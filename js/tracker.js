@@ -13,7 +13,7 @@ export const addSource = fn => sources.push(fn);
 function ensure() {
   const d = vnDate();
   if (pend.date && pend.date !== d) flush();
-  if (!pend.date) pend = { date: d, h: {}, l: {}, sec: 0, s: 0, r: 0, w: 0, d: 0, k: 0, c: 0, q: 0, qc: 0, x: 0 };
+  if (!pend.date) pend = { date: d, h: {}, l: {}, sec: 0, s: 0, r: 0, w: 0, d: 0, k: 0, c: 0, q: 0, qc: 0, x: 0, n: 0, t: 0, tp: 0 };
   return pend;
 }
 
@@ -35,11 +35,13 @@ export const dictation = () => { ensure().d++; flush(); };
 export const speak = () => { ensure().k++; flush(); };
 export const hw = () => { ensure().x++; flush(); };                  // viết xong 1 chữ
 export const card = () => { ensure().c++; flush(); };               // ôn 1 thẻ
+export const world = () => { ensure().n++; flush(); };               // đọc xong 1 bài ở Thế giới của tôi
+export const test = pct => { const p = ensure(); p.t++; if (pct >= 80) p.tp++; flush(); }; // nộp 1 bài kiểm tra (tp = đạt từ 80%)
 export const quiz = ok => { const p = ensure(); p.q++; if (ok) p.qc++; flush(); }; // làm 1 câu bài tập
 
 export function flush() {
   const p = pend;
-  if (!p.date || !(p.sec || p.s || p.r || p.w || p.d || p.k || p.c || p.q || p.x)) return;
+  if (!p.date || !(p.sec || p.s || p.r || p.w || p.d || p.k || p.c || p.q || p.x || p.n || p.t)) return;
   pend = {};
   const id = p.date + '_' + deviceId();
   const c = store.get('days', id) || {};
@@ -47,7 +49,7 @@ export function flush() {
   store.put('days', id, {
     date: p.date, dev: deviceId(),
     sec: (c.sec || 0) + p.sec, s: (c.s || 0) + p.s, r: (c.r || 0) + p.r, w: (c.w || 0) + p.w, d: (c.d || 0) + (p.d || 0), k: (c.k || 0) + (p.k || 0),
-    c: (c.c || 0) + (p.c || 0), q: (c.q || 0) + (p.q || 0), qc: (c.qc || 0) + (p.qc || 0), x: (c.x || 0) + (p.x || 0),
+    c: (c.c || 0) + (p.c || 0), q: (c.q || 0) + (p.q || 0), qc: (c.qc || 0) + (p.qc || 0), x: (c.x || 0) + (p.x || 0), n: (c.n || 0) + (p.n || 0), t: (c.t || 0) + (p.t || 0), tp: (c.tp || 0) + (p.tp || 0),
     h: sum(c.h, p.h), l: sum(c.l, p.l),
   });
 }
@@ -59,8 +61,8 @@ export function byDate() {
   flush();
   const m = new Map();
   for (const d of store.list('days')) {
-    const a = m.get(d.date) || { date: d.date, sec: 0, s: 0, r: 0, w: 0, d: 0, k: 0, c: 0, q: 0, qc: 0, x: 0, h: {}, l: {} };
-    a.sec += d.sec || 0; a.s += d.s || 0; a.r += d.r || 0; a.w += d.w || 0; a.d += d.d || 0; a.k += d.k || 0; a.c += d.c || 0; a.q += d.q || 0; a.qc += d.qc || 0; a.x += d.x || 0;
+    const a = m.get(d.date) || { date: d.date, sec: 0, s: 0, r: 0, w: 0, d: 0, k: 0, c: 0, q: 0, qc: 0, x: 0, n: 0, t: 0, tp: 0, h: {}, l: {} };
+    a.sec += d.sec || 0; a.s += d.s || 0; a.r += d.r || 0; a.w += d.w || 0; a.d += d.d || 0; a.k += d.k || 0; a.c += d.c || 0; a.q += d.q || 0; a.qc += d.qc || 0; a.x += d.x || 0; a.n += d.n || 0; a.t += d.t || 0; a.tp += d.tp || 0;
     for (const k in d.h) a.h[k] = (a.h[k] || 0) + d.h[k];
     for (const k in d.l) a.l[k] = (a.l[k] || 0) + d.l[k];
     m.set(d.date, a);

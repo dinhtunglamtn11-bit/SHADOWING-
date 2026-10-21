@@ -21,8 +21,13 @@ export function isTarget(text, lang) {
   return /[a-z]/i.test(text) && !VIET.test(text);
 }
 
+// Giọng bạn đã chọn trong Cài đặt (lưu riêng từng máy vì mỗi máy có bộ giọng khác nhau)
+export const savedVoices = () => { try { return JSON.parse(localStorage.getItem('voices') || '{}'); } catch { return {}; } };
+export const allVoices = () => voices;
 export function voiceFor(bcp) {
   const want = bcp.toLowerCase().replace('_', '-'), base = want.split('-')[0];
+  const pick = savedVoices()[base];
+  if (pick) { const v = voices.find(x => x.voiceURI === pick); if (v) return v; }
   return voices.find(v => v.lang.toLowerCase().replace('_', '-') === want)
     || voices.find(v => v.lang.toLowerCase().startsWith(base));
 }

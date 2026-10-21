@@ -4,8 +4,10 @@ import * as store from './store.js';
 import * as tracker from './tracker.js';
 import { pickAndAdd, openItem, addByLink } from './player.js';
 import * as notes from './notes.js';
+import * as tree from './tree.js';
+import * as lessons from './lessons.js';
 
-let tab = 'video', folder = 'all', editId = null;
+let tab = 'video', folder = 'all', editId = null, linkFolder = null;
 const lang = it => it.lang || 'zh';
 const byRecent = (a, b) => (b.u || 0) - (a.u || 0);
 const curFolder = () => (folder === 'all' ? '' : folder);
@@ -14,10 +16,14 @@ function itemsOf(t) {
   return store.list('items').filter(i =>
     (t === 'pdf' ? (i.type === 'pdf' || i.type === 'text') : i.type === t) && lang(i) === getLang());
 }
-const foldersOf = l => store.list('folders').filter(f => lang(f) === l).sort((a, b) => a.name.localeCompare(b.name));
+// thư mục lồng nhau hiện kèm đường dẫn: “HSK1 › HSK bài 1”
+const foldersOf = l => tree.flatTree(l).map(f => ({ id: f.id, name: f.label }));
 
 function render() {
   $$('#libTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  const isLesson = tab === 'lesson';
+  $('#libMain').hidden = isLesson; $('#lessonBox').hidden = !isLesson;
+  if (isLesson) { lessons.render($('#lessonBox'), { openDoc, openEdit, addDocs, addLink: openLinkDialog }); return; }
   const all = itemsOf(tab), folders = foldersOf(getLang());
   if (folder !== 'all' && folder !== '' && !folders.some(f => f.id === folder)) folder = 'all';
   const cnt = id => all.filter(i => (i.folder || '') === id).length;
@@ -126,10 +132,20 @@ export async function openDoc(id) {
 
 // ---------- sửa mục ----------
 function fillFolders(l, sel) {
-  $('#eFolder').innerHTML = '<option value="">Chưa phân mục</option>' +
-    foldersOf(l).map(f => `<option value="${f.id}" ${f.id === sel ? 'selected' : ''}>${esc(f.name)}</option>`).join('');
+  $('#eFolder').innerHTML = tree.options(l, sel);
 }
-function openEdit(id) {
+// thêm file PDF / văn bản vào thư mục (folderId '' = chưa phân mục)
+export async function addDocs(folderId = '') {
+  const fs = await pickFile('.pdf,.txt,.md,application/pdf,text/plain', true);
+  for (const f of fs) {
+    const isPdf = /\.pdf$/i.test(f.name) || f.type === 'application/pdf', assetId = uid();
+    try { await store.putAsset(assetId, f, f.name); } catch (e) { toast('Không lưu được: ' + e.message); continue; }
+    store.put('items', uid(), { type: isPdf ? 'pdf' : 'text', title: f.name.replace(/\.[^.]+$/, ''), lang: getLang(), folder: folderId, assetId, fileName: f.name, size: f.size, created: Date.now() });
+  }
+}
+function openLinkDialog(folderId = null) { linkFolder = folderId; $('#lUrl').value = ''; $('#lTitle').value = ''; $('#linkDlg').showModal(); }
+
+export function openEdit(id) {
   const it = store.get('items', id); if (!it) return;
   editId = id;
   $('#eTitle').value = it.title;
@@ -143,6 +159,7 @@ function openEdit(id) {
 }
 
 export function init() {
+  $('#eExercises').onclick = () => { const id = editId; $('#editDlg').close(); bus.emit('nav', 'review'); document.dispatchEvent(new CustomEvent('exercises-for', { detail: id })); };
   $('#libTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.t; folder = 'all'; render(); } });
   $('#folderBar').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -156,35 +173,27 @@ export function init() {
       if (name) { store.put('folders', folder, { name }); render(); }
     } else if (b.id === 'delFolder') {
       const f = store.get('folders', folder);
-      if (!confirm(`Xóa mục "${f?.name}"? Các mục con sẽ chuyển về “Chưa phân mục”.`)) return;
-      store.list('items').filter(i => i.folder === folder).forEach(i => store.put('items', i.id, { folder: '' }));
-      store.del('folders', folder); folder = 'all'; render();
+      if (!confirm(`Xóa mục "${f?.name}"? Các mục con sẽ chuyển về “Chưa phân mục” (thư mục con, nếu có, được giữ lại).`)) return;
+      tree.removeFolder(folder, getLang(), false); folder = 'all'; render();
     }
   });
   $('#libAdd').onclick = () => {
     if (tab === 'video') pickAndAdd(curFolder()).then(render);
-    else if (tab === 'pdf') {
-      pickFile('.pdf,.txt,.md,application/pdf,text/plain', true).then(async fs => {
-        for (const f of fs) {
-          const isPdf = /\.pdf$/i.test(f.name) || f.type === 'application/pdf', assetId = uid();
-          try { await store.putAsset(assetId, f, f.name); } catch (e) { toast('Không lưu được: ' + e.message); continue; }
-          store.put('items', uid(), { type: isPdf ? 'pdf' : 'text', title: f.name.replace(/\.[^.]+$/, ''), lang: getLang(), folder: curFolder(), assetId, fileName: f.name, size: f.size, created: Date.now() });
-        }
-        render();
-      });
-    } else notes.newNote(curFolder());
+    else if (tab === 'pdf') addDocs(curFolder()).then(render);
+    else notes.newNote(curFolder());
   };
   $('#libSearch').addEventListener('input', render);
-  $('#libLink').onclick = () => { $('#lUrl').value = ''; $('#lTitle').value = ''; $('#linkDlg').showModal(); };
+  $('#libLink').onclick = () => openLinkDialog(null);
   $('#lSave').onclick = async () => {
     const url = $('#lUrl').value.trim();
     if (!url) return;
     const k = classifySrc(url).kind;
     if (k === 'link' && !confirm('Link này không phát trực tiếp được trong app (chỉ mở sang tab mới).\nVẫn lưu vào thư viện?')) return;
     $('#lSave').disabled = true;
-    const id = await addByLink(url, $('#lTitle').value.trim(), curFolder());
+    const id = await addByLink(url, $('#lTitle').value.trim(), linkFolder ?? curFolder());
     $('#lSave').disabled = false;
     if (!id) return;
+    linkFolder = null;
     $('#linkDlg').close(); render();
     toast('Đã thêm vào thư viện');
   };
@@ -219,7 +228,7 @@ export function init() {
     $('#editDlg').close();
   };
   $('#docBack').onclick = () => bus.emit('nav', 'library');
-  bus.on('store', c => { if (document.body.dataset.view === 'library' && (c === 'items' || c === 'folders' || c === '*')) render(); });
+  bus.on('store', c => { if (document.body.dataset.view === 'library' && (c === 'items' || c === 'folders' || c === 'sets' || c === 'tests' || c === '*')) render(); });
   bus.on('lang', () => { folder = 'all'; render(); });
   bus.on('show', v => { if (v === 'library') render(); });
   render();

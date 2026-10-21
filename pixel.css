@@ -524,3 +524,24 @@ body.lookup #now .l1, body.lookup #cueList .cue .m, body.lookup .qtext, body.loo
 .keybtn { min-width: 84px; font-family: var(--pf); }
 .keybtn.on { --c: #ffd84d; --cl: #fff0a3; --cd: #d9a41c; --ct: #3a2a00; }
 #keyList .uirow { padding: 1px 0; }
+/* chip ngôn ngữ: căn giữa chữ theo chiều dọc (chữ Hán/Hàn/Nhật cao hơn chữ Latin) */
+.chip { display: inline-flex; align-items: center; justify-content: center; padding: 2px 10px; line-height: 1; min-height: 30px; }
+.chip small { line-height: 1; display: inline-block; }
+#langs .chip { font-family: "Microsoft YaHei", "Malgun Gothic", "Yu Gothic", var(--pf), sans-serif; font-size: 19px; }
+#langs .chip small { font-family: var(--pf); }
+@media (max-width: 520px) { #top .chip { padding: 2px 5px; min-height: 28px; } }
+/* hiệu chỉnh nhỏ: phông pixel có chân chữ cao nên đẩy chữ xuống 1–2px cho cân giữa khung */
+#langs .chip { padding: 4px 10px 1px; }
+#langs .chip small { position: relative; top: 1px; }
+@media (max-width: 520px) { #top .chip { padding: 3px 5px 1px; } }
+/* tải sẵn để dùng offline */
+.offrow { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; padding: 5px 2px; border-bottom: 2px dashed var(--line); cursor: pointer; }
+.offn { font-size: 14px; min-width: 0; }
+.offst { font-family: var(--pf); font-size: 17px; white-space: nowrap; }
+.offst.ok { color: var(--ok); }
+/* đọc to ghi chú / tài liệu */
+::highlight(reading) { background: var(--hl); color: var(--ink); }
+[data-readall].on, [data-tapread].on { --c: #4fd9c0; --cl: #a6f0e3; --cd: #209c88; --ct: #05302a; }
+body.tapread #nPreview, body.tapread #docBody .txt { cursor: pointer; }
+.voicebox { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.voicebox select { max-width: 220px; }

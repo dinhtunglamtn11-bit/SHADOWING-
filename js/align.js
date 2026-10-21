@@ -231,6 +231,13 @@ async function loadWhisper(model, onLoad) {
   return asr;
 }
 
+// Chỉ tải mô hình về bộ nhớ đệm của trình duyệt (dùng cho "Tải sẵn để dùng offline"), rồi giải phóng RAM
+export async function preloadWhisper(model, onLoad) {
+  const had = asr && asrModel === model;
+  await loadWhisper(model, onLoad);
+  if (!had) { try { await asr.dispose?.(); } catch { /* bỏ qua */ } asr = null; asrModel = ''; }
+}
+
 // Thêm dòng phiên âm pinyin (dòng 2) cho các câu mới có 1 dòng; mỗi chữ Hán một âm tiết. Trả về số câu đã thêm.
 export async function addPinyin(cues) {
   const { pinyin } = await import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/pinyin-pro@3.29.5/+esm');

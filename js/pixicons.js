@@ -28,6 +28,14 @@ const ICONS = {
     '.kkkk.kkkk.', 'kbbbbkbbbbk', 'kbwwbkbwwbk', 'kbbbbkbbbbk', 'kbwwbkbwwbk',
     'kbbbbkbbbbk', 'kcccckcccck', 'kcccckcccck', '.kkkk.kkkk.',
   ],
+  news: [
+    'kkkkkkkkkkk', 'kcrrrccccck', 'kcrrrcBBBck', 'kcrrrccccck', 'kccccccccck',
+    'kcBBBcBBBck', 'kccccccccck', 'kcBBBcBBBck', 'kccccccccck', 'kkkkkkkkkkk',
+  ],
+  dice: [
+    '.kkkkkkkkkk.', 'kwwwwwwwwwwk', 'kwrrwwwwrrwk', 'kwrrwwwwrrwk', 'kwwwwwwwwwwk', 'kwwwwrrwwwwk',
+    'kwwwwrrwwwsk', 'kwwwwwwwwwsk', 'kwrrwwwwrrsk', 'kwrrwwwwrrsk', 'kwwwwwwwwssk', '.kkkkkkkkkk.',
+  ],
   star: [
     '.....k.....', '....kyk....', '....kyk....', 'kkkkkykkkkk', 'kywyyyyyyYk',
     '.kyyyyyyYk.', '..kyyyyYk..', '..kyyyyYk..', '.kyyykyyYk.', '.kkk...kkk.',
@@ -189,6 +197,87 @@ const ICONS = {
   ],
 };
 
+// ---------- tranh minh họa lớn (16 điểm) cho thư mục, bài học, bài kiểm tra… ----------
+Object.assign(ICONS, {
+  globe: [
+    '...kkkkk...', '.kkbbgbbkk.', 'kbbggbbbbbk', 'kbgggbbgbbk', 'kbbggbggbbk', 'kbbbbbgggbk', 'kbbbggggbbk', 'kbbbbgggbBk', '.kkbbbbBBk.', '...kkkkk...',
+  ],
+  a_world: [
+    '.....kkkkkk.....', '...kkbbbbbbkk...', '..kbbbgggbbbbk..', '.kbbbgggggbbbbk.', '.kbbgggbbbbgbbk.', 'kbbbbggbbbbggbbk', 'kbwbbbbbbbbggbbk', 'kbwbbbbgggbbbbbk',
+    'kbbbbbggggggbbbk', 'kbbbbbbgggggbbbk', 'kbbbbbbbggggbbBk', '.kbbbbbbbgbbbBk.', '.kbbbbbbbbbbBBk.', '..kbbbbbbbBBBk..', '...kkBBBBBBkk...', '.....kkkkkk.....',
+  ],
+  a_folder: [
+    '................', '.kkkkkkk........', 'kyyyyyyyk.......', 'kyyyyyyykkkkkkkk', 'kywyyyyyyyyyyyyk', 'kywyyyyyyyyyyyyk', 'kyyyyyyyyyyyyyyk', 'kyyyyyyyyyyyyyyk',
+    'kyyyyyyyyyyyyyyk', 'kyyyyyyyyyyyyyyk', 'kyyyyyyyyyyyyyYk', 'kyyyyyyyyyyyyYYk', 'kYYYYYYYYYYYYYYk', 'kkkkkkkkkkkkkkkk',
+  ],
+  a_plus: [
+    '....kkk....', '....kgk....', '....kgk....', 'kkkkkgkkkkk', 'kgggggggggk', 'kkkkkgkkkkk', '....kgk....', '....kgk....', '....kkk....',
+  ],
+  a_books: [
+    '................', '...kkkkkkkkkkk..', '...krrwwwwrrRk..', '...kRRRRRRRRRk..', '...kkkkkkkkkkk..', '.kkkkkkkkkkkkk..', '.kbbwwwwwbbbBk..',
+    '.kBBBBBBBBBBBk..', '.kkkkkkkkkkkkk..', '..kkkkkkkkkkkkk.', '..kggwwwwwgggGk.', '..kGGGGGGGGGGGk.', '..kkkkkkkkkkkkk.',
+  ],
+  a_book: [
+    '................', '..kkkkk..kkkkk..', '.kccccckkccccck.', '.kcSSSckkcSSSck.', '.kccccckkccccck.', '.kcSSSckkcSSSck.', '.kccccckkccccck.',
+    '.kcSSSckkcSSSck.', '.kBBBBBBBBBBBBk.', '..kkkkkkkkkkkk..',
+  ],
+  a_test: [
+    '.....kkkkkk.....', '....kSSSSSSk....', '..kkkSkkkkSkkk..', '.kccccccccccck..', '.kcggccSSSSSck..', '.kccccccccccck..', '.kcggccSSSSSck..',
+    '.kccccccccccck..', '.kcrrccSSSSSck..', '.kccccccccccck..', '.kcggccSSSSSck..', '.kccccccccccck..', '.kkkkkkkkkkkkk..',
+  ],
+  a_exercise: [
+    '.kkkkkkkkkk.....', '.kccccccccck..kk', '.kcrccSSSSck.kpk', '.kccccccccck.kpk', '.kcrccSSSSck.kyk', '.kccccccccck.kyk', '.kcrccSSSSck.kyk',
+    '.kccccccccck.kyk', '.kcrccSSSSck.kYk', '.kccccccccck.kYk', '.kcccccccccckkkk', '.kkkkkkkkkkk.kk.',
+  ],
+});
+
+// Huy hiệu thành tựu: dải ruy-băng + huy chương tròn theo hạng (đồng/bạc/vàng/kim cương) + hình nhỏ ở giữa. Chưa mở khóa thì xám.
+const TIER = {
+  bronze: ['#e3a066', '#b5713a', '#f6c79a'], silver: ['#d8deec', '#9aa3bd', '#ffffff'], gold: ['#ffd84d', '#d9a41c', '#fff3a3'], diamond: ['#8fe8ff', '#3aa6d8', '#eefcff'], locked: ['#dcd8ee', '#a9a3c6', '#f2f0fb'],
+};
+const GLYPH = {
+  star: ['...g...', '...g...', 'ggggggg', '.ggggg.', '..ggg..', '.gg.gg.', '.g...g.'],
+  time: ['.ggggg.', 'g.....g', 'g..g..g', 'g..gg.g', 'g.....g', '.ggggg.', '.......'],
+  cal: ['g.....g', 'ggggggg', 'g.....g', 'g.g.g.g', 'g.....g', 'g.g.g.g', 'ggggggg'],
+  flame: ['...g...', '..gg...', '..ggg..', '.ggggg.', 'gggggg.', 'gggggg.', '.gggg..'],
+  mic: ['..ggg..', '..ggg..', '..ggg..', 'g.ggg.g', 'g.ggg.g', '.ggggg.', '...g...'],
+  card: ['.ggggg.', 'g.....g', 'g.ggg.g', 'g.....g', 'g.ggg.g', 'g.....g', '.ggggg.'],
+  check: ['......g', '.....gg', 'g...gg.', 'gg.gg..', '.ggg...', '..g....', '.......'],
+  target: ['.ggggg.', 'g.....g', 'g.ggg.g', 'g.g.g.g', 'g.ggg.g', 'g.....g', '.ggggg.'],
+  globe: ['.ggggg.', 'g.g.g.g', 'ggggggg', 'g.g.g.g', 'ggggggg', 'g.g.g.g', '.ggggg.'],
+  pencil: ['.....gg', '....ggg', '...ggg.', '..ggg..', '.ggg...', 'ggg....', 'gg.....'],
+  book: ['ggg.ggg', 'g.g.g.g', 'g.g.g.g', 'g.g.g.g', 'g.g.g.g', 'ggg.ggg', '.......'],
+  phones: ['.ggggg.', 'g.....g', 'g.....g', 'g.....g', 'ggg.ggg', 'ggg.ggg', '.......'],
+  trophy: ['ggggggg', 'g.ggg.g', 'g.ggg.g', '.ggggg.', '..ggg..', '..ggg..', '.ggggg.'],
+  up: ['...g...', '..ggg..', '.ggggg.', '...g...', '...g...', '...g...', '...g...'],
+  news: ['ggggggg', 'g.g.ggg', 'ggg.g.g', 'g.g.ggg', 'ggggggg', '.......', '.......'],
+};
+export const glyphNames = () => Object.keys(GLYPH);
+const bcache = new Map();
+export function badge(tier = 'bronze', glyph = 'star') {
+  const key = tier + '|' + glyph;
+  if (bcache.has(key)) return bcache.get(key);
+  const [main, dark, light] = TIER[tier] || TIER.locked, ink = tier === 'locked' ? '#9a93c4' : '#2d1f47';
+  let rects = '';
+  const px = (x, y, c) => { rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${c}"/>`; };
+  for (let y = 0; y < 6; y++) { // ruy-băng
+    for (const [x0, c] of [[4, '#ff5a5f'], [9, '#5ab4ff']]) { px(x0 - 1, y, '#2d1f47'); px(x0 + 3, y, '#2d1f47'); for (let x = x0; x < x0 + 3; x++) px(x, y, tier === 'locked' ? '#cfcae6' : c); }
+  }
+  for (let y = 4; y < 18; y++) {
+    for (let x = 0; x < 16; x++) {
+      const d = Math.hypot(x - 7.5, y - 10.5);
+      if (d > 6.7) continue;
+      if (d > 5.6) px(x, y, '#2d1f47');
+      else if (d > 4.3) px(x, y, x + y < 17 ? light : dark);
+      else px(x, y, main);
+    }
+  }
+  (GLYPH[glyph] || GLYPH.star).forEach((row, j) => [...row].forEach((ch, i) => { if (ch === 'g') px(4 + i, 7 + j, ink); }));
+  const svg = `<svg class="pix badge" viewBox="0 0 16 18" style="--w:16;--h:18" shape-rendering="crispEdges" aria-hidden="true">${rects}</svg>`;
+  bcache.set(key, svg);
+  return svg;
+}
+
 // Kiểm tra lưới (dùng khi thiết kế biểu tượng mới): trả về danh sách lỗi
 export function checkIcons() {
   const bad = [];
@@ -244,11 +333,11 @@ const MAP = {
   '✅': 'check', '✔': 'check', '✓': 'check', '❌': 'cross', '✗': 'cross', '✕': 'cross',
   '＋': 'plus', '➕': 'plus', '👤': 'user', '🔴': 'dot', '🧩': 'quiz', '💡': 'bulb',
   '🧹': 'eraser', '💾': 'floppy', '⚙': 'gear', '☰': 'menu',
-  '📈': 'chart', '🔎': 'search', '🔍': 'search', '🔔': 'bell', '⌨': 'keyboard', '🏆': 'trophy', '❤': 'heart', '♥': 'heart', '⭐': 'star', '💎': 'gem',
+  '📈': 'chart', '🔎': 'search', '🔍': 'search', '🔔': 'bell', '⌨': 'keyboard', '🏆': 'trophy', '❤': 'heart', '♥': 'heart', '⭐': 'star', '💎': 'gem', '📰': 'news', '🎲': 'dice', '🌍': 'globe', '🌎': 'globe', '🌏': 'globe',
 };
 const RE = new RegExp('(' + Object.keys(MAP).join('|') + ')\\uFE0F?', 'gu');
 // vùng chứa nội dung của người dùng hoặc ô nhập: không đổi emoji ở đó
-const DENY = 'script,style,textarea,input,select,option,.pxe,#now,.cue,.qtext,.qexp,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,[contenteditable]';
+const DENY = 'script,style,textarea,input,select,option,.pxe,#now,.cue,.qtext,.qexp,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.nw-emoji,.nw-h,.nw-lead,.nw-ttl,.nw-text,.wchip,.slot,[contenteditable]';
 
 function convert(tn) {
   const s = tn.nodeValue;

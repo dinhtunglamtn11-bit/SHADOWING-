@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="pixel.css">
+<link rel="stylesheet" href="exnews.css">
 <script>
 // Áp dụng cài đặt giao diện sớm (tránh nháy màu): đọc 'ui' trong localStorage, cùng logic với js/settings.js
 (function () {
@@ -51,6 +52,7 @@
   <button data-view="player"><i>🎧</i><span>Học</span></button>
   <button data-view="library" class="on"><i>📚</i><span>Thư viện</span></button>
   <button data-view="review"><i>📒</i><span>Ôn tập</span><em id="rvDue"></em></button>
+  <button data-view="world" title="Thế giới của tôi"><i>🌍</i><span>Thế giới</span></button>
   <button data-view="notes"><i>✍️</i><span>Soạn</span></button>
   <button data-view="quest"><i>🎯</i><span>Nhiệm vụ</span><em id="qBadge"></em></button>
 </nav>
@@ -183,13 +185,17 @@
   <section id="vLibrary" class="view active">
     <div class="wrap">
       <div class="seg" id="libTabs">
+        <button data-t="lesson">🎓 Bài học</button>
         <button data-t="video" class="on">🎬 Video</button>
         <button data-t="pdf">📄 Tài liệu</button>
         <button data-t="note">📝 Ghi chú</button>
       </div>
+      <div id="lessonBox" hidden></div>
+      <div id="libMain">
       <div id="folderBar" class="chips"></div>
       <div class="row"><button class="btn primary" id="libAdd">＋ Thêm video</button><button class="btn" id="libLink">🔗 Thêm bằng link</button><button class="btn" id="libFind" title="Tìm một từ hay một câu trong mọi phụ đề, ghi chú và thẻ">🔎 Tìm câu</button><input id="libSearch" type="search" placeholder="🔍 Tìm theo tên…" style="flex:1;min-width:120px;max-width:260px"><span class="grow"></span><span id="libUsage" class="dim"></span></div>
       <div id="libItems" class="cards"></div>
+      </div>
     </div>
   </section>
 
@@ -205,6 +211,18 @@
       </div>
       <label class="dim ttsrate">🔊 Tốc độ đọc <select id="ttsRate"><option value="0.7">Chậm</option><option value="0.9" selected>Vừa</option><option value="1.1">Nhanh</option></select></label>
       <div id="rvBody"></div>
+    </div>
+  </section>
+
+  <!-- ===== Thế giới của tôi ===== -->
+  <section id="vWorld" class="view">
+    <div class="wrap">
+      <div class="row" id="nwTools" hidden>
+        <button class="btn" data-readall title="Đọc to bài bằng giọng máy (tiếng Trung, Nhật, Hàn, Anh). Chạm câu để nghe riêng">🔊 Đọc</button>
+        <button class="btn" data-tapread title="Bật rồi chạm vào một câu để nghe câu đó (tắt Tra từ khi dùng)">👆 Chạm câu</button>
+        <button class="btn" data-lookup title="Bật rồi chạm vào chữ Hán để tra nghĩa">📖 Tra từ</button>
+      </div>
+      <div id="worldRoot"></div>
     </div>
   </section>
 
@@ -225,6 +243,8 @@
           <button class="btn" id="nAudio" title="Bôi đen chữ trước để gắn link vào chữ đó">🔊 Gắn âm thanh</button>
           <button class="btn" id="nVideo" title="Bôi đen chữ trước để gắn link vào chữ đó">🎬 Gắn video</button>
           <button class="btn" data-lookup title="Bật rồi chạm vào chữ Hán (chế độ Xem) để tra nghĩa">📖 Tra từ</button>
+          <button class="btn" data-readall title="Đọc to cả ghi chú bằng giọng máy (tiếng Trung, Nhật, Hàn). Chạm câu để nghe riêng">🔊 Đọc</button>
+          <button class="btn" data-tapread title="Bật rồi chạm vào một câu trong chế độ Xem để nghe câu đó (tắt Tra từ khi dùng)">👆 Chạm câu</button>
           <span id="nSaved" class="dim"></span>
         </div>
         <textarea id="nBody" placeholder="Viết ở đây. Dòng bắt đầu bằng # là tiêu đề, **chữ** là in đậm.&#10;Muốn gắn link: bôi đen một từ, rồi bấm 🎬 Gắn video (hoặc 🔊 Gắn âm thanh). Sang chế độ Xem, bấm vào từ đó là video hiện bên cạnh."></textarea>
@@ -239,7 +259,7 @@
   <!-- ===== Xem tài liệu ===== -->
   <section id="vDoc" class="view">
     <div class="wrap">
-      <div class="row"><button class="btn" id="docBack">← Thư viện</button><b id="docTitle" class="ellipsis grow"></b></div>
+      <div class="row"><button class="btn" id="docBack">← Thư viện</button><b id="docTitle" class="ellipsis grow"></b><button class="btn" data-readall title="Đọc to tài liệu dạng chữ bằng giọng máy">🔊 Đọc</button><button class="btn" data-tapread title="Bật rồi chạm vào một câu để nghe câu đó">👆 Chạm câu</button></div>
       <div id="docBody"></div>
     </div>
   </section>
@@ -299,7 +319,7 @@
       <small>Dán link YouTube, TikTok hoặc link file mp4. Máy nào chưa có file sẽ phát từ link này, và chữ gắn link trong ghi chú cũng mở được.</small></label>
     <label id="eFrameRow">Khung video
       <select id="eFrame"><option value="landscape">Ngang (kiểu YouTube 16:9)</option><option value="portrait">Dọc (kiểu TikTok 9:16)</option></select></label>
-    <div class="row"><button class="btn primary" id="eSave">Lưu</button><span class="grow"></span><button class="btn danger" id="eDel">🗑 Xóa</button></div>
+    <div class="row"><button class="btn primary" id="eSave">Lưu</button><button class="btn" id="eExercises" title="Xem hoặc tạo bài tập gắn với mục này">🧩 Bài tập</button><span class="grow"></span><button class="btn danger" id="eDel">🗑 Xóa</button></div>
   </div>
 </dialog>
 
@@ -417,6 +437,18 @@
     <small class="dim">Bấm vào một phím rồi nhấn phím mới. Esc: hủy · Backspace: gỡ phím.</small>
     <div id="keyList"></div>
     <div class="row"><button id="keyReset" class="btn">Đặt lại phím tắt</button></div>
+
+    <h3>Giọng đọc (máy này)</h3>
+    <small class="dim">Chọn giọng đọc cho từng ngôn ngữ. Mỗi máy có bộ giọng riêng nên lựa chọn này chỉ áp dụng cho máy đang dùng. Giọng “Tự chọn” là giọng đầu tiên máy tìm được.</small>
+    <div id="voiceList"></div>
+    <div class="uirow"><span>Đọc cả phần tiếng Việt / tiếng Anh trong ghi chú</span><input type="checkbox" id="readVi"></div>
+
+    <h3>Dùng offline (tải sẵn)</h3>
+    <small class="dim">Bấm một lần khi có Wi-Fi để máy này dùng được các tính năng lúc mất mạng. Không gồm file video, PDF, âm thanh của bạn vì những file đó không đồng bộ giữa các máy. Mô hình AI khá nặng, nên chỉ tải khi cần chấm phát âm hoặc canh từ.</small>
+    <div id="offList"></div>
+    <progress id="offProg" max="1" value="0" hidden></progress>
+    <div class="dim" id="offStat"></div>
+    <div class="row"><button id="offGo" class="btn primary">⬇ Tải mục đã chọn</button></div>
 
     <h3>Dữ liệu</h3>
     <div class="row"><button id="btnData" class="btn">💾 Sao lưu và khôi phục…</button><button id="btnTrash" class="btn">🗑 Thùng rác</button></div>

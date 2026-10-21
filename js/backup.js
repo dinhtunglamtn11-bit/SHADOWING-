@@ -50,6 +50,12 @@ async function convertAllZh() {
     const text = z(s.text || ''), title = z(s.title || '');
     if (text !== s.text || title !== s.title) { store.put('sets', s.id, { text, title }); n++; }
   }
+  for (const a of store.list('articles')) {
+    if ((a.lang || 'zh') !== 'zh') continue;
+    const patch = {};
+    for (const f of ['title', 'tag', 'source', 'body', 'qtext']) if (a[f] && z(a[f]) !== a[f]) patch[f] = z(a[f]);
+    if (Object.keys(patch).length) { store.put('articles', a.id, patch); n++; }
+  }
   try { const k = 'hw:list:zh', t = localStorage.getItem(k); if (t && z(t) !== t) { localStorage.setItem(k, z(t)); n++; } } catch { /* bỏ qua */ }
   return n;
 }
@@ -70,7 +76,7 @@ export function exportBackup() {
   toast('Đã tạo file sao lưu');
 }
 
-function hasData() { return store.list('items').length + store.list('cards').length + store.list('sets').length > 0; }
+function hasData() { return store.list('items').length + store.list('cards').length + store.list('sets').length + store.list('articles').length > 0; }
 
 export function checkReminder() {
   const b = getBk(), bar = $('#bkBar');

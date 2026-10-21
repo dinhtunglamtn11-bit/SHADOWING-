@@ -21,7 +21,7 @@ const coreOf = s => { const m = AFFIX.exec(s); return m && m[2] ? m[2] : s; };
 
 // Câu nằm trong vùng này là nội dung của người dùng: gần như không dịch
 const USER_OK = new Set(['chưa có phiên âm', 'chưa có nghĩa', 'Đúng', 'Sai']);
-const USER_SEL = '.cue .m,.cue .s,#now .main:not(.small),#now .sub,.qtext,.qexp,.qopt,.qback,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.ci b,.lib .n b,.wd b,.uipv,textarea,[contenteditable]';
+const USER_SEL = '.cue .m,.cue .s,#now .main:not(.small),#now .sub,.qtext,.qexp,.qopt,.qback,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.ci b,.lib .n b,.wd b,.gt,.nw-h,.nw-lead,.nw-tag,.nw-ttl,.nw-text,.nw-src,.nw-syn,.wchip,.slot,.qhint,.qtitle,#msItem option,#wtFolder option:not(:first-child),.uipv,textarea,[contenteditable]';
 
 // Nạp từ điển của ngôn ngữ đang chọn (chỉ tải khi không dùng tiếng Việt)
 const EN_FILES = ['en-a', 'en-b', 'en-c', 'en-d'];
@@ -40,11 +40,11 @@ function build() {
   for (const dict of [DICT]) {
     for (const [k, v] of Object.entries(dict)) {
       const key = norm(coreOf(k)), val = coreOf(v);
-      if (/\{[*~]?\}/.test(key)) {
-        // {} số hoặc cụm ngắn (chỉ nhận số khi mẫu ngắn), {*} cụm bất kỳ, {~} cụm bất kỳ và được dịch tiếp (thông báo giao diện)
-        const parts = key.split(/(\{[*~]?\})/), isPh = p => /^\{[*~]?\}$/.test(p), lit = parts.filter(p => !isPh(p)).join('').length;
+      if (/\{[*~#]?\}/.test(key)) {
+        // {} số hoặc cụm ngắn (chỉ nhận số khi mẫu ngắn), {#} luôn là số, {*} cụm bất kỳ, {~} cụm bất kỳ và được dịch tiếp (thông báo giao diện)
+        const parts = key.split(/(\{[*~#]?\})/), isPh = p => /^\{[*~#]?\}$/.test(p), lit = parts.filter(p => !isPh(p)).join('').length;
         const full = new Set(); let k = 0;
-        const src = parts.map(p => { if (!isPh(p)) return esc(p); if (p === '{~}') full.add(k); k++; return p === '{}' && lit < 8 ? '([\\d.,:/%]+)' : '(.*?)'; }).join('');
+        const src = parts.map(p => { if (!isPh(p)) return esc(p); if (p === '{~}') full.add(k); k++; return p === '{#}' || (p === '{}' && lit < 8) ? '([\\d.,:/%]+)' : '(.*?)'; }).join('');
         PATS.push({ re: new RegExp(`^${src}$`, 'su'), tpl: val, lit, full, dot: key.includes(' · ') });
       } else {
         E.set(key, val);

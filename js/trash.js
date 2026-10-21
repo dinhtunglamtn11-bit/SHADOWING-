@@ -3,7 +3,7 @@ import { $, esc, toast, fmtMB } from './util.js';
 import * as store from './store.js';
 
 const KEEP_DAYS = 30, DAY = 864e5;
-const KIND = { items: 'Video / tài liệu / ghi chú', cards: 'Thẻ', sets: 'Bộ bài tập', wsets: 'Bộ viết', folders: 'Mục' };
+const KIND = { items: 'Video / tài liệu / ghi chú', cards: 'Thẻ', sets: 'Bộ bài tập', wsets: 'Bộ viết', folders: 'Mục', articles: 'Bài đọc', wfolders: 'Thư mục chủ đề', tests: 'Bài kiểm tra' };
 
 function label(c, d) {
   if (c === 'cards') return [d.front, (d.back || [])[0]].filter(Boolean).join(' · ');
@@ -12,7 +12,7 @@ function label(c, d) {
 }
 function icon(c, d) {
   if (c === 'items') return d.type === 'video' ? '🎬' : d.type === 'note' ? '📝' : '📄';
-  return { cards: '📒', sets: '🧩', wsets: '🖊', folders: '📂' }[c] || '📄';
+  return { cards: '📒', sets: '🧩', wsets: '🖊', folders: '📂', articles: '📰', wfolders: '📂', tests: '📋' }[c] || '📄';
 }
 const deletedAt = d => d.deletedAt || d.u || 0;
 

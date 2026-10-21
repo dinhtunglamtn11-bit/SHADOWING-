@@ -1,92 +1,21 @@
 // Bài tập của tôi: nhập nhiều câu cùng lúc bằng một đoạn văn bản theo cú pháp riêng, rồi làm bài.
-//
-// Mỗi dòng là một câu hỏi, bắt đầu bằng LOẠI: rồi các phần cách nhau bằng dấu |
-//   T:  từ | phiên âm | nghĩa           từ vựng (tự sinh 3 câu: từ→nghĩa, nghĩa→từ, nghe→nghĩa)
-//   TN: câu hỏi | *đúng | sai | sai      trắc nghiệm, dấu * đứng trước đáp án đúng
-//   Đ:  Tôi [go/goes] to [school]        điền từ, đáp án để trong [ ], nhiều đáp án chấp nhận cách nhau bằng /
-//   G:  câu hỏi | đáp án / đáp án khác   gõ đáp án
-//   DS: nhận định | đúng                 đúng hay sai
-//   thêm  ~ lời giải thích               ở cuối dòng (không bắt buộc)
-//   # Tên bộ bài   dòng tiêu đề      // ghi chú      dòng bị bỏ qua      \|  để viết dấu | trong chữ
-import { $, $$, esc, toast, uid, pickFile, getLang, langInfo, LANGS } from './util.js';
+// Bộ bài tập có thể gắn với một video / tài liệu / ghi chú trong thư viện; danh sách chia mục theo đó.
+// Cú pháp từng dạng câu nằm ở exparse.js, phần làm bài ở exrun.js, prompt nhờ AI tạo bài ở exprompts.js.
+import { $, $$, esc, toast, uid, pickFile, getLang, langInfo, LANGS, bus } from './util.js';
 import * as store from './store.js';
-import * as tracker from './tracker.js';
 import * as cards from './cards.js';
-import { sayable, withSpeaker, say, isTarget } from './tts.js';
-import { rngOf, shuffle, norm } from './quiz.js';
+import * as tracker from './tracker.js';
+import * as tree from './tree.js';
+import { rngOf, shuffle } from './quiz.js';
 import { zhText } from './prefs.js';
-import { loadSimplifier } from './util.js';
 import { trLines } from './i18n.js';
+import { parseSet, build, countKinds, buildTest } from './exparse.js';
+import { runSheet } from './exsheet.js';
+import { pix } from './pixicons.js';
+import { runQuiz } from './exrun.js';
+import { KIND_ORDER, setPrompt, promptPanel } from './exprompts.js';
 
-const uniq = a => [...new Set(a)];
-
-// ---------- phân tích cú pháp ----------
-const ALIAS = { tn: 'mc', mc: 'mc', q: 'mc', d: 'fill', dien: 'fill', fill: 'fill', g: 'type', type: 'type', ds: 'tf', tf: 'tf', t: 'vocab', w: 'vocab', v: 'vocab' };
-const kindOf = k => ALIAS[k.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()];
-
-function splitBy(s, sep) { // tách theo sep, bỏ qua \sep
-  const out = []; let cur = '';
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (ch === '\\' && s[i + 1] === sep) { cur += sep; i++; }
-    else if (ch === sep || (sep === '|' && ch === '｜')) { out.push(cur); cur = ''; }
-    else cur += ch;
-  }
-  out.push(cur);
-  return out.map(x => x.trim());
-}
-const TRUE = ['dung', 'd', 'true', 't', 'yes', 'y', '1', 'đúng'], FALSE = ['sai', 's', 'false', 'f', 'no', 'n', '0'];
-const flat = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-
-export function parseSet(text) {
-  const qs = [], vocab = [], errors = [];
-  let title = '';
-  text.split(/\r?\n/).forEach((raw, li) => {
-    const line = raw.trim(), n = li + 1;
-    if (!line || line.startsWith('//')) return;
-    if (line.startsWith('#')) { if (!title) title = line.replace(/^#+\s*/, ''); return; }
-    const m = line.match(/^([A-Za-zĐđ]{1,5})\s*[:：]\s*(.*)$/);
-    if (!m) { errors.push({ line: n, msg: 'thiếu “LOẠI:” ở đầu dòng (TN:, Đ:, G:, DS: hoặc T:)' }); return; }
-    const kind = kindOf(m[1]);
-    if (!kind) { errors.push({ line: n, msg: `không biết loại “${m[1]}” (dùng TN, Đ, G, DS hoặc T)` }); return; }
-    // lời giải thích: phần sau dấu ~ (đứng sau khoảng trắng hoặc dấu |)
-    let rest = m[2], explain = '';
-    const ex = rest.match(/(?:^|[\s|｜])~\s*(.*)$/);
-    if (ex) { explain = ex[1].trim(); rest = rest.slice(0, ex.index); }
-    const f = splitBy(rest, '|').filter((x, k, a) => x || k < a.length - 1);
-    const err = msg => errors.push({ line: n, msg });
-
-    if (kind === 'vocab') {
-      if (f.length < 2 || f.length > 3 || f.some(x => !x)) return err('từ vựng cần dạng “T: từ | nghĩa” hoặc “T: từ | phiên âm | nghĩa”');
-      vocab.push({ word: f[0], pron: f.length === 3 ? f[1] : '', meaning: f[f.length - 1], line: n });
-    } else if (kind === 'mc') {
-      if (f.length < 3) return err('trắc nghiệm cần câu hỏi và ít nhất 2 đáp án: TN: câu hỏi | *đúng | sai');
-      const options = f.slice(1).map(x => ({ t: x.replace(/^\*\s*/, ''), ok: x.startsWith('*') }));
-      if (options.some(o => !o.t)) return err('có đáp án bị trống');
-      if (options.filter(o => o.ok).length !== 1) return err('phải đánh dấu * đúng một đáp án đúng');
-      qs.push({ kind: 'mc', prompt: f[0], options, explain, line: n });
-    } else if (kind === 'fill') {
-      const sent = f[0] || '', parts = []; let last = 0, blanks = 0;
-      for (const b of sent.matchAll(/\[([^\]]+)\]/g)) {
-        parts.push(sent.slice(last, b.index));
-        parts.push({ a: splitBy(b[1], '/').filter(Boolean) });
-        last = b.index + b[0].length; blanks++;
-      }
-      parts.push(sent.slice(last));
-      if (!blanks) return err('điền từ cần đặt đáp án trong [ ], ví dụ: Đ: Tôi [đi] học');
-      qs.push({ kind: 'fill', parts, hint: f[1] || '', explain, line: n });
-    } else if (kind === 'type') {
-      if (f.length < 2 || !f[1]) return err('gõ đáp án cần dạng: G: câu hỏi | đáp án / đáp án khác');
-      qs.push({ kind: 'type', prompt: f[0], answers: splitBy(f[1], '/').filter(Boolean), explain, line: n });
-    } else if (kind === 'tf') {
-      const v = flat(f[1] || '');
-      if (!TRUE.includes(v) && !FALSE.includes(v)) return err('đúng/sai cần dạng: DS: nhận định | đúng (hoặc sai)');
-      qs.push({ kind: 'tf', prompt: f[0], ans: TRUE.includes(v), explain, line: n });
-    }
-  });
-  if (vocab.length === 1) errors.push({ line: vocab[0].line, msg: 'cần ít nhất 2 từ vựng để tạo câu trắc nghiệm' });
-  return { title, qs, vocab, errors };
-}
+export { parseSet, build };
 
 export const EXAMPLES = {
   zh: `# Bài 1: Chào hỏi
@@ -95,142 +24,245 @@ T: 谢谢 | xièxie | Cảm ơn
 T: 再见 | zàijiàn | Tạm biệt
 T: 对不起 | duìbuqǐ | Xin lỗi
 TN: “Cảm ơn” nói thế nào? | *谢谢 | 你好 | 再见 | 对不起
+DS: 再见 nghĩa là “Xin chào” | sai ~ 再见 (zàijiàn) là tạm biệt
 Đ: 我[每天]去学校 | Tôi đi học mỗi ngày
 G: Xin chào | 你好 / nǐ hǎo
-DS: 再见 nghĩa là “Xin chào” | sai ~ 再见 (zàijiàn) là tạm biệt`,
+S: 我 / 喜欢 / 学 / 中文 | Tôi thích học tiếng Trung
+K: 我每天[早上]喝[咖啡]，不喝茶。 | 晚上 / 牛奶 | Tôi uống cà phê mỗi sáng
+N: 谢谢 | *Cảm ơn | Xin chào | Tạm biệt | Xin lỗi
+NG: 你好吗？ | 你好吗`,
   en: `# Unit 1: Daily life
 T: breakfast | bữa sáng
 T: library | thư viện
 T: weather | thời tiết
 T: neighbour | hàng xóm
 TN: What do you eat in the morning? | *breakfast | library | weather | neighbour
+DS: A library is a place to buy food | sai ~ Library là thư viện
 Đ: She [goes/went] to the [library] every day | Cô ấy đến thư viện mỗi ngày
 G: bữa sáng | breakfast
-DS: A library is a place to buy food | sai ~ Library là thư viện`,
+S: I / like / to / read / books | Tôi thích đọc sách
+K: Every [morning] I drink [coffee] before [work]. | evening / tea / school | Mỗi sáng tôi uống cà phê trước giờ làm
+N: breakfast | *Bữa sáng | Thư viện | Thời tiết | Hàng xóm
+NG: How are you today?`,
   ko: `# Bài 1: Chào hỏi
 T: 안녕하세요 | annyeonghaseyo | Xin chào
 T: 감사합니다 | gamsahamnida | Cảm ơn
 T: 죄송합니다 | joesonghamnida | Xin lỗi
 T: 안녕히 가세요 | annyeonghi gaseyo | Tạm biệt
 TN: “Cảm ơn” nói thế nào? | *감사합니다 | 안녕하세요 | 죄송합니다 | 안녕히 가세요
+DS: 안녕하세요 nghĩa là “Tạm biệt” | sai
 Đ: 저는 [학생]입니다 | Tôi là học sinh
 G: Xin lỗi | 죄송합니다
-DS: 안녕하세요 nghĩa là “Tạm biệt” | sai`,
+S: 저는 / 학생 / 입니다 | Tôi là học sinh
+K: 저는 [매일] [학교]에 갑니다. | 집 / 가끔 | Tôi đi học mỗi ngày
+N: 감사합니다 | *Cảm ơn | Xin chào | Xin lỗi | Tạm biệt
+NG: 안녕하세요`,
   ja: `# Bài 1: Chào hỏi
 T: こんにちは | konnichiwa | Xin chào
 T: ありがとう | arigatou | Cảm ơn
 T: すみません | sumimasen | Xin lỗi
 T: さようなら | sayounara | Tạm biệt
 TN: “Cảm ơn” nói thế nào? | *ありがとう | こんにちは | すみません | さようなら
+DS: こんにちは nghĩa là “Tạm biệt” | sai
 Đ: 私は[学生]です | Tôi là học sinh
 G: Xin lỗi | すみません
-DS: こんにちは nghĩa là “Tạm biệt” | sai`,
+S: 私は / 学生 / です | Tôi là học sinh
+K: 私は[毎日]、[学校]に行きます。 | 家 / 時々 | Tôi đi học mỗi ngày
+N: ありがとう | *Cảm ơn | Xin chào | Xin lỗi | Tạm biệt
+NG: こんにちは`,
 };
 
-// ---------- ra đề từ bộ đã phân tích ----------
-function mcFrom(prompt, correct, pool, rnd, extra = {}) {
-  const others = shuffle(pool.filter(x => x !== correct), rnd).slice(0, 3);
-  return { kind: 'mc', prompt, options: shuffle([correct, ...others], rnd).map(t => ({ t, ok: t === correct })), ...extra };
-}
+// ---------- trạng thái ----------
+let box = null, mode = 'list', editId = null, draft = null, promptCtx = null, runner = null, runLang = null, backTo = null;
+// quay lại nơi đã mở màn này (ví dụ thư mục bài học) hoặc về danh sách
+const goBack = () => { runner = null; mode = 'list'; if (backTo) { const f = backTo; backTo = null; f(); } else drawList(); };
+const runOpts = { shuffle: true, listen: true, count: 0, kind: 'all' };
+const pk = { kinds: ['TN', 'DS', 'S', 'K', 'N', 'G'], count: 5 };
 
-export function build(parsed, opts, rnd) {
-  const out = parsed.qs.map(q => (q.kind === 'mc' ? { ...q, options: shuffle(q.options, rnd) } : { ...q }));
-  const V = parsed.vocab;
-  if (V.length >= 2) {
-    const meanings = uniq(V.map(v => v.meaning)), words = uniq(V.map(v => v.word));
-    for (const v of V) {
-      const info = `${v.word}${v.pron ? ' (' + v.pron + ')' : ''} = ${v.meaning}`;
-      const card = { front: v.word, back: [v.pron, v.meaning] };
-      out.push(mcFrom(v.word, v.meaning, meanings, rnd, { label: 'Chọn nghĩa đúng của từ', explain: info, card, sayPrompt: true }));
-      out.push(mcFrom(v.meaning, v.word, words, rnd, { label: 'Chọn từ đúng cho nghĩa', explain: info, card }));
-      if (opts.listen) out.push(mcFrom('', v.meaning, meanings, rnd, { label: 'Nghe và chọn nghĩa đúng', listen: v.word, explain: info, card }));
-    }
-  }
-  const res = opts.shuffle ? shuffle(out, rnd) : out;
-  return opts.count > 0 ? res.slice(0, opts.count) : res;
-}
-
-// ---------- chấm ----------
-// tiếng Trung: gõ phồn thể hay giản thể đều được
-const okAnswer = (typed, list, lang) => list.some(a => norm(zhText(a, lang)) === norm(zhText(typed, lang)));
-
-// ---------- giao diện ----------
-let box = null, mode = 'list', editId = null, run = null;
-const runOpts = { shuffle: true, listen: true, count: 0 };
+const SHORT = { mc: 'Trắc nghiệm', tf: 'Đúng/Sai', type: 'Tự luận', fill: 'Điền từ', order: 'Sắp xếp câu', listen: 'Nghe-chọn', listentype: 'Nghe-gõ', cloze: 'Kéo thả', vocab: 'Từ vựng' };
+const KIND_FILTER = [['all', 'Tất cả dạng'], ['mc', 'Trắc nghiệm'], ['tf', 'Đúng/Sai'], ['type', 'Tự luận'], ['fill', 'Điền từ'], ['order', 'Sắp xếp câu'], ['cloze', 'Kéo thả'], ['listen', 'Có nghe']];
+const kindOfQ = q => (q.listen ? 'listen' : q.kind);
 
 const setsOf = lang => store.list('sets').filter(s => (s.lang || 'zh') === lang).sort((a, b) => (b.u || 0) - (a.u || 0));
+const itemsOfLang = lang => store.list('items').filter(i => (i.lang || 'zh') === lang);
+const iconOf = i => (i.type === 'video' ? '🎬' : i.type === 'note' ? '📝' : i.type === 'pdf' ? '📄' : '📃');
+const countOf = (p, listen = runOpts.listen) => p.qs.length + (p.vocab.length >= 2 ? p.vocab.length * (listen ? 3 : 2) : 0);
 
 export function render(el) {
   box = el;
+  if (mode === 'run' && runner) {
+    if (runLang && runLang !== getLang()) { runner.stop(); runner = null; mode = 'list'; }
+    else { runner.attach(el); return; }
+  }
+  if (mode === 'sheet') { if (el.querySelector('.sheet')) return; mode = 'list'; }
   if (mode === 'edit') return drawEditor();
-  if (mode === 'run' && run) return drawQuestion();
+  if (mode === 'prompt') return drawPromptView();
   mode = 'list'; drawList();
 }
 
+// Từ thư viện: mở bài tập của một video / tài liệu (chưa có thì mở màn soạn, đã gắn sẵn mục đó)
+document.addEventListener('exercises-for', e => {
+  const id = e.detail;
+  runner?.stop(); runner = null; mode = 'list';
+  document.dispatchEvent(new CustomEvent('review-tab', { detail: 'mine' }));
+  if (!box) return;
+  if (setsOf(getLang()).some(s => s.itemId === id)) { drawList(); box.querySelector('[data-g="' + id + '"]')?.scrollIntoView(); }
+  else { editId = null; draft = { itemId: id, title: store.get('items', id)?.title || '' }; mode = 'edit'; drawEditor(); }
+});
+
+// Từ thư mục bài học (lessons.js): soạn / làm bộ bài tập rồi quay lại thư mục
+document.addEventListener('sets-open', e => {
+  const d = e.detail || {};
+  runner?.stop(); runner = null; backTo = d.back || null;
+  document.dispatchEvent(new CustomEvent('review-tab', { detail: 'mine' }));
+  if (!box) return;
+  if (d.run) { start(d.run, d.title); return; }
+  if (d.edit) { editId = d.edit; draft = null; }
+  else { editId = null; draft = { folder: d.newIn || '' }; }
+  mode = 'edit'; drawEditor();
+});
+
+// ---------- danh sách, chia mục theo thư mục bài học / video / tài liệu ----------
+function setCard(s) {
+  const p = parseSet(s.text || ''), kc = countKinds(p);
+  const chips = Object.keys(kc).map(k => `<span class="kb">${esc(SHORT[k])} ${kc[k]}</span>`).join('');
+  return `<div class="card" style="cursor:default"><div class="thumb">${pix('a_exercise')}</div><div class="ci"><b>${esc(s.title || 'Bộ bài tập')}</b><span class="dim">${countOf(p)} câu hỏi${p.errors.length ? ` · <span class="bad">${p.errors.length} dòng lỗi</span>` : ''}</span><span class="kbs">${chips}</span></div>
+    <button class="btn primary" data-run="${s.id}">▶ Làm</button><button class="btn" data-edit="${s.id}">✎</button><button class="btn" data-del="${s.id}">🗑</button></div>`;
+}
+
 function drawList() {
-  const lang = getLang(), list = setsOf(lang);
-  box.innerHTML = `<div class="row"><button class="btn primary" id="msNew">＋ Tạo bộ bài tập</button><span class="grow"></span>
+  const lang = getLang(), list = setsOf(lang), items = new Map(itemsOfLang(lang).map(i => [i.id, i]));
+  const groups = new Map();
+  const fmap = new Map(tree.allFolders(lang).map(f => [f.id, f]));
+  for (const s of list) {
+    const key = s.folder && fmap.has(s.folder) ? 'F:' + s.folder : s.itemId && items.has(s.itemId) ? 'I:' + s.itemId : '';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(s);
+  }
+  const keys = [...groups.keys()].sort((a, b) => (a === '') - (b === '') || Math.max(...groups.get(b).map(s => s.u || 0)) - Math.max(...groups.get(a).map(s => s.u || 0)));
+  const total = s => groups.get(s).reduce((n, x) => n + countOf(parseSet(x.text || '')), 0);
+  box.innerHTML = `<div class="row"><button class="btn primary" id="msNew">＋ Tạo bộ bài tập</button><button class="btn" id="msPrompt" title="Tạo prompt để nhờ ChatGPT / Claude tách văn bản thành nhiều câu hỏi">🤖 Prompt nhờ AI</button>${list.length ? '<button class="btn" id="msQuick" title="Ra một bài kiểm tra ngẫu nhiên từ mọi bộ bài tập, hiện trên một trang">📋 Kiểm tra nhanh</button>' : ''}<span class="grow"></span>
       <label class="dim"><input type="checkbox" id="msShuf" ${runOpts.shuffle ? 'checked' : ''}> Trộn câu</label>
       <label class="dim"><input type="checkbox" id="msListen" ${runOpts.listen ? 'checked' : ''}> Có câu nghe</label>
+      <label class="dim">Dạng <select id="msKind">${KIND_FILTER.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></label>
       <label class="dim">Số câu <select id="msCount"><option value="0">Tất cả</option><option value="10">10</option><option value="20">20</option></select></label></div>
-    <div class="dim" style="margin:4px 2px">Nhập nhiều câu cùng lúc: bấm “＋ Tạo bộ bài tập”, dán các dòng theo cú pháp (có hướng dẫn và ví dụ ngay trong màn soạn).</div>
-    <div class="cards">${list.length ? list.map(s => {
-      const p = parseSet(s.text || '');
-      const n = p.qs.length + p.vocab.length * (p.vocab.length >= 2 ? (runOpts.listen ? 3 : 2) : 0);
-      return `<div class="card" style="cursor:default"><div class="thumb">📝</div><div class="ci"><b>${esc(s.title || 'Bộ bài tập')}</b><span class="dim">${n} câu · ${p.vocab.length} từ vựng${p.errors.length ? ` · <span class="bad">${p.errors.length} dòng lỗi</span>` : ''}</span></div>
-        <button class="btn primary" data-run="${s.id}">▶ Làm</button><button class="btn" data-edit="${s.id}">✎</button><button class="btn" data-del="${s.id}">🗑</button></div>`;
-    }).join('') : `<div class="empty">Chưa có bộ bài tập ${esc(langInfo().name)} nào.</div>`}</div>`;
+    <div class="dim" style="margin:4px 2px">Bài tập được chia theo mục video / tài liệu. Nhập nhiều câu cùng lúc: bấm “Tạo bộ bài tập” rồi dán các dòng theo cú pháp, hoặc bấm “Prompt nhờ AI” để AI tách văn bản thành câu hỏi.</div>
+    ${list.length ? keys.map(k => {
+      const it = k.startsWith('I:') ? items.get(k.slice(2)) : null, ss = groups.get(k), fid = k.startsWith('F:') ? k.slice(2) : '';
+      return `<details class="grp" open data-g="${esc(k.slice(2))}"><summary><span class="gt">${fid ? '🎓 ' + esc(tree.pathLabel(fid, lang)) : it ? iconOf(it) + ' ' + esc(it.title || 'Không tên') : '📚 Chung (chưa gắn với video / tài liệu)'}</span> <small class="dim">${ss.length} bộ · ${total(k)} câu hỏi</small></summary>
+        <div class="row"><button class="btn primary" data-grun="${esc(k)}">▶ Làm cả mục</button><button class="btn" data-gnew="${esc(k)}">＋ Bộ mới</button><button class="btn" data-gprompt="${esc(k)}">🤖 Prompt cho mục này</button></div>
+        <div class="cards">${ss.map(setCard).join('')}</div></details>`;
+    }).join('') : `<div class="empty">Chưa có bộ bài tập ${esc(langInfo().name)} nào.</div>`}`;
   $('#msCount', box).value = String(runOpts.count);
-  $('#msNew', box).onclick = () => { editId = null; mode = 'edit'; drawEditor(); };
+  $('#msKind', box).value = runOpts.kind;
+  $('#msNew', box).onclick = () => { editId = null; draft = null; mode = 'edit'; drawEditor(); };
+  $('#msPrompt', box).onclick = () => { promptCtx = { itemId: '' }; mode = 'prompt'; drawPromptView(); };
   $('#msShuf', box).onchange = e => { runOpts.shuffle = e.target.checked; };
   $('#msListen', box).onchange = e => { runOpts.listen = e.target.checked; drawList(); };
+  $('#msKind', box).onchange = e => { runOpts.kind = e.target.value; };
   $('#msCount', box).onchange = e => { runOpts.count = +e.target.value; };
-  $$('[data-run]', box).forEach(b => b.onclick = () => start(b.dataset.run));
-  $$('[data-edit]', box).forEach(b => b.onclick = () => { editId = b.dataset.edit; mode = 'edit'; drawEditor(); });
+  $$('[data-run]', box).forEach(b => b.onclick = () => start([b.dataset.run]));
+  $$('[data-edit]', box).forEach(b => b.onclick = () => { editId = b.dataset.edit; draft = null; mode = 'edit'; drawEditor(); });
   $$('[data-del]', box).forEach(b => b.onclick = () => { if (confirm('Xóa bộ bài tập này?')) { store.del('sets', b.dataset.del); drawList(); } });
+  const gTitle = k => (k.startsWith('F:') ? tree.pathLabel(k.slice(2), lang) : items.get(k.slice(2))?.title);
+  $$('[data-grun]', box).forEach(b => b.onclick = () => start(groups.get(b.dataset.grun).map(s => s.id), gTitle(b.dataset.grun)));
+  $$('[data-gnew]', box).forEach(b => b.onclick = () => { const k = b.dataset.gnew; editId = null; draft = k.startsWith('F:') ? { folder: k.slice(2) } : { itemId: k.slice(2) }; mode = 'edit'; drawEditor(); });
+  $$('[data-gprompt]', box).forEach(b => b.onclick = () => { const k = b.dataset.gprompt; promptCtx = { itemId: k.startsWith('I:') ? k.slice(2) : '' }; mode = 'prompt'; drawPromptView(); });
+  $('#msQuick', box)?.addEventListener('click', () => quickTest(list));
+}
+
+// ---------- prompt nhờ AI ----------
+async function sourceOf(id) {
+  const it = id && store.get('items', id);
+  if (!it || it.deleted) return '';
+  let t = '';
+  try {
+    if (it.type === 'note') t = (it.body || '').replace(/\[\[(?:audio|video):[^|\]]*\|?([^\]]*)\]\]/g, '$1');
+    else if (it.type === 'video' && it.cues) t = JSON.parse(it.cues).map(c => (c.lines || [])[0] || '').filter(Boolean).join('\n');
+    else if (it.type === 'text' && it.assetId) { const a = await store.getAsset(it.assetId); if (a?.blob) t = await a.blob.text(); }
+  } catch { /* không đọc được thì để trống */ }
+  return t.trim().slice(0, 8000);
+}
+
+function drawPromptView() {
+  const lang = getLang(), it = promptCtx.itemId ? store.get('items', promptCtx.itemId) : null;
+  box.innerHTML = `<div class="row"><button class="btn" id="pvBack">← Quay lại</button><b>🤖 Prompt nhờ AI tạo bài tập</b>${it ? ` <span class="gt">${esc(it.title || '')}</span>` : ''}</div><div class="qcard"><div id="pvHost"></div></div>`;
+  $('#pvBack', box).onclick = () => { mode = 'list'; drawList(); };
+  promptPanel($('#pvHost', box), {
+    state: pk, source: () => sourceOf(promptCtx.itemId), build: o => setPrompt({ lang, kinds: o.kinds, count: o.count, title: it?.title || '', source: o.source }),
+    onPaste: text => { editId = null; draft = { itemId: promptCtx.itemId, text, title: it?.title || '' }; mode = 'edit'; drawEditor(); },
+  });
 }
 
 // ---------- soạn ----------
 const HELP = `<details class="help"><summary>📖 Cú pháp nhập nhiều câu cùng lúc</summary>
 <p>Mỗi dòng là một câu hỏi: <code>LOẠI: phần 1 | phần 2 | …</code> (các phần cách nhau bằng dấu <code>|</code>).</p>
 <table>
-<tr><td><code>T:</code> từ vựng</td><td><code>T: 你好 | nǐ hǎo | Xin chào</code><br><small>(phiên âm có thể bỏ). App tự sinh 3 câu: từ→nghĩa, nghĩa→từ, nghe→nghĩa.</small></td></tr>
-<tr><td><code>TN:</code> trắc nghiệm</td><td><code>TN: Cảm ơn nói thế nào? | *谢谢 | 你好 | 再见</code><br><small>Dấu <code>*</code> đứng trước đáp án đúng (đúng một đáp án).</small></td></tr>
-<tr><td><code>Đ:</code> điền từ</td><td><code>Đ: She [goes/went] to the [library] | Cô ấy đến thư viện</code><br><small>Đáp án để trong [ ]. Nhiều đáp án chấp nhận cách nhau bằng /. Có thể nhiều chỗ trống. Phần sau | là gợi ý.</small></td></tr>
-<tr><td><code>G:</code> gõ đáp án</td><td><code>G: Xin chào | 你好 / nǐ hǎo</code><br><small>Các đáp án chấp nhận cách nhau bằng /.</small></td></tr>
+<tr><td><code>TN:</code> trắc nghiệm</td><td><code>TN: Cảm ơn nói thế nào? | *谢谢 | 你好 | 再见 | 对不起</code><br><small>Dấu <code>*</code> đứng trước đáp án đúng (đúng một đáp án, thường 4 đáp án).</small></td></tr>
 <tr><td><code>DS:</code> đúng/sai</td><td><code>DS: 再见 nghĩa là “Xin chào” | sai</code></td></tr>
+<tr><td><code>S:</code> sắp xếp câu</td><td><code>S: 我 / 喜欢 / 学 / 中文 | Tôi thích học tiếng Trung</code><br><small>Các từ cách nhau bằng /, viết đúng thứ tự (app tự xáo trộn); phần sau | là gợi ý. Có nhiều cách xếp đúng: ngăn cách bằng <code>;;</code>. Từ gây nhiễu: đặt <code>+</code> trước từ.</small></td></tr>
+<tr><td><code>G:</code> tự luận ngắn</td><td><code>G: Xin chào | 你好 / nǐ hǎo</code><br><small>Các đáp án chấp nhận cách nhau bằng /.</small></td></tr>
+<tr><td><code>Đ:</code> điền từ</td><td><code>Đ: She [goes/went] to the [library] | Cô ấy đến thư viện</code><br><small>Đáp án để trong [ ]. Nhiều đáp án chấp nhận cách nhau bằng /. Có thể nhiều chỗ trống. Phần sau | là gợi ý.</small></td></tr>
+<tr><td><code>K:</code> đoạn văn khuyết (kéo thả)</td><td><code>K: 我每天[早上]喝[咖啡]。 | 晚上 / 牛奶 | gợi ý</code><br><small>Từ đúng để trong [ ]; phần sau | là các từ gây nhiễu (cách nhau bằng /). Người học kéo từ vào chỗ trống.</small></td></tr>
+<tr><td><code>N:</code> nghe và chọn</td><td><code>N: 谢谢 | *Cảm ơn | Xin chào | Tạm biệt | Xin lỗi</code><br><small>Máy đọc phần đầu thành tiếng (người học không thấy chữ), chọn nghĩa đúng.</small></td></tr>
+<tr><td><code>NG:</code> nghe và gõ</td><td><code>NG: 你好吗？ | 你好吗</code><br><small>Nghe rồi gõ. Bỏ phần sau | thì đáp án chính là câu được đọc (chép chính tả).</small></td></tr>
+<tr><td><code>T:</code> từ vựng</td><td><code>T: 你好 | nǐ hǎo | Xin chào</code><br><small>(phiên âm có thể bỏ). App tự sinh 3 câu: từ→nghĩa, nghĩa→từ, nghe→nghĩa.</small></td></tr>
 </table>
-<p><b>Thêm giải thích:</b> đặt <code>~ lời giải thích</code> ở cuối dòng. <b>Tiêu đề:</b> dòng <code>#  Tên bộ</code>. <b>Ghi chú:</b> dòng bắt đầu bằng <code>//</code> bị bỏ qua. Muốn viết dấu | trong chữ thì gõ <code>\\|</code>.</p>
+<p><b>Thêm giải thích:</b> đặt <code>~ lời giải thích</code> ở cuối dòng. <b>Tiêu đề:</b> dòng <code>#  Tên bộ</code>. <b>Ghi chú:</b> dòng bắt đầu bằng <code>//</code> bị bỏ qua. Muốn viết dấu | trong chữ thì gõ <code>\\|</code>, xuống dòng thì gõ <code>\\n</code>.</p>
 <p>Khi làm bài, chữ tiếng đang học có <b>🔊</b> bên cạnh, bấm là máy đọc.</p></details>`;
 
 function drawEditor() {
   const s = editId ? store.get('sets', editId) : null;
-  const lang = s?.lang || getLang();
+  const lang = s?.lang || draft?.lang || getLang(), start0 = s?.itemId ?? draft?.itemId ?? '';
   box.innerHTML = `${HELP}
-    <label class="dim">Tên bộ bài tập<input id="msTitle" type="text" value="${esc(s?.title || '')}" placeholder="Ví dụ: Bài 1: Chào hỏi"></label>
+    <label class="dim">Tên bộ bài tập<input id="msTitle" type="text" value="${esc(s?.title || draft?.title || '')}" placeholder="Ví dụ: Bài 1: Chào hỏi"></label>
     <label class="dim">Ngôn ngữ<select id="msLang">${LANGS.map(l => `<option value="${l.id}" ${l.id === lang ? 'selected' : ''}>${l.name}</option>`).join('')}</select></label>
-    <label class="dim">Nội dung (mỗi dòng một câu)<textarea id="msText" class="mono" rows="14" spellcheck="false" placeholder="Dán hoặc gõ nhiều dòng ở đây. Bấm “Chèn ví dụ” để xem mẫu.">${esc(s?.text || '')}</textarea></label>
+    <label class="dim">Thư mục bài học (ví dụ HSK1 › HSK bài 1)<select id="msFolder"></select></label>
+    <label class="dim">Thuộc mục (video / tài liệu / ghi chú)<select id="msItem"></select></label>
+    <details class="help" id="msAi"><summary>🤖 Nhờ AI tách văn bản thành nhiều câu (prompt)</summary><div id="msAiHost"></div></details>
+    <label class="dim">Nội dung (mỗi dòng một câu)<textarea id="msText" class="mono" rows="14" spellcheck="false" placeholder="Dán hoặc gõ nhiều dòng ở đây. Bấm “Chèn ví dụ” để xem mẫu.">${esc(s?.text || draft?.text || '')}</textarea></label>
     <div id="msCheck" class="dim"></div>
     <div class="row"><button class="btn primary" id="msSave">💾 Lưu</button><button class="btn" id="msTry">▶ Lưu và làm thử</button><button class="btn" id="msEx">Chèn ví dụ</button><button class="btn" id="msFile">📂 Mở file .txt</button><span class="grow"></span><button class="btn" id="msCards">📒 Từ vựng → sổ thẻ</button><button class="btn" id="msBack">← Quay lại</button></div>`;
-  const ta = $('#msText', box);
+  const ta = $('#msText', box), sel = $('#msItem', box);
+  const fillItems = (lg, cur) => {
+    const items = itemsOfLang(lg).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    sel.innerHTML = `<option value="">📚 Chung (không gắn)</option>` + items.map(i => `<option value="${i.id}" ${i.id === cur ? 'selected' : ''}>${iconOf(i)} ${esc(i.title || 'Không tên')}</option>`).join('');
+  };
+  fillItems(lang, start0);
+  const fsel = $('#msFolder', box);
+  fsel.innerHTML = tree.options(lang, s?.folder ?? draft?.folder ?? '', 'Không thuộc thư mục nào');
   const check = () => {
-    const p = parseSet(ta.value), total = p.qs.length + p.vocab.length;
-    $('#msCheck', box).innerHTML = (total ? `<span class="ok">✓ ${p.qs.length} câu + ${p.vocab.length} từ vựng hợp lệ</span>` : 'Chưa có dòng nào.') +
+    const p = parseSet(ta.value), total = p.qs.length + p.vocab.length, kc = countKinds(p);
+    $('#msCheck', box).innerHTML = (total ? `<span class="ok">✓ ${p.qs.length} câu + ${p.vocab.length} từ vựng hợp lệ</span> <span class="kbs">${Object.keys(kc).map(k => `<span class="kb">${esc(SHORT[k])} ${kc[k]}</span>`).join('')}</span>` : 'Chưa có dòng nào.') +
       (p.errors.length ? `<div class="bad">${p.errors.length} dòng có lỗi:</div>` + p.errors.slice(0, 8).map(e => `<div class="bad">dòng ${e.line}: ${esc(e.msg)}</div>`).join('') : '');
   };
   ta.addEventListener('input', check); check();
+  $('#msLang', box).onchange = e => { fillItems(e.target.value, ''); fsel.innerHTML = tree.options(e.target.value, '', 'Không thuộc thư mục nào'); panel?.reload(); };
+
+  let panel = null;
+  $('#msAi', box).addEventListener('toggle', () => {
+    if (!$('#msAi', box).open || panel) return;
+    panel = promptPanel($('#msAiHost', box), {
+      state: pk, source: () => sourceOf(sel.value),
+      build: o => setPrompt({ lang: $('#msLang', box).value, kinds: o.kinds, count: o.count, title: $('#msTitle', box).value.trim(), source: o.source }),
+      onPaste: text => { ta.value = ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' + text : text; check(); toast('Đã dán vào ô nội dung ✓'); },
+    });
+  });
+  sel.addEventListener('change', () => panel?.reload());
+  $('#msTitle', box).addEventListener('change', () => panel?.reload());
+
   const save = () => {
     const lg = $('#msLang', box).value;
     if (lg === 'zh') { const c = zhText(ta.value, 'zh'); if (c !== ta.value) { ta.value = c; check(); toast('Đã chuyển chữ Trung sang giản thể'); } }
     const p = parseSet(ta.value);
     if (!p.qs.length && !p.vocab.length) { toast('Chưa có câu hỏi hợp lệ nào để lưu'); return null; }
     const id = editId || uid(); editId = id;
-    store.put('sets', id, { lang: lg, title: zhText($('#msTitle', box).value.trim(), lg) || p.title || 'Bộ bài tập', text: ta.value, created: s?.created || Date.now(), deleted: false });
+    store.put('sets', id, { lang: lg, title: zhText($('#msTitle', box).value.trim(), lg) || p.title || 'Bộ bài tập', text: ta.value, itemId: sel.value, folder: fsel.value, created: s?.created || Date.now(), deleted: false });
     toast('Đã lưu ✓');
     return id;
   };
   $('#msSave', box).onclick = save;
-  $('#msTry', box).onclick = () => { const id = save(); if (id) start(id); };
+  $('#msTry', box).onclick = () => { const id = save(); if (id) start([id]); };
   $('#msEx', box).onclick = () => { if (!ta.value.trim() || confirm('Thay nội dung đang có bằng ví dụ?')) { ta.value = trLines(EXAMPLES[$('#msLang', box).value] || EXAMPLES.zh); check(); } };
   $('#msFile', box).onclick = () => pickFile('.txt,text/plain').then(async ([f]) => { if (f) { ta.value = await f.text(); check(); if (!$('#msTitle', box).value) $('#msTitle', box).value = parseSet(ta.value).title || f.name.replace(/\.[^.]+$/, ''); } });
   $('#msCards', box).onclick = () => {
@@ -240,148 +272,37 @@ function drawEditor() {
     for (const v of p.vocab) if (!have.has(v.word)) { cards.addManual({ lang: lg, front: v.word, back: [v.pron, v.meaning] }); n++; }
     toast(n ? `Đã thêm ${n} từ vào sổ thẻ 📒` : 'Các từ này đã có trong sổ thẻ');
   };
-  $('#msBack', box).onclick = () => { mode = 'list'; drawList(); };
+  $('#msBack', box).onclick = goBack;
+}
+
+// Kiểm tra nhanh: trộn câu của mọi bộ bài tập (ngôn ngữ đang học), 20 câu, hiện trên một trang
+function quickTest(list) {
+  const lang = getLang(), qs = buildTest(list, { mode: 'random', count: 20, listen: runOpts.listen }, rngOf('qt' + Date.now()));
+  if (!qs.length) { toast('Chưa có câu hỏi để ra bài kiểm tra'); return; }
+  mode = 'sheet';
+  const again = () => quickTest(setsOf(lang));
+  runSheet(box, {
+    qs, lang, title: 'Kiểm tra nhanh', submitLabel: 'Hoàn thành & nộp bài',
+    intro: `<div class="dim">${qs.length} câu ngẫu nhiên. Làm hết rồi bấm nút nộp bài ở cuối trang để chấm điểm.</div>`,
+    onDone: r => tracker.test(r.pct), onAgain: again, onExit: goBack, exitLabel: 'Danh sách',
+  });
 }
 
 // ---------- làm bài ----------
-function start(id, only) {
-  const s = store.get('sets', id); if (!s) return;
-  const parsed = parseSet(s.text || '');
-  if (!parsed.qs.length && parsed.vocab.length < 2) { toast('Bộ này chưa đủ câu hỏi hợp lệ'); return; }
-  const rnd = rngOf('set' + id + Date.now());
-  const qs = only || build(parsed, runOpts, rnd);
-  run = { id, lang: s.lang || 'zh', title: s.title, qs, i: 0, res: [] };
-  mode = 'run';
-  document.dispatchEvent(new CustomEvent('review-tab', { detail: 'mine' }));
-  drawQuestion();
-}
-
-function prompt(q) {
-  const L = run.lang, bcp = langInfo(L).bcp;
-  if (q.kind === 'mc') {
-    if (q.listen) return `<div class="qlabel">${esc(q.label)}</div><div class="row c"><button class="btn primary big" id="msListenBtn">🔊 Nghe</button></div>`;
-    return `<div class="qlabel">${esc(q.label || 'Chọn đáp án đúng')}</div><div class="qtext" lang="${bcp}">${q.sayPrompt || !q.label ? sayable(q.prompt, L) : esc(q.prompt)}</div>`;
-  }
-  if (q.kind === 'tf') return `<div class="qlabel">Đúng hay sai?</div><div class="qtext" lang="${bcp}">${sayable(q.prompt, L)}</div>`;
-  if (q.kind === 'type') return `<div class="qlabel">Gõ đáp án</div><div class="qtext" lang="${bcp}">${sayable(q.prompt, L)}</div>`;
-  return '';
-}
-
-function drawQuestion() {
-  const { qs, i, res } = run;
-  if (i >= qs.length) return summary();
-  const q = qs[i], r = res[i], answered = r != null, L = run.lang, bcp = langInfo(L).bcp;
-  let body = prompt(q);
-  if (q.kind === 'mc') {
-    body += `<div class="qopts">${q.options.map((o, k) => `<button class="qopt ${answered ? (o.ok ? 'right' : r.sel === k ? 'wrong' : '') : ''}" data-o="${k}" ${answered ? 'disabled' : ''} lang="${bcp}"><i>${k + 1}</i><span>${withSpeaker(o.t, L)}</span></button>`).join('')}</div>`;
-  } else if (q.kind === 'tf') {
-    body += `<div class="qopts two"><button class="qopt ${answered ? (q.ans === true ? 'right' : r.sel === true ? 'wrong' : '') : ''}" data-tf="1" ${answered ? 'disabled' : ''}><i>1</i><span>Đúng</span></button>` +
-      `<button class="qopt ${answered ? (q.ans === false ? 'right' : r.sel === false ? 'wrong' : '') : ''}" data-tf="0" ${answered ? 'disabled' : ''}><i>2</i><span>Sai</span></button></div>`;
-  } else if (q.kind === 'type') {
-    body += `<div class="row"><input id="msIn" type="text" lang="${bcp}" autocomplete="off" autocapitalize="off" spellcheck="false" ${answered ? `value="${esc(r.typed)}" disabled class="${r.ok ? 'okin' : 'badin'}"` : ''} placeholder="Gõ đáp án"><button class="btn primary" id="msSubmit" ${answered ? 'hidden' : ''}>Trả lời</button></div>`;
-    if (answered && !r.ok) body += `<div class="dim">Đáp án: ${q.answers.map(a => sayable(a, L)).join(' / ')}</div>`;
-  } else if (q.kind === 'fill') {
-    let b = 0;
-    body += `<div class="qlabel">Điền vào chỗ trống</div><div class="qtext fill" lang="${bcp}">${q.parts.map(p => {
-      if (typeof p === 'string') return esc(p);
-      const k = b++, w = Math.max(3, Math.max(...p.a.map(a => [...a].length)) + 1);
-      return `<input class="fin ${answered ? (r.each[k] ? 'okin' : 'badin') : ''}" data-b="${k}" size="${w}" autocomplete="off" autocapitalize="off" spellcheck="false" ${answered ? `value="${esc(r.typed[k] || '')}" disabled` : ''}>`;
-    }).join('')}</div>${q.hint ? `<div class="dim">Gợi ý: ${esc(q.hint)}</div>` : ''}`;
-    if (!answered) body += '<div class="row"><button class="btn primary" id="msSubmit">Trả lời</button></div>';
-    else if (!r.ok) body += `<div class="dim">Đáp án: ${q.parts.filter(p => typeof p !== 'string').map(p => sayable(p.a[0], L) + (p.a.length > 1 ? ' <small>(hoặc ' + esc(p.a.slice(1).join(' / ')) + ')</small>' : '')).join(' · ')}</div>`;
-  }
-  let fb = '';
-  if (answered) {
-    const full = q.kind === 'fill' ? q.parts.map(p => (typeof p === 'string' ? p : p.a[0])).join('') : '';
-    fb = `<div class="qfb ${r.ok ? 'ok' : 'bad'}">${r.ok ? '✅ Đúng!' : '❌ Chưa đúng'}</div>` +
-      (full ? `<div class="qexp" lang="${bcp}">${sayable(full, L)}</div>` : '') +
-      (q.explain ? `<div class="qexp dim">${esc(q.explain)}</div>` : '') +
-      `<div class="row"><button class="btn primary" id="msNext">${i + 1 >= qs.length ? 'Xem kết quả' : 'Tiếp ▶'}</button></div>`;
-  }
-  box.innerHTML = `<div class="row"><button class="btn" id="msQuit">← Thoát</button><span class="dim">${esc(run.title || '')}</span></div>
-    <div class="qprog"><span>Câu ${i + 1}/${qs.length}</span><progress max="${qs.length}" value="${res.filter(Boolean).length}"></progress></div>
-    <div class="qcard">${body}${fb}</div>`;
-
-  $('#msQuit', box).onclick = () => { run = null; mode = 'list'; drawList(); };
-  $$('[data-o]', box).forEach(b => b.onclick = () => finish(q.options[+b.dataset.o].ok, { sel: +b.dataset.o }));
-  $$('[data-tf]', box).forEach(b => b.onclick = () => finish((b.dataset.tf === '1') === q.ans, { sel: b.dataset.tf === '1' }));
-  $('#msSubmit', box)?.addEventListener('click', submit);
-  const inputs = $$('#msIn, .fin', box);
-  inputs.forEach((inp, k) => inp.addEventListener('keydown', e => {
-    if (e.key !== 'Enter' || e.isComposing) return;
-    e.preventDefault();
-    if (k < inputs.length - 1) inputs[k + 1].focus(); else submit();
-  }));
-  $('#msNext', box)?.addEventListener('click', () => { run.i++; drawQuestion(); });
-  $('#msListenBtn', box)?.addEventListener('click', () => say(q.listen, bcp));
-  if (q.listen && !answered) setTimeout(() => say(q.listen, bcp), 250);
-  if (!answered) inputs[0]?.focus();
-}
-
-function finish(ok, extra) {
-  if (run.res[run.i] != null) return;
-  run.res[run.i] = { ok, ...extra };
-  tracker.quiz(ok);
-  drawQuestion();
-}
-
-function submit() {
-  const q = run.qs[run.i];
-  if (q.kind === 'type') {
-    const v = $('#msIn', box).value;
-    if (!v.trim()) { toast('Hãy gõ đáp án'); return; }
-    finish(okAnswer(v, q.answers, run.lang), { typed: v });
-  } else if (q.kind === 'fill') {
-    const typed = $$('.fin', box).map(i => i.value), blanks = q.parts.filter(p => typeof p !== 'string');
-    if (typed.every(t => !t.trim())) { toast('Hãy điền vào chỗ trống'); return; }
-    const each = blanks.map((p, k) => okAnswer(typed[k] || '', p.a, run.lang));
-    finish(each.every(Boolean), { typed, each });
-  }
-}
-
-function summary() {
-  const { qs, res } = run, ok = res.filter(r => r && r.ok).length, pct = Math.round(100 * ok / qs.length);
-  const wrong = qs.filter((_, k) => !(res[k] && res[k].ok));
-  box.innerHTML = `<div class="qcard"><div class="score ${pct >= 80 ? 'ok' : pct >= 50 ? 'miss' : 'bad'}">${ok}/${qs.length} đúng · ${pct}%</div>
-    <div class="qlist">${qs.map((q, k) => `<div class="${res[k]?.ok ? 'ok' : 'bad'}">${res[k]?.ok ? '✓' : '✗'} ${esc(summaryText(q))}</div>`).join('')}</div>
-    <div class="dim">${wrong.length ? `${wrong.length} câu chưa đúng.` : '🎉 Hoàn hảo!'}</div>
-    <div class="row"><button class="btn primary" id="msAgain">↻ Làm lại</button>${wrong.length ? '<button class="btn" id="msWrong">🔁 Làm lại câu sai</button><button class="btn" id="msToCards">📒 Câu sai → sổ thẻ</button>' : ''}<button class="btn" id="msList">Danh sách</button></div></div>`;
-  $('#msAgain', box).onclick = () => start(run.id);
-  $('#msWrong', box)?.addEventListener('click', () => { const id = run.id; start(id, wrong.map(q => ({ ...q, options: q.options && shuffle(q.options, rngOf('w' + Date.now())) }))); });
-  $('#msToCards', box)?.addEventListener('click', () => {
-    let n = 0;
-    for (const q of wrong) {
-      const c = cardOf(q); if (!c) continue;
-      cards.addManual({ lang: run.lang, front: c.front, back: c.back.filter(Boolean) }); n++;
-    }
-    toast(`Đã thêm ${n} thẻ vào sổ ôn 📒`);
+function start(ids, title) {
+  const sets = ids.map(id => store.get('sets', id)).filter(Boolean);
+  if (!sets.length) return;
+  const lang = sets[0].lang || 'zh', rnd = rngOf('set' + ids.join() + Date.now());
+  let qs = sets.flatMap(s => build(parseSet(s.text || ''), { shuffle: false, listen: runOpts.listen, count: 0 }, rnd));
+  if (runOpts.kind !== 'all') qs = qs.filter(q => kindOfQ(q) === runOpts.kind);
+  if (!qs.length) { toast(runOpts.kind === 'all' ? 'Bộ này chưa đủ câu hỏi hợp lệ' : 'Không có câu thuộc dạng đã chọn'); return; }
+  if (runOpts.shuffle) qs = shuffle(qs, rnd);
+  if (runOpts.count > 0) qs = qs.slice(0, runOpts.count);
+  runner?.stop();
+  mode = 'run'; runLang = lang;
+  runner = runQuiz(box, {
+    qs, lang, title: title || sets[0].title,
+    onExit: goBack,
+    onAgain: () => start(ids, title),
   });
-  $('#msList', box).onclick = () => { run = null; mode = 'list'; drawList(); };
 }
-
-function summaryText(q) {
-  if (q.kind === 'fill') return q.parts.map(p => (typeof p === 'string' ? p : `[${p.a[0]}]`)).join('');
-  if (q.listen) return '🔊 ' + q.options.find(o => o.ok).t;
-  return q.prompt || q.options.find(o => o.ok).t;
-}
-// Nội dung thẻ ôn cho một câu sai
-function cardOf(q) {
-  if (q.card) return q.card;
-  const ex = q.explain ? [q.explain] : [];
-  if (q.kind === 'mc') return { front: q.prompt, back: [q.options.find(o => o.ok).t, ...ex] };
-  if (q.kind === 'tf') return { front: q.prompt, back: [q.ans ? 'Đúng' : 'Sai', ...ex] };
-  if (q.kind === 'type') return { front: q.prompt, back: [q.answers.join(' / '), ...ex] };
-  if (q.kind === 'fill') return { front: q.parts.map(p => (typeof p === 'string' ? p : p.a[0])).join(''), back: [q.hint, ...ex] };
-  return null;
-}
-
-document.addEventListener('keydown', e => {
-  if (!box || !run || mode !== 'run' || document.body.dataset.view !== 'review' || e.target.matches('input,textarea,select')) return;
-  const q = run.qs[run.i];
-  if (!q) return;
-  if (run.res[run.i] != null) { if (e.key === 'Enter') $('#msNext', box)?.click(); return; }
-  if (/^[1-9]$/.test(e.key)) {
-    if (q.kind === 'mc' && +e.key <= q.options.length) $$('[data-o]', box)[+e.key - 1]?.click();
-    else if (q.kind === 'tf' && (e.key === '1' || e.key === '2')) $$('[data-tf]', box)[+e.key - 1]?.click();
-  }
-});

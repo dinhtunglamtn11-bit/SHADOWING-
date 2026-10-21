@@ -5,7 +5,7 @@ import * as dict from './dict.js';
 import { say } from './tts.js';
 import * as cards from './cards.js';
 
-const BLOCK = '#now .l1, #cueList .cue .m, #nPreview, #docBody, .qtext, .qback, .qexp, #rvBody .rvbig';
+const BLOCK = '#now .l1, #cueList .cue .m, #nPreview, #docBody, .qtext, .qback, .qexp, #rvBody .rvbig, .nw-text, .nw-ttl';
 const HAN = /\p{Script=Han}/u;
 let on = false, cur = null;
 
