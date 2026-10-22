@@ -1,5 +1,6 @@
 // Trình học: phát video (file trong máy, link mp4 hoặc YouTube), phụ đề chạy theo, khung ngang / dọc.
-import { $, esc, fmt, fmtS, toast, bus, uid, pickFile, getLang, langInfo, parseSubs, classifySrc, tokenWeight } from './util.js';
+import { $, esc, fmt, fmtS, toast, bus, uid, pickFile, getLang, langInfo, parseSubs, classifySrc, tokenWeight, tokensOf } from './util.js';
+import { modeBar, editCard } from './cuehtml.js';
 import * as store from './store.js';
 import * as tracker from './tracker.js';
 import { prefs, savePrefs, zhText } from './prefs.js';
@@ -14,6 +15,7 @@ export const temp = new Map(); // video chưa lưu vào máy (chỉ phát phiên
 const tempUrls = new Map();
 let cues = [], cur = -1, lastRender = -1, itemId = null, itemLang = 'zh';
 let passT = 0, counted = false, lastTs = 0, lastSaved = 0;
+let editOn = false, saveT = 0; // chế độ ✏️ sửa phụ đề ngay trong danh sách câu bên phải
 
 const off = () => parseFloat($('#offset').value) || 0;
 const item = () => (itemId ? store.get('items', itemId) : null);
@@ -116,6 +118,7 @@ export async function openItem(id) {
   if (!it || it.deleted) return;
   persistPos();
   M.clear();
+  if (editOn) { flushEdits(); editOn = false; document.body.classList.remove('cueedit'); } // sang video khác: thoát chế độ sửa
   if (dictOn) { setDictMode(false); bus.emit('dictExit'); }
   if (speakOn) { setSpeakMode(false); bus.emit('speakExit'); }
   itemId = id; itemLang = it.lang || getLang();
@@ -213,15 +216,82 @@ function renderList() {
       `<span class="${sc[i] == null ? 'dim' : sc[i] >= 90 ? 'ok' : sc[i] >= 60 ? 'miss' : 'bad'}">${sc[i] == null ? '—' : '✓ ' + sc[i] + '%'}</span></div></div>`).join('');
     return;
   }
+  const bar = itemId ? modeBar(editOn, cues.length) : '';
+  if (editOn) {
+    const bcp = langInfo(itemLang).bcp;
+    list.innerHTML = bar + (cues.length ? cues.map((c, i) => editCard(c, i, bcp)).join('') : '<div class="empty">Chưa có câu nào. Bấm “＋ Thêm câu”.</div>');
+    return;
+  }
   const sp = (item() && item().speak) || {};
   const starts = new Map(segs.map((s, k) => [s, k]));
-  list.innerHTML = cues.map((c, i) => {
+  list.innerHTML = bar + cues.map((c, i) => {
     const hd = segOn && starts.has(i)
       ? `<div class="seghd ${starts.get(i) === segIdx ? 'on' : ''}" data-k="${starts.get(i)}"><span>Đoạn ${starts.get(i) + 1} · ${fmtS(c.start)}</span>${i ? `<button class="cut" data-uncut="${i}" title="Bỏ mốc này (gộp với đoạn trên)">✕ gộp</button>` : ''}</div>` : '';
     const cut = segOn && i && !starts.has(i) ? `<button class="cut" data-cut="${i}" title="Chia đoạn ở đây (câu này bắt đầu đoạn mới)">✂</button>` : '';
     return hd + `<div class="cue" data-i="${i}"><div class="t">${fmt(c.start)}${sp[i] != null ? ` <span class="badge">🎙 ${sp[i]}%</span>` : ''}${cut}</div><div class="m">${esc(c.lines[0])}</div>` +
       c.lines.slice(1).map(l => `<div class="s">${esc(l)}</div>`).join('') + '</div>';
   }).join('');
+}
+
+// ---------- sửa phụ đề ngay trong danh sách (nút ✏️ ở đầu cột phải) ----------
+export const isEditing = () => editOn;
+export const videoCueTime = () => Math.max(0, M.currentTime - off());
+export const playCue = i => seekCue(i, true);
+
+function doSave() {
+  saveT = 0;
+  if (itemId) store.put('items', itemId, { cues: JSON.stringify(cues), cueCount: cues.length });
+  const s = $('#cueSaved'); if (s) s.textContent = 'Đã lưu ✓';
+}
+export function flushEdits() { if (saveT) { clearTimeout(saveT); doSave(); } }
+const saveSoon = () => { clearTimeout(saveT); saveT = setTimeout(doSave, 600); const s = $('#cueSaved'); if (s) s.textContent = 'Đang lưu…'; };
+
+// sửa một ô của một câu: f = start | end | l1 | l2 | l3 (không vẽ lại danh sách để khỏi mất chỗ đang gõ)
+export function editCue(i, f, v) {
+  const c = cues[i]; if (!c) return false;
+  if (f === 'start' || f === 'end') {
+    if (!Number.isFinite(v) || v < 0) return false;
+    c[f] = +v.toFixed(2);
+  } else {
+    const k = { l1: 0, l2: 1, l3: 2 }[f], lines = (c.lines || []).slice();
+    while (lines.length <= k) lines.push('');
+    lines[k] = v; c.lines = lines;
+    if (f === 'l1' && c.t && tokensOf(v, langInfo(itemLang).words).length !== c.t.length) delete c.t; // đổi số chữ thì giờ từng từ không còn đúng
+  }
+  if (i === cur) { lastRender = -1; renderNow(i); }
+  saveSoon();
+  return true;
+}
+// thêm / xóa / gộp câu: lưu ngay và vẽ lại
+export function replaceCues(next) { flushEdits(); applyCues(next); }
+
+// gom lại khi thoát chế độ sửa: bỏ câu không có chữ, sửa giờ sai, đổi giản thể, sắp xếp theo giờ
+function normalizeCues() {
+  const lang = itemLang;
+  return cues.filter(c => (c.lines?.[0] || '').trim()).map(c => {
+    const s = +c.start || 0; let e = +c.end || s + 2; if (e <= s) e = s + 0.5;
+    const lines = (c.lines || []).map(l => zhText((l || '').trim(), lang));
+    while (lines.length > 1 && !lines[lines.length - 1]) lines.pop();
+    const n = { start: +s.toFixed(2), end: +e.toFixed(2), lines };
+    if (c.t) n.t = c.t;
+    return n;
+  }).sort((a, b) => a.start - b.start);
+}
+export function setEditMode(on) {
+  if (on === editOn) return true;
+  if (on) {
+    if (!itemId) { toast('Hãy mở một video trước'); return false; }
+    if (dictOn || speakOn) { toast('Hãy tắt chế độ chép chính tả / luyện nói trước khi sửa phụ đề'); return false; }
+    editOn = true; document.body.classList.add('cueedit'); renderList();
+    return true;
+  }
+  flushEdits();
+  const out = normalizeCues();
+  if (cues.length && !out.length) { toast('Chưa có câu nào có chữ: hãy nhập chữ cho ít nhất một câu rồi thoát'); return false; }
+  editOn = false; document.body.classList.remove('cueedit');
+  applyCues(out);
+  toast('Đã lưu phụ đề ✓');
+  return true;
 }
 
 // ---------- chia đoạn ----------
@@ -379,7 +449,11 @@ function setCur(i) {
   if (!dictOn) list.querySelectorAll('.cue.active').forEach(e => e.classList.remove('active'));
   if (i >= 0 && !dictOn) {
     const el = list.querySelector(`.cue[data-i="${i}"]`);
-    if (el) { el.classList.add('active'); list.scrollTo({ top: el.offsetTop - list.clientHeight / 2 + el.clientHeight / 2, behavior: 'smooth' }); }
+    if (el) {
+      el.classList.add('active');
+      const typing = editOn && list.contains(document.activeElement) && document.activeElement.matches?.('input'); // đang gõ trong danh sách thì không cuộn đi chỗ khác
+      if (!typing) list.scrollTo({ top: el.offsetTop - list.clientHeight / 2 + el.clientHeight / 2, behavior: 'smooth' });
+    }
   }
   if (i !== lastRender) renderNow(i);
 }
@@ -501,6 +575,7 @@ export function init() {
     const cutB = e.target.closest('[data-cut]'), unB = e.target.closest('[data-uncut]');
     if (cutB) { e.stopPropagation(); setSegments([...segs, +cutB.dataset.cut]); return; }          // chia đoạn: câu này mở đầu đoạn mới
     if (unB) { e.stopPropagation(); const k = +unB.dataset.uncut; setSegments(segs.filter(s => s !== k)); return; } // gộp lại
+    if (editOn && !dictOn) return; // đang sửa: chạm vào ô nhập không được tua video
     const el = e.target.closest('.cue'); if (!el) return;
     if (segOn && !dictOn && !speakOn) { segIdx = segOfCue(+el.dataset.i); segAtEnd = false; segRepeat = +($('#sgAuto')?.value || 0); seekCue(+el.dataset.i, true); updateSegBar(); return; } // chọn câu làm điểm bắt đầu
     if (dictOn) bus.emit('dictGo', +el.dataset.i);

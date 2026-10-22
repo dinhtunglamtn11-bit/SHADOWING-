@@ -199,3 +199,34 @@
 .wvs { font-size: 16px; color: var(--dim); line-height: 1.5; }
 .wvs mark { background: #ffe27a; color: #3a2a00; padding: 0 2px; }
 #lkWorld { width: 100%; }
+/* ---------- sửa phụ đề ngay trong cột phải: nút 📖 đọc / ✏️ sửa ---------- */
+.cuebar { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 8px; margin: -8px -8px 8px; padding: 6px 8px; background: var(--panel); border-bottom: var(--px) solid var(--ink); }
+.cuemode button { font-size: 22px; padding: 2px 12px 4px; }
+.cuehint { font-family: var(--pf); font-size: 18px; }
+body.cueedit #cueList { outline: 3px dashed var(--accent); outline-offset: -6px; }
+.cue.ed { display: flex; flex-direction: column; gap: 6px; cursor: default; margin: 8px 0; padding: 8px; border-left-width: 0; background: var(--panel2); border: 2px dashed var(--line); }
+.cue.ed:hover { background: var(--panel2); }
+.cue.ed.active { background: var(--cueon); border: 2px solid var(--ink); }
+.cue.ed input[type=text] { width: 100%; font-size: 17px; }
+.cue.ed input[data-f=l2], .cue.ed input[data-f=l3] { font-size: 14px; }
+.ect { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ect .en { background: var(--ink); color: #fff; padding: 0 8px 1px; font-family: var(--pf); font-size: 20px; font-weight: 400; }
+.ect .tm { display: inline-flex; align-items: center; gap: 2px; }
+.cue.ed .tm input { width: 74px; text-align: center; font-variant-numeric: tabular-nums; }
+.ect .btn { padding: 2px 8px; }
+/* ---------- Soạn: chữ đã gắn video / âm thanh được tô màu ---------- */
+.wl { border-radius: 3px; padding: 0 3px; color: inherit; }
+.wl[data-video] { background: rgba(169, 139, 255, .32); border-bottom: 3px solid #a98bff; }
+.wl[data-audio] { background: rgba(79, 192, 106, .32); border-bottom: 3px solid #4fc06a; }
+.wl:hover { filter: brightness(1.12); background-blend-mode: normal; }
+.wl[data-video]:hover { background: rgba(169, 139, 255, .5); } .wl[data-audio]:hover { background: rgba(79, 192, 106, .5); }
+.nbox { position: relative; }
+#nHL { position: absolute; inset: 0; overflow: hidden; pointer-events: none; color: transparent; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; background: var(--field, var(--panel)); box-sizing: border-box; }
+#nHL mark { color: transparent; border-radius: 3px; }
+#nHL mark.hvideo { background: rgba(169, 139, 255, .42); box-shadow: 0 3px 0 #a98bff; }
+#nHL mark.haudio { background: rgba(79, 192, 106, .42); box-shadow: 0 3px 0 #4fc06a; }
+#nBody { position: relative; z-index: 1; background: transparent !important; resize: none; overflow: hidden; box-sizing: border-box; display: block; }
+.nsel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 6px 0; padding: 6px 8px; font-size: 15px; background: var(--panel2); border: 2px dashed var(--line); }
+.nsel[hidden] { display: none; }
+.nsel .btn { padding: 2px 10px; }
+.nsa { display: inline-flex; flex-wrap: wrap; gap: 6px; }

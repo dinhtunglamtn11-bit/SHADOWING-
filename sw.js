@@ -1,10 +1,10 @@
 // Service worker: ưu tiên mạng (luôn lấy bản mới), mất mạng thì dùng bản đã lưu.
-const CACHE = 'shadowing-v23';
+const CACHE = 'shadowing-v25';
 const DICT_CACHE = 'shadowing-dict'; // từ điển ~9 MB: giữ riêng để không bị xóa mỗi lần cập nhật app
 const SHELL = [
   './', 'index.html', 'styles.css', 'pixel.css', 'exnews.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
   'js/main.js', 'js/pixicons.js', 'js/i18n.js', 'js/en-a.js', 'js/en-b.js', 'js/en-c.js', 'js/settings.js', 'js/en-d.js', 'js/zh-en.js', 'js/zh-a.js', 'js/zh-b.js', 'js/zh-c.js', 'js/zh-d.js', 'js/trash.js', 'js/dict.js', 'js/lookup.js', 'js/vocab.js', 'js/find.js', 'js/fsrs.js', 'js/shadowviz.js', 'js/shortcuts.js', 'js/offline.js', 'js/readaloud.js', 'js/util.js', 'js/store.js', 'js/prefs.js', 'js/tracker.js',
-  'js/media.js', 'js/align.js', 'js/alignui.js', 'js/dictation.js', 'js/speak.js', 'js/cards.js', 'js/clip.js', 'js/quiz.js', 'js/review.js', 'js/tts.js', 'js/sets.js', 'js/exparse.js', 'js/exrun.js', 'js/exprompts.js', 'js/world.js', 'js/tree.js', 'js/mistakes.js', 'js/wvocab.js', 'js/mistakeui.js', 'js/achieve.js', 'js/lessons.js', 'js/exsheet.js', 'js/dnd.js', 'js/writing.js', 'js/backup.js', 'js/subedit.js', 'js/subpaste.js', 'js/strokes.js', 'js/writeset.js', 'js/segments.js', 'js/player.js', 'js/library.js', 'js/notes.js', 'js/side.js', 'js/quests.js',
+  'js/media.js', 'js/align.js', 'js/alignui.js', 'js/dictation.js', 'js/speak.js', 'js/cards.js', 'js/clip.js', 'js/quiz.js', 'js/review.js', 'js/tts.js', 'js/sets.js', 'js/exparse.js', 'js/exrun.js', 'js/exprompts.js', 'js/world.js', 'js/cuehtml.js', 'js/cueedit.js', 'js/tree.js', 'js/mistakes.js', 'js/wvocab.js', 'js/mistakeui.js', 'js/achieve.js', 'js/lessons.js', 'js/exsheet.js', 'js/dnd.js', 'js/writing.js', 'js/backup.js', 'js/subedit.js', 'js/subpaste.js', 'js/strokes.js', 'js/writeset.js', 'js/segments.js', 'js/player.js', 'js/library.js', 'js/notes.js', 'js/side.js', 'js/quests.js',
 ];
 
 self.addEventListener('install', e => {

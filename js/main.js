@@ -25,6 +25,7 @@ import * as shortcuts from './shortcuts.js';
 import * as offline from './offline.js';
 import * as readaloud from './readaloud.js';
 import * as world from './world.js';
+import * as cueedit from './cueedit.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDP5ijko_nBpuqxVKxxviBA91kHYNhvrdo",
@@ -95,7 +96,7 @@ await store.initStore();
 loadPrefs();
 bus.on('store', c => { if (c === 'prefs' || c === '*') { loadPrefs(); bus.emit('prefs'); } });
 renderLangs();
-player.init(); side.init(); library.init(); notes.init(); quests.init(); alignui.init(); dictation.init(); speak.init(); review.init(); backup.init(); subedit.init(); subpaste.init(); segments.init(); trash.init(); lookup.init(); vocab.init(); find.init(); shortcuts.init(); offline.init(); readaloud.init(); world.init();
+player.init(); side.init(); library.init(); notes.init(); quests.init(); alignui.init(); dictation.init(); speak.init(); review.init(); backup.init(); subedit.init(); subpaste.init(); segments.init(); trash.init(); lookup.init(); vocab.init(); find.init(); shortcuts.init(); offline.init(); readaloud.init(); world.init(); cueedit.init();
 show('library');
 initFirebase();
 loadSimplifier(); // sẵn sàng đổi phồn thể → giản thể (chỉ ~100 KB)

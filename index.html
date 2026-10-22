@@ -67,7 +67,7 @@
           <button class="btn" id="btnAdd">＋ Thêm video</button>
           <button class="btn" id="btnPaste" title="Thêm phụ đề từ file hoặc dán văn bản (gốc | phiên âm | nghĩa)">📄 Phụ đề</button>
           <input id="sfile" type="file" accept=".srt,.vtt">
-          <button class="btn" id="btnSubEdit" title="Sửa chữ, giờ, dán phiên âm/nghĩa hàng loạt, xuất .srt">✏️ Sửa phụ đề</button>
+          <button class="btn" id="btnSubEdit" title="Hộp thoại sửa nhiều câu một lúc: dán phiên âm / nghĩa hàng loạt, gộp, xuất file .srt. (Sửa từng câu: bấm nút ✏️ ở đầu danh sách câu bên phải)">📝 Sửa hàng loạt</button>
           <button class="btn" id="btnSeg" title="Chia phụ đề thành từng đoạn: video dừng cuối đoạn, lặp lại hoặc tiếp tục">📑 Chia đoạn</button>
           <button class="btn" id="btnAlign" title="Tự động tạo phụ đề và canh giờ từng từ theo giọng nói">✨ Canh từ</button>
           <button class="btn" id="btnCard" title="Lưu câu đang chạy vào sổ thẻ để ôn lặp lại">📒 Lưu câu</button>
@@ -241,14 +241,16 @@
         <input id="nTitle" class="title" placeholder="Tiêu đề">
         <div class="row" id="nTools">
           <select id="nFolder"></select>
-          <button class="btn" id="nAudio" title="Bôi đen chữ trước để gắn link vào chữ đó">🔊 Gắn âm thanh</button>
-          <button class="btn" id="nVideo" title="Bôi đen chữ trước để gắn link vào chữ đó">🎬 Gắn video</button>
+          <button class="btn" id="nAudio" title="Bôi đen chữ trước, rồi chọn file âm thanh để gắn vào chữ đó">🔊 Gắn âm thanh</button>
+          <button class="btn" id="nVideo" title="Bôi đen chữ trước, rồi chọn một video trong thư viện để gắn vào chữ đó">🎬 Gắn video</button>
+          <button class="btn" id="nLink" title="Bôi đen chữ trước, rồi dán link YouTube / TikTok / .mp4 để gắn vào chữ đó">🔗 Gắn link video</button>
           <button class="btn" data-lookup title="Bật rồi chạm vào chữ Hán (chế độ Xem) để tra nghĩa">📖 Tra từ</button>
           <button class="btn" data-readall title="Đọc to cả ghi chú bằng giọng máy (tiếng Trung, Nhật, Hàn). Chạm câu để nghe riêng">🔊 Đọc</button>
           <button class="btn" data-tapread title="Bật rồi chạm vào một câu trong chế độ Xem để nghe câu đó (tắt Tra từ khi dùng)">👆 Chạm câu</button>
           <span id="nSaved" class="dim"></span>
         </div>
-        <textarea id="nBody" placeholder="Viết ở đây. Dòng bắt đầu bằng # là tiêu đề, **chữ** là in đậm.&#10;Muốn gắn link: bôi đen một từ, rồi bấm 🎬 Gắn video (hoặc 🔊 Gắn âm thanh). Sang chế độ Xem, bấm vào từ đó là video hiện bên cạnh."></textarea>
+        <div id="nSelBar" class="nsel"></div>
+        <div id="nBox" class="nbox"><div id="nHL" aria-hidden="true"></div><textarea id="nBody" placeholder="Viết ở đây. Dòng bắt đầu bằng # là tiêu đề, **chữ** là in đậm.&#10;Muốn gắn link: bôi đen một từ, rồi bấm 🎬 Gắn video, 🔗 Gắn link video hoặc 🔊 Gắn âm thanh. Chữ đã gắn được tô màu; sang chế độ Xem, bấm vào chữ đó là video hiện bên cạnh."></textarea></div>
         <div id="nPreview" class="preview" hidden></div>
       </div>
     </div>
@@ -524,9 +526,12 @@
 </dialog>
 
 <dialog id="vidDlg">
-  <div class="hd"><span class="grow">Gắn video từ thư viện</span><button class="btn" onclick="this.closest('dialog').close()">✕</button></div>
+  <div class="hd"><span class="grow">Gắn video vào chữ</span><button class="btn" onclick="this.closest('dialog').close()">✕</button></div>
   <div class="vidopt dim" id="vidHint"></div>
+  <div class="vidopt"><label class="dim">Dán link video (YouTube, TikTok hoặc file .mp4)<input id="vidUrl" type="url" placeholder="https://www.youtube.com/watch?v=…" style="width:100%"></label>
+    <div class="row" style="margin-top:6px"><button class="btn primary" id="vidUrlGo">🔗 Gắn link này</button></div></div>
   <div class="vidopt"><label class="dim">Mở từ giây (không bắt buộc) <input id="vidStart" type="number" min="0" step="0.1" placeholder="0" style="width:80px"></label></div>
+  <div class="vidopt dim">Hoặc chọn một video đã có trong thư viện:</div>
   <div class="bd" id="vidList"></div>
 </dialog>
 

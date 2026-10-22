@@ -337,7 +337,7 @@ const MAP = {
 };
 const RE = new RegExp('(' + Object.keys(MAP).join('|') + ')\\uFE0F?', 'gu');
 // vùng chứa nội dung của người dùng hoặc ô nhập: không đổi emoji ở đó
-const DENY = 'script,style,textarea,input,select,option,.pxe,#now,.cue,.qtext,.qexp,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.wvw,.wvm,.wvs,.mbq,.nw-emoji,.nw-h,.nw-lead,.nw-ttl,.nw-text,.wchip,.slot,[contenteditable]';
+const DENY = 'script,style,textarea,input,select,option,.pxe,#now,.cue:not(.ed),.qtext,.qexp,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.wvw,.wvm,.wvs,.mbq,.nw-emoji,.nw-h,.nw-lead,.nw-ttl,.nw-text,.wchip,.slot,[contenteditable]';
 
 function convert(tn) {
   const s = tn.nodeValue;

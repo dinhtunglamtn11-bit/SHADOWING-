@@ -3,7 +3,7 @@
    Hai chủ đề: ngày (mặc định) và đêm, đổi bằng nút ☀/☾ ở đầu trang (lưu trong máy). */
 :root {
   --px: 3px; --hl: #ffd84d;
-  --pf: "VT323", "Courier New", ui-monospace, monospace;
+  --pf: "VT323", "PxFix", "Courier New", ui-monospace, monospace;
   /* ngày: trời xanh nhạt, giấy da, gỗ, thép */
   --ink: #2d1f47;
   --bg: #c6e6f8; --bg2: #b8dcf2;
@@ -383,9 +383,11 @@ dialog > .subtools, dialog > .vidopt { flex: none; }
 :root[data-px="2"] { --px: 2px; }
 :root[data-px="4"] { --px: 4px; }
 :root[data-corner=square] * { --np: none; }
+/* phông VT323 không có các âm pinyin ǎ ǐ ǒ ǔ ǚ…: lấy từ phông hệ thống (thu nhỏ cho vừa nét pixel) thay vì để trình duyệt chọn phông ngẫu nhiên */
+@font-face { font-family: "PxFix"; font-weight: 400; src: local("Segoe UI"), local("Roboto"), local("Noto Sans"), local("Helvetica Neue"), local("Arial"), local("DejaVu Sans"); unicode-range: U+0100-024F, U+1E00-1EFF; size-adjust: 82%; }
 @font-face { font-family: "PxSans"; font-weight: 400; src: local("Segoe UI"), local("Roboto"), local("Helvetica Neue"), local("Arial"); size-adjust: 80%; }
 @font-face { font-family: "PxSans"; font-weight: 700; src: local("Segoe UI Bold"), local("Roboto Bold"), local("Helvetica Neue Bold"), local("Arial Bold"); size-adjust: 80%; }
-:root[data-uilang=zh] { --pf: "VT323", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif; } /* giao diện tiếng Trung: chữ Hán lấy phông hệ thống */
+:root[data-uilang=zh] { --pf: "VT323", "PxFix", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif; } /* giao diện tiếng Trung: chữ Hán lấy phông hệ thống */
 :root[data-font=clean] { --pf: "PxSans", system-ui, "Segoe UI", Roboto, Arial, sans-serif; }
 :root[data-icons=emoji] .pxe .pix { display: none; }
 :root[data-icons=emoji] .pxr { position: static; width: auto; height: auto; clip: auto; overflow: visible; }
