@@ -4,6 +4,8 @@ import { $, $$, esc, toast, getLang } from './util.js';
 import * as dict from './dict.js';
 import { say } from './tts.js';
 import * as cards from './cards.js';
+import * as store from './store.js';
+import * as wvocab from './wvocab.js';
 
 const BLOCK = '#now .l1, #cueList .cue .m, #nPreview, #docBody, .qtext, .qback, .qexp, #rvBody .rvbig, .nw-text, .nw-ttl';
 const HAN = /\p{Script=Han}/u;
@@ -78,10 +80,11 @@ function renderPop() {
   $('#lkMean').value = meaning(ents[0]);
 }
 
-function open(cands, x, y) {
-  cur = { cands, sel: 0 };
+function open(cands, x, y, ctx = {}) {
+  cur = { cands, sel: 0, ...ctx };
   const pop = $('#lkPop');
   pop.hidden = false;
+  $('#lkWorld').hidden = !ctx.aid; // chỉ khi đang đọc một bài ở Thế giới của tôi
   renderPop();
   const narrow = matchMedia('(max-width: 800px)').matches;
   pop.style.left = pop.style.top = pop.style.right = pop.style.bottom = '';
@@ -105,7 +108,8 @@ async function onTap(e) {
   }
   const cands = dict.candidatesAt(p.text, p.k);
   if (!cands.length) { toast(`Không có “${p.text[p.k]}” trong từ điển`, 2500); return; }
-  open(cands, e.clientX, e.clientY);
+  const aid = blk.closest('#vWorld')?.querySelector('[data-aid]')?.dataset.aid || '';
+  open(cands, e.clientX, e.clientY, { aid, sentence: aid ? wvocab.sentenceAt(p.text, p.k) : '' });
 }
 
 export function init() {
@@ -120,8 +124,14 @@ export function init() {
     if (!cur) return;
     const c = cur.cands[cur.sel], e = c.entries[0], front = e[0];
     if (cards.allCards('zh').some(x => x.front === front)) { toast('Từ này đã có trong sổ thẻ'); return; }
-    cards.addManual({ lang: 'zh', front, back: [dict.pinyinMarks(e[2]), $('#lkMean').value.trim() || meaning(e)], title: 'Từ điển', type: 'word' });
+    cards.addManual({ lang: 'zh', front, back: [dict.pinyinMarks(e[2]), $('#lkMean').value.trim() || meaning(e), cur.sentence].filter(Boolean), title: 'Từ điển', type: 'word' });
     toast(`Đã thêm “${front}” vào sổ thẻ 📒`);
+  };
+  $('#lkWorld').onclick = () => {
+    if (!cur) return;
+    const c = cur.cands[cur.sel], e = c.entries[0], a = store.get('articles', cur.aid);
+    const r = wvocab.addWord({ lang: 'zh', word: e[0], pron: dict.pinyinMarks(e[2]), meaning: $('#lkMean').value.trim() || meaning(e), sentence: cur.sentence, article: cur.aid, title: a?.title || '' });
+    toast(r === 'dup' ? 'Từ này đã có trong từ vựng Thế giới' : `Đã lưu “${e[0]}” vào từ vựng Thế giới 🌍`);
   };
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && cur) hide(); });
   if (on) dict.loadDict().catch(() => {});

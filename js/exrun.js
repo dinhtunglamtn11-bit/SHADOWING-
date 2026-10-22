@@ -7,6 +7,7 @@ import { sayable, withSpeaker, say } from './tts.js';
 import { rngOf, shuffle, norm } from './quiz.js';
 import { zhText } from './prefs.js';
 import { grabChip } from './dnd.js';
+import * as mistakes from './mistakes.js';
 
 // tiếng Trung: gõ phồn thể hay giản thể đều được
 export const okAnswer = (typed, list, lang) => list.some(a => norm(zhText(a, lang)) === norm(zhText(typed, lang)));
@@ -199,6 +200,7 @@ export function runQuiz(box0, o) {
     if (S.res[S.i] != null) return;
     S.res[S.i] = { ok, ...extra };
     tracker.quiz(ok);
+    mistakes.record(S.qs[S.i], ok, L, o.title);
     draw();
   }
   function submit() {
@@ -228,7 +230,7 @@ export function runQuiz(box0, o) {
   function summary() {
     const { qs, res } = S, ok = res.filter(r => r && r.ok).length, pct = Math.round(100 * ok / qs.length);
     const wrong = qs.filter((_, k) => !(res[k] && res[k].ok));
-    if (!S.done) { S.done = true; o.onDone?.({ ok, total: qs.length, pct }); }
+    if (!S.done) { S.done = true; o.onDone?.({ ok, total: qs.length, pct, qs, res }); }
     box.innerHTML = `<div class="qcard"><div class="score ${pct >= 80 ? 'ok' : pct >= 50 ? 'miss' : 'bad'}">${ok}/${qs.length} đúng · ${pct}%</div>
       <div class="qlist">${qs.map((q, k) => `<div class="${res[k]?.ok ? 'ok' : 'bad'}">${res[k]?.ok ? '✓' : '✗'} ${esc(summaryText(q, L))}</div>`).join('')}</div>
       <div class="dim">${wrong.length ? `${wrong.length} câu chưa đúng.` : '🎉 Hoàn hảo!'}</div>

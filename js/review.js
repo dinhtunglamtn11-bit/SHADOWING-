@@ -7,6 +7,7 @@ import { prefs, savePrefs } from './prefs.js';
 import * as quiz from './quiz.js';
 import * as sets from './sets.js';
 import * as writing from './writing.js';
+import * as mistakeui from './mistakeui.js';
 import { sayable } from './tts.js';
 
 let tab = 'cards';
@@ -28,6 +29,7 @@ function render() {
   if (tab === 'quiz') { quiz.render(body()); return; }
   if (tab === 'mine') { sets.render(body()); return; }
   if (tab === 'write') { writing.render(body()); return; }
+  if (tab === 'mistakes') { mistakeui.render(body()); return; }
   if (tab === 'deck') { renderDeck(); return; }
   session ? renderSession() : renderHome();
 }
@@ -135,7 +137,7 @@ export function init() {
   $('#ttsRate').onchange = e => { prefs.ttsRate = parseFloat(e.target.value) || 0.9; savePrefs(); };
   bus.on('prefs', () => { $('#ttsRate').value = String(prefs.ttsRate || 0.9); });
   bus.on('show', v => { if (v === 'review') render(); else updateBadge(); });
-  bus.on('lang', () => { session = null; if (document.body.dataset.view === 'review') render(); updateBadge(); });
+  bus.on('lang', () => { session = null; mistakeui.reset(); if (document.body.dataset.view === 'review') render(); updateBadge(); });
   bus.on('store', c => { if (c === 'cards' || c === 'items' || c === '*') { updateBadge(); if (document.body.dataset.view === 'review' && tab === 'deck') renderDeck(); } });
   updateBadge();
 }

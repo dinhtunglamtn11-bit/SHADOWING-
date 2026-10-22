@@ -10,7 +10,7 @@ import { rngOf, shuffle } from './quiz.js';
 import { zhText } from './prefs.js';
 import { trLines } from './i18n.js';
 import { parseSet, build, countKinds, buildTest } from './exparse.js';
-import { runSheet } from './exsheet.js';
+import { runSheet, timeHtml, wireTime, readTime } from './exsheet.js';
 import { pix } from './pixicons.js';
 import { runQuiz } from './exrun.js';
 import { KIND_ORDER, setPrompt, promptPanel } from './exprompts.js';
@@ -141,7 +141,7 @@ function drawList() {
   }
   const keys = [...groups.keys()].sort((a, b) => (a === '') - (b === '') || Math.max(...groups.get(b).map(s => s.u || 0)) - Math.max(...groups.get(a).map(s => s.u || 0)));
   const total = s => groups.get(s).reduce((n, x) => n + countOf(parseSet(x.text || '')), 0);
-  box.innerHTML = `<div class="row"><button class="btn primary" id="msNew">＋ Tạo bộ bài tập</button><button class="btn" id="msPrompt" title="Tạo prompt để nhờ ChatGPT / Claude tách văn bản thành nhiều câu hỏi">🤖 Prompt nhờ AI</button>${list.length ? '<button class="btn" id="msQuick" title="Ra một bài kiểm tra ngẫu nhiên từ mọi bộ bài tập, hiện trên một trang">📋 Kiểm tra nhanh</button>' : ''}<span class="grow"></span>
+  box.innerHTML = `<div class="row"><button class="btn primary" id="msNew">＋ Tạo bộ bài tập</button><button class="btn" id="msPrompt" title="Tạo prompt để nhờ ChatGPT / Claude tách văn bản thành nhiều câu hỏi">🤖 Prompt nhờ AI</button>${list.length ? '<button class="btn" id="msQuick" title="Ra một bài kiểm tra ngẫu nhiên từ mọi bộ bài tập, hiện trên một trang">📋 Kiểm tra nhanh</button>' + timeHtml('msQT', 0) : ''}<span class="grow"></span>
       <label class="dim"><input type="checkbox" id="msShuf" ${runOpts.shuffle ? 'checked' : ''}> Trộn câu</label>
       <label class="dim"><input type="checkbox" id="msListen" ${runOpts.listen ? 'checked' : ''}> Có câu nghe</label>
       <label class="dim">Dạng <select id="msKind">${KIND_FILTER.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></label>
@@ -168,7 +168,8 @@ function drawList() {
   $$('[data-grun]', box).forEach(b => b.onclick = () => start(groups.get(b.dataset.grun).map(s => s.id), gTitle(b.dataset.grun)));
   $$('[data-gnew]', box).forEach(b => b.onclick = () => { const k = b.dataset.gnew; editId = null; draft = k.startsWith('F:') ? { folder: k.slice(2) } : { itemId: k.slice(2) }; mode = 'edit'; drawEditor(); });
   $$('[data-gprompt]', box).forEach(b => b.onclick = () => { const k = b.dataset.gprompt; promptCtx = { itemId: k.startsWith('I:') ? k.slice(2) : '' }; mode = 'prompt'; drawPromptView(); });
-  $('#msQuick', box)?.addEventListener('click', () => quickTest(list));
+  if ($('#msQT', box)) wireTime(box, 'msQT');
+  $('#msQuick', box)?.addEventListener('click', () => quickTest(list, readTime(box, 'msQT')));
 }
 
 // ---------- prompt nhờ AI ----------
@@ -276,24 +277,24 @@ function drawEditor() {
 }
 
 // Kiểm tra nhanh: trộn câu của mọi bộ bài tập (ngôn ngữ đang học), 20 câu, hiện trên một trang
-function quickTest(list) {
+function quickTest(list, time = 0) {
   const lang = getLang(), qs = buildTest(list, { mode: 'random', count: 20, listen: runOpts.listen }, rngOf('qt' + Date.now()));
   if (!qs.length) { toast('Chưa có câu hỏi để ra bài kiểm tra'); return; }
   mode = 'sheet';
-  const again = () => quickTest(setsOf(lang));
+  const again = () => quickTest(setsOf(lang), time);
   runSheet(box, {
-    qs, lang, title: 'Kiểm tra nhanh', submitLabel: 'Hoàn thành & nộp bài',
-    intro: `<div class="dim">${qs.length} câu ngẫu nhiên. Làm hết rồi bấm nút nộp bài ở cuối trang để chấm điểm.</div>`,
+    qs, lang, title: '', src: 'Kiểm tra nhanh', submitLabel: 'Hoàn thành & nộp bài', timeLimit: time,
+    intro: `<div class="dim">${qs.length} câu ngẫu nhiên</div>${time ? '<div class="dim">Có giới hạn thời gian: hết giờ bài tự nộp.</div>' : ''}<div class="dim">Làm hết rồi bấm nút nộp bài ở cuối trang để chấm điểm.</div>`,
     onDone: r => tracker.test(r.pct), onAgain: again, onExit: goBack, exitLabel: 'Danh sách',
   });
 }
 
 // ---------- làm bài ----------
 function start(ids, title) {
-  const sets = ids.map(id => store.get('sets', id)).filter(Boolean);
+  const sets = ids.map(id => { const d = store.get('sets', id); return d && { ...d, id }; }).filter(Boolean);
   if (!sets.length) return;
   const lang = sets[0].lang || 'zh', rnd = rngOf('set' + ids.join() + Date.now());
-  let qs = sets.flatMap(s => build(parseSet(s.text || ''), { shuffle: false, listen: runOpts.listen, count: 0 }, rnd));
+  let qs = sets.flatMap(s => build(parseSet(s.text || ''), { shuffle: false, listen: runOpts.listen, count: 0 }, rnd).map(q => ({ ...q, sid: s.id })));
   if (runOpts.kind !== 'all') qs = qs.filter(q => kindOfQ(q) === runOpts.kind);
   if (!qs.length) { toast(runOpts.kind === 'all' ? 'Bộ này chưa đủ câu hỏi hợp lệ' : 'Không có câu thuộc dạng đã chọn'); return; }
   if (runOpts.shuffle) qs = shuffle(qs, rnd);
@@ -304,5 +305,11 @@ function start(ids, title) {
     qs, lang, title: title || sets[0].title,
     onExit: goBack,
     onAgain: () => start(ids, title),
+    // ghi lại mỗi bộ đã làm (số lần + điểm cao nhất) để thư mục bài học tính tiến độ
+    onDone: r => {
+      const by = {};
+      r.qs.forEach((q, i) => { if (!q.sid) return; (by[q.sid] ||= { ok: 0, n: 0 }); by[q.sid].n++; if (r.res[i]?.ok) by[q.sid].ok++; });
+      for (const [sid, x] of Object.entries(by)) { const c = store.get('sets', sid) || {}; store.put('sets', sid, { tries: (c.tries || 0) + 1, best: Math.max(c.best ?? 0, Math.round(100 * x.ok / x.n)) }); }
+    },
   });
 }

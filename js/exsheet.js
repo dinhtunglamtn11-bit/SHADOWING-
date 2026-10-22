@@ -6,6 +6,25 @@ import * as cards from './cards.js';
 import { sayable, withSpeaker, say } from './tts.js';
 import { okAnswer, same, joiner, blanksOf, fullOf, cardOf, reshuffle } from './exrun.js';
 import { grabChip } from './dnd.js';
+import * as mistakes from './mistakes.js';
+import { KIND_LABEL, kindKey } from './exparse.js';
+
+// ---------- ô chọn giới hạn thời gian (dùng ở màn soạn bài kiểm tra) ----------
+export const TIME_OPTS = [0, 5, 10, 15, 20, 30, 45, 60, 90];
+export function timeHtml(id, value = 0) {
+  const known = TIME_OPTS.includes(value), custom = value > 0 && !known;
+  return `<label class="dim">Giới hạn thời gian <select id="${id}">${TIME_OPTS.map(m => `<option value="${m}" ${m === value ? 'selected' : ''}>${m ? m + ' phút' : 'Không giới hạn'}</option>`).join('')}<option value="custom" ${custom ? 'selected' : ''}>Tùy chỉnh…</option></select>
+    <input id="${id}Min" type="number" min="1" max="300" value="${custom ? value : 15}" style="width:72px" ${custom ? '' : 'hidden'}> <span id="${id}Unit" ${custom ? '' : 'hidden'}>phút</span></label>`;
+}
+export function wireTime(root, id) {
+  const sel = $('#' + id, root);
+  sel.addEventListener('change', () => { const c = sel.value === 'custom'; $('#' + id + 'Min', root).hidden = !c; $('#' + id + 'Unit', root).hidden = !c; });
+}
+export function readTime(root, id) {
+  const v = $('#' + id, root).value;
+  return v === 'custom' ? Math.max(1, Math.min(300, Math.round(+$('#' + id + 'Min', root).value) || 15)) : +v || 0;
+}
+const clock = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
 const initState = q => (q.kind === 'order' ? { placed: [] } : q.kind === 'cloze' ? { slots: blanksOf(q).map(() => null), focus: null }
   : q.kind === 'fill' ? { typed: blanksOf(q).map(() => '') } : q.kind === 'type' ? { typed: '' } : { sel: null });
@@ -15,6 +34,8 @@ export function runSheet(box, o) {
   const L = o.lang || 'zh', bcp = langInfo(L).bcp, J = joiner(L), qs = o.qs;
   const st = qs.map(initState);
   let res = null; // sau khi nộp: [{ ok, each }]
+  const t0 = Date.now(), limit = (o.timeLimit || 0) * 60000, deadline = limit ? t0 + limit : 0;
+  let tick = null;
   const chip = (b, cls, off) => `<button class="wchip ${cls}" data-b="${b.id}" ${off ? 'disabled' : ''}>${esc(b.t)}</button>`;
 
   const answered = i => {
@@ -77,11 +98,23 @@ export function runSheet(box, o) {
   const el = i => box.querySelector(`.sq[data-i="${i}"]`);
 
   function draw() {
-    box.innerHTML = `<div class="sheet">${o.title ? `<h3 class="shtitle gt">${esc(o.title)}</h3>` : ''}${o.intro || ''}<div id="shTop"></div><div class="shlist">${listHtml()}</div>
+    box.innerHTML = `<div class="sheet">${deadline && !res ? `<div class="shtimer" id="shTimer">⏱ ${clock(deadline - Date.now())}</div>` : ''}${o.title ? `<h3 class="shtitle gt">${esc(o.title)}</h3>` : ''}${o.intro || ''}<div id="shTop"></div><div class="shlist">${listHtml()}</div>
       <div class="shbar"><span class="dim" id="shCount"></span><progress id="shProg" max="${qs.length}" value="0"></progress>${res ? '' : `<button class="btn primary big" id="shSubmit">✅ ${esc(o.submitLabel || 'Hoàn thành')}</button>`}</div></div>`;
     qs.forEach((_, i) => wire(i));
-    $('#shSubmit', box)?.addEventListener('click', submit);
+    $('#shSubmit', box)?.addEventListener('click', () => submit(false));
     count();
+    startTimer();
+  }
+  function startTimer() {
+    if (!deadline || tick || res) return;
+    tick = setInterval(() => {
+      const el = $('#shTimer', box);
+      if (res || !el || !box.isConnected) { clearInterval(tick); tick = null; return; }
+      const left = deadline - Date.now();
+      el.textContent = '⏱ ' + clock(left);
+      el.classList.toggle('low', left < 60000);
+      if (left <= 0) { clearInterval(tick); tick = null; toast('Hết giờ! Bài được nộp tự động', 4000); submit(true); }
+    }, 500);
   }
   function redo(i) { const n = el(i); n.outerHTML = blockHtml(i); wire(i); count(); }
   function count() {
@@ -155,19 +188,33 @@ export function runSheet(box, o) {
     return { ok: each.every(Boolean), each };
   }
 
-  function submit() {
+  // bảng điểm theo từng dạng câu: dạng nào thấp nhất là dạng yếu
+  function kindTable() {
+    const by = {};
+    qs.forEach((q, i) => { const k = kindKey(q); (by[k] ||= { ok: 0, total: 0 }); by[k].total++; if (res[i].ok) by[k].ok++; });
+    const keys = Object.keys(by).sort((a, b) => by[a].ok / by[a].total - by[b].ok / by[b].total || by[b].total - by[a].total);
+    const weak = keys.find(k => by[k].ok < by[k].total);
+    const rows = keys.map(k => { const x = by[k], p = Math.round(100 * x.ok / x.total); return `<div class="krow ${x.ok === x.total ? 'full' : k === weak ? 'weak' : ''}"><span class="kn">${esc(KIND_LABEL[k] || k)}</span><div class="prog"><i style="width:${p}%"></i></div><b>${x.ok}/${x.total}</b></div>`; }).join('');
+    const note = weak ? `<div class="kweak">Yếu nhất: <b>${esc(KIND_LABEL[weak] || weak)}</b> (${by[weak].ok}/${by[weak].total}). Nên ôn lại dạng này.</div>` : '<div class="kweak good">Không có dạng nào yếu 🎉</div>';
+    return { by, html: `<div class="kstat"><div class="dim">Điểm theo dạng câu</div>${rows}${note}</div>` };
+  }
+
+  function submit(force) {
     if (res) return;
     const blank = qs.filter((_, i) => !answered(i)).length;
-    if (blank && !confirm(`Còn ${blank} câu chưa trả lời. Vẫn nộp bài?`)) return;
+    if (blank && !force && !confirm(`Còn ${blank} câu chưa trả lời. Vẫn nộp bài?`)) return;
+    if (tick) { clearInterval(tick); tick = null; }
+    const used = Date.now() - t0;
     res = qs.map((_, i) => grade(i));
-    res.forEach(r => tracker.quiz(r.ok));
-    const ok = res.filter(r => r.ok).length, pct = Math.round(100 * ok / qs.length), wrong = qs.filter((_, i) => !res[i].ok);
+    res.forEach((r, i) => { tracker.quiz(r.ok); mistakes.record(qs[i], r.ok, L, o.src || o.title || ''); });
+    const ok = res.filter(r => r.ok).length, pct = Math.round(100 * ok / qs.length), wrong = qs.filter((_, i) => !res[i].ok), kt = kindTable();
     draw();
     $('#shTop', box).innerHTML = `<div class="qcard sheetscore"><div class="score ${pct >= 80 ? 'ok' : pct >= 50 ? 'miss' : 'bad'}">${ok}/${qs.length} đúng · ${pct}%</div>
-      <div class="dim">${wrong.length ? `${wrong.length} câu chưa đúng: xem đáp án và giải thích ngay bên dưới từng câu.` : '🎉 Hoàn hảo!'}</div>
+      <div class="dim">⏱ Thời gian làm bài: ${clock(used)}${force ? ' (hết giờ)' : ''}${deadline ? ` · giới hạn ${o.timeLimit} phút` : ''}</div>
+      <div class="dim">${wrong.length ? `${wrong.length} câu chưa đúng: xem đáp án và giải thích ngay bên dưới từng câu. Các câu sai đã vào Sổ lỗi.` : '🎉 Hoàn hảo!'}</div>${kt.html}
       <div class="row"><button class="btn primary" id="shAgain">↻ Làm lại</button>${wrong.length ? '<button class="btn" id="shWrong">🔁 Làm lại câu sai</button><button class="btn" id="shCards">📒 Câu sai → sổ thẻ</button>' : ''}${(o.extra || []).map((x, k) => `<button class="btn" data-x="${k}">${esc(x.label)}</button>`).join('')}${o.onExit ? `<button class="btn" id="shExit">${esc(o.exitLabel || 'Thoát')}</button>` : ''}</div></div>`;
     $('#shAgain', box).onclick = () => (o.onAgain ? o.onAgain() : runSheet(box, { ...o, qs: qs.map(reshuffle) }));
-    $('#shWrong', box)?.addEventListener('click', () => runSheet(box, { ...o, qs: wrong.map(reshuffle), onDone: null, title: (o.title ? o.title + ' · ' : '') + 'câu sai' }));
+    $('#shWrong', box)?.addEventListener('click', () => runSheet(box, { ...o, qs: wrong.map(reshuffle), onDone: null, timeLimit: 0, title: (o.title ? o.title + ' · ' : '') + 'câu sai' }));
     $('#shCards', box)?.addEventListener('click', () => {
       let n = 0;
       for (const q of wrong) { const c = cardOf(q, L); if (!c || !c.front) continue; cards.addManual({ lang: L, front: c.front, back: c.back.filter(Boolean) }); n++; }
@@ -176,7 +223,7 @@ export function runSheet(box, o) {
     $$('[data-x]', box).forEach(b => b.onclick = () => o.extra[+b.dataset.x].fn());
     $('#shExit', box)?.addEventListener('click', () => o.onExit());
     $('#shTop', box).scrollIntoView({ block: 'start', behavior: 'smooth' });
-    o.onDone?.({ ok, total: qs.length, pct, wrong });
+    o.onDone?.({ ok, total: qs.length, pct, wrong, by: kt.by, used });
   }
 
   draw();

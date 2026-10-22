@@ -159,3 +159,7 @@ export function buildTest(sets, { mode = 'random', count = 0, listen = true } = 
   const all = shuffle(per.flatMap(x => x.qs), rnd);
   return count > 0 ? all.slice(0, count) : all;
 }
+
+// Phân loại một câu đã dựng theo “dạng câu” (để thống kê điểm theo dạng và lọc trong Sổ lỗi)
+export const KIND_LABEL = { mc: 'Trắc nghiệm', tf: 'Đúng/Sai', type: 'Tự luận', fill: 'Điền từ', order: 'Sắp xếp câu', listen: 'Nghe-chọn', listentype: 'Nghe-gõ', cloze: 'Kéo thả', vocab: 'Từ vựng' };
+export const kindKey = q => (q.kind === 'mc' ? (q.listen ? 'listen' : q.card ? 'vocab' : 'mc') : q.kind === 'type' ? (q.listen ? 'listentype' : 'type') : q.kind);

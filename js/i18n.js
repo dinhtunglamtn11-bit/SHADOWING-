@@ -21,7 +21,7 @@ const coreOf = s => { const m = AFFIX.exec(s); return m && m[2] ? m[2] : s; };
 
 // Câu nằm trong vùng này là nội dung của người dùng: gần như không dịch
 const USER_OK = new Set(['chưa có phiên âm', 'chưa có nghĩa', 'Đúng', 'Sai']);
-const USER_SEL = '.cue .m,.cue .s,#now .main:not(.small),#now .sub,.qtext,.qexp,.qopt,.qback,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.ci b,.lib .n b,.wd b,.gt,.nw-h,.nw-lead,.nw-tag,.nw-ttl,.nw-text,.nw-src,.nw-syn,.wchip,.slot,.qhint,.qtitle,#msItem option,#wtFolder option:not(:first-child),.uipv,textarea,[contenteditable]';
+const USER_SEL = '.cue .m,.cue .s,#now .main:not(.small),#now .sub,.qtext,.qexp,.qopt,.qback,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.ci b,.lib .n b,.wd b,.gt,.nw-h,.nw-lead,.nw-tag,.nw-ttl,.nw-text,.nw-src,.nw-syn,.wchip,.slot,.qhint,.qtitle,.mbq,.mbsrc,.wvw,.wvp,.wvm,.wvs,.wvsrc,#msItem option,#wtFolder option:not(:first-child),.uipv,textarea,[contenteditable]';
 
 // Nạp từ điển của ngôn ngữ đang chọn (chỉ tải khi không dùng tiếng Việt)
 const EN_FILES = ['en-a', 'en-b', 'en-c', 'en-d'];

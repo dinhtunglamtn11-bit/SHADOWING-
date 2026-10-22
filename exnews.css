@@ -164,3 +164,38 @@
 .pip.on { opacity: 1; }
 .pip.bronze.on { background: #e3a066; } .pip.silver.on { background: #d8deec; } .pip.gold.on { background: #ffd84d; } .pip.diamond.on { background: #8fe8ff; }
 .recent .chip .pix { --z: 1; margin-right: 4px; }
+/* ---------- đồng hồ, bảng điểm theo dạng câu, Sổ lỗi ---------- */
+.shtimer { position: sticky; top: 0; z-index: 6; width: fit-content; margin: 0 0 8px auto; padding: 2px 14px 4px; font-family: var(--pf); font-size: 30px; line-height: 1.1; color: #fff; background: var(--ink); border: var(--px) solid var(--ink); box-shadow: 4px 4px 0 rgba(0, 0, 0, .25); }
+.shtimer.low { background: #d63b4b; animation: blinkt 1s steps(2) infinite; }
+@keyframes blinkt { 50% { opacity: .6; } }
+.kstat { margin: 8px 0; padding: 8px 10px; background: var(--field); border: 2px solid var(--line); }
+.krow { display: grid; grid-template-columns: minmax(96px, 150px) 1fr 52px; align-items: center; gap: 8px; margin: 4px 0; }
+.krow .kn { font-family: var(--pf); font-size: 19px; }
+.krow .prog { margin-top: 0; height: 14px; }
+.krow b { font-family: var(--pf); font-size: 20px; font-weight: 400; text-align: right; }
+.krow.weak .kn, .krow.weak b { color: var(--bad); } .krow.weak .prog i { --bc: #ff7b88; --bd: #c2354a; }
+.krow.full .prog i { --bc: #5fd068; --bd: #2f9a4a; }
+.kweak { margin-top: 6px; font-size: 16px; color: var(--bad); } .kweak.good { color: var(--ok); }
+.mbl { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.mbrow.okc { opacity: .75; }
+.mbrow .ci b { white-space: normal; overflow-wrap: anywhere; font-size: 20px; }
+/* ---------- tiến độ thư mục bài học ---------- */
+.pbar { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.pbar .prog { flex: 1; margin-top: 0; height: 14px; }
+.pbar small { font-family: var(--pf); font-size: 17px; color: var(--dim); white-space: nowrap; }
+.lf.full { background: var(--okbg); }
+.lf.full .prog i { --bc: #5fd068; --bd: #2f9a4a; }
+.lrow.done { background: var(--okbg); }
+.nextbar { align-items: center; margin: 10px 0; padding: 8px; background: #ffe9b8; border: var(--px) solid var(--ink); clip-path: var(--np); }
+.nextbar b { font-family: var(--pf); font-weight: 400; font-size: 21px; }
+.btn.tg { min-width: 40px; font-size: 22px; }
+/* ---------- từ vựng Thế giới ---------- */
+.wvl { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.wvrow { align-items: flex-start; }
+.wvrow .ci { gap: 3px; white-space: normal; }
+.wvw { font-size: 28px; font-weight: 400; }
+.wvp { font-size: 18px; }
+.wvm { font-size: 18px; color: var(--text); }
+.wvs { font-size: 16px; color: var(--dim); line-height: 1.5; }
+.wvs mark { background: #ffe27a; color: #3a2a00; padding: 0 2px; }
+#lkWorld { width: 100%; }

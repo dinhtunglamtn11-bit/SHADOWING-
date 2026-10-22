@@ -9,9 +9,10 @@ import * as tracker from './tracker.js';
 import { rngOf } from './quiz.js';
 import { zhText } from './prefs.js';
 import { parseSet, build, countKinds, flat, buildTest } from './exparse.js';
-import { runSheet } from './exsheet.js';
+import { runSheet, timeHtml, wireTime, readTime } from './exsheet.js';
 import { setPrompt, newsPrompt, promptPanel, NEWS_SYNTAX } from './exprompts.js';
 import { pix } from './pixicons.js';
+import * as wvocab from './wvocab.js';
 
 const DAY = 864e5;
 const WD = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
@@ -174,6 +175,7 @@ export function render() {
   root = $('#worldRoot');
   if (!root) return;
   if (mode === 'read' && curId && store.get('articles', curId)) return; // đang đọc / làm câu hỏi: giữ nguyên
+  if (mode === 'vocab') return wvocab.render(root, { back: () => { mode = 'feed'; drawFeed(); scrollTo(0, 0); } });
   if (mode === 'testrun' && root.querySelector('.sheet')) return;
   if (mode === 'test') return drawTestBuilder();
   if (mode === 'edit') return drawEditor();
@@ -213,7 +215,7 @@ function drawFeed() {
   const hero = !filter.folder && !filter.unread && list.length >= 3 ? list[Math.floor(Date.now() / DAY) % list.length] : null;
   const fsel = filter.folder && filter.folder !== '_none' ? folders.find(f => f.id === filter.folder) : null;
   root.innerHTML = `${head}
-    <div class="row"><button class="btn primary big" id="nwRandom" title="Chọn ngẫu nhiên một chủ đề (thư mục) rồi mở một bài trong đó; chủ đề được phép lặp lại">🎲 Chủ đề ngẫu nhiên</button><button class="btn" id="nwAdd">＋ Viết bài</button><button class="btn" id="nwImport">📥 Nhập nhiều bài</button><button class="btn" id="nwTest" title="Gom câu hỏi của các bài đọc thành một bài kiểm tra, theo nhóm hoặc ngẫu nhiên">📋 Tạo bài kiểm tra</button><button class="chip ${filter.unread ? 'on' : ''}" id="nwUnread">● Chưa đọc xong <small>${all.length - done}</small></button></div>
+    <div class="row"><button class="btn primary big" id="nwRandom" title="Chọn ngẫu nhiên một chủ đề (thư mục) rồi mở một bài trong đó; chủ đề được phép lặp lại">🎲 Chủ đề ngẫu nhiên</button><button class="btn" id="nwAdd">＋ Viết bài</button><button class="btn" id="nwImport">📥 Nhập nhiều bài</button><button class="btn" id="nwVocab" title="Từ đã lưu khi đọc bài, kèm câu chứa từ; ôn và làm bài kiểm tra từ vựng">📖 Từ vựng (${wvocab.wordsOf(lang).length})</button><button class="btn" id="nwTest" title="Gom câu hỏi của các bài đọc thành một bài kiểm tra, theo nhóm hoặc ngẫu nhiên">📋 Tạo bài kiểm tra</button><button class="chip ${filter.unread ? 'on' : ''}" id="nwUnread">● Chưa đọc xong <small>${all.length - done}</small></button></div>
     ${folderTiles(all, folders)}
     ${fsel ? `<div class="row"><b class="gt">${esc(fsel.name)}</b><button class="btn" id="wfRen">✎ Đổi tên</button><button class="btn" id="wfDel">🗑 Xóa thư mục</button></div>` : ''}
     ${hero ? `<div class="nw-sec">⭐ Bài nổi bật hôm nay</div>${card(hero, true)}` : ''}
@@ -226,6 +228,7 @@ function bindFeed() {
   $('#nwImport')?.addEventListener('click', () => { mode = 'import'; drawImport(); });
   $('#nwSample')?.addEventListener('click', () => { const n = importArts(parseNews(SAMPLES[getLang()] || SAMPLES.zh).arts); toast(`Đã thêm ${n} bài mẫu`); drawFeed(); });
   $('#nwRandom')?.addEventListener('click', () => randomTopic(null));
+  $('#nwVocab')?.addEventListener('click', () => { mode = 'vocab'; render(); });
   $('#nwTest')?.addEventListener('click', () => { mode = 'test'; drawTestBuilder(); });
   $('#nwUnread')?.addEventListener('click', () => { filter.unread = !filter.unread; drawFeed(); });
   $$('[data-wf]', root).forEach(b => b.onclick = () => { filter.folder = b.dataset.wf; drawFeed(); });
@@ -278,7 +281,7 @@ function openArticle(id) {
       <div class="nw-hero" style="--cc:${colorOf(a)}"><span class="nw-emoji big">${esc(a.emoji || '📰')}</span>${f ? `<span class="nw-tag">${esc(f.name)}</span>` : ''}</div>
       <h1 class="nw-ttl" lang="${bcp}">${esc(a.title)}</h1>
       <div class="nw-by dim">${a.source ? `<span class="nw-src">${esc(a.source)}</span> · ` : ''}⏱ ${minutes(a)} phút đọc${a.best != null ? ` · ⭐ điểm cao nhất ${a.best}%` : ''}</div>
-      <div class="nw-text" id="newsBody" lang="${bcp}">${bodyHtml(a)}</div>
+      <div class="nw-text" id="newsBody" data-aid="${id}" lang="${bcp}">${bodyHtml(a)}</div>
     </article>
     <div class="nw-qsec"><div class="nw-sec">✍️ Câu hỏi về bài đọc</div>${qs.length ? '<div id="nwSheet"></div>'
       : `<div class="qcard nw-cta"><div class="dim">Bài này chưa có câu hỏi. Bấm “Sửa bài” để thêm (hoặc dùng prompt nhờ AI tạo câu hỏi).</div><div class="row"><button class="btn primary" id="nwMark">✔ Đánh dấu đã đọc xong</button></div></div>`}</div>
@@ -290,7 +293,7 @@ function openArticle(id) {
   $('#nwMark')?.addEventListener('click', () => { finishRead(id, null); toast('Đã đánh dấu đã đọc xong ✓'); $('#nwMark').disabled = true; });
   if (qs.length) {
     const run = () => runSheet($('#nwSheet'), {
-      qs, lang: L, title: '', submitLabel: 'Hoàn thành bài đọc',
+      qs, lang: L, title: '', src: a.title, submitLabel: 'Hoàn thành bài đọc',
       onDone: r => finishRead(id, r.pct),
       onAgain: () => openArticle(id),
       extra: [{ label: '🎲 Chủ đề ngẫu nhiên', fn: () => randomTopic(id) }],
@@ -430,6 +433,7 @@ function drawTestBuilder() {
       <div class="dim" id="wtHint"></div>
       <label class="dim"><span id="wtCountLbl">Số câu của bài</span> <select id="wtCount"><option value="0">Tất cả</option>${[5, 10, 15, 20, 30, 50].map(n => `<option value="${n}">${n}</option>`).join('')}</select></label>
       <label class="dim"><input type="checkbox" id="wtListen" checked> Có câu nghe (máy đọc)</label>
+      ${timeHtml('wtTime', 0)}
       <div class="row"><button class="btn primary big" id="wtGo">▶ Bắt đầu làm bài</button></div>
     </div>`;
   $('#wtCount').value = '10';
@@ -438,13 +442,13 @@ function drawTestBuilder() {
     $('#wtHint').textContent = m === 'group' ? 'Giữ các câu theo từng bài đọc: mỗi bài là một phần riêng trên trang. Số câu bên dưới là số câu lấy ngẫu nhiên từ MỖI bài (“Tất cả” = lấy hết).' : 'Trộn câu hỏi của mọi bài đã chọn rồi lấy ngẫu nhiên. Mỗi lần làm là một đề khác nhau.';
     $('#wtCountLbl').textContent = m === 'group' ? 'Số câu mỗi bài' : 'Số câu của bài';
   };
-  hint();
+  hint(); wireTime(root, 'wtTime');
   $$('#wtMode button').forEach(b => b.onclick = () => { m = b.dataset.m; $$('#wtMode button').forEach(x => x.classList.toggle('on', x === b)); hint(); });
   $('#wtBack').onclick = () => { mode = 'feed'; drawFeed(); };
   const cfg = {};
   const start = () => {
     const f = cfg.f ?? $('#wtFolder').value, src = all.filter(a => (f ? a.folder === f : true)).map(a => ({ title: a.title, text: a.qtext }));
-    Object.assign(cfg, { f, count: cfg.count ?? +$('#wtCount').value, listen: cfg.listen ?? $('#wtListen').checked });
+    Object.assign(cfg, { f, count: cfg.count ?? +$('#wtCount').value, listen: cfg.listen ?? $('#wtListen').checked, time: cfg.time ?? readTime(root, 'wtTime') });
     const qs = buildTest(src, { mode: m, count: cfg.count, listen: cfg.listen }, rngOf('wt' + Date.now()));
     if (!qs.length) { toast('Chưa có câu hỏi nào để ra bài kiểm tra'); return; }
     mode = 'testrun';
@@ -452,8 +456,8 @@ function drawTestBuilder() {
     const back = () => { mode = 'feed'; drawFeed(); scrollTo(0, 0); };
     $('#wtBack2').onclick = back;
     runSheet($('#wtSheet'), {
-      qs, lang, title: '', submitLabel: 'Hoàn thành & nộp bài',
-      intro: `<div class="dim">${qs.length} câu hỏi · ${m === 'group' ? 'theo nhóm' : 'ngẫu nhiên'}. Làm hết rồi bấm nút nộp bài ở cuối trang để chấm điểm.</div>`,
+      qs, lang, title: '', src: 'Bài đọc', submitLabel: 'Hoàn thành & nộp bài', timeLimit: cfg.time,
+      intro: `<div class="dim">${qs.length} câu hỏi · ${m === 'group' ? 'theo nhóm' : 'ngẫu nhiên'}</div>${cfg.time ? '<div class="dim">Có giới hạn thời gian: hết giờ bài tự nộp.</div>' : ''}<div class="dim">Làm hết rồi bấm nút nộp bài ở cuối trang để chấm điểm.</div>`,
       onDone: r => tracker.test(r.pct), onAgain: start, onExit: back, exitLabel: '← Thế giới của tôi',
     });
     scrollTo(0, 0);
@@ -463,6 +467,6 @@ function drawTestBuilder() {
 export function init() {
   root = $('#worldRoot');
   bus.on('show', v => { if (v === 'world') render(); });
-  bus.on('lang', () => { mode = 'feed'; curId = null; filter.folder = ''; filter.unread = false; if (document.body.dataset.view === 'world') render(); });
+  bus.on('lang', () => { wvocab.reset(); mode = 'feed'; curId = null; filter.folder = ''; filter.unread = false; if (document.body.dataset.view === 'world') render(); });
   bus.on('store', c => { if ((c === 'articles' || c === 'wfolders' || c === '*') && document.body.dataset.view === 'world' && mode === 'feed') drawFeed(); });
 }
