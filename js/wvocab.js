@@ -28,8 +28,8 @@ export function addWord({ lang, word, pron = '', meaning = '', sentence = '', ar
 }
 
 // câu chứa chữ ở vị trí k trong đoạn text
-export function sentenceAt(text, k) {
-  const END = /[。！？!?\n；;]/;
+export function sentenceAt(text, k, dot = false) {
+  const END = dot ? /[。！？!?.\n；;]/ : /[。！？!?\n；;]/; // chữ Anh / Hàn dùng dấu chấm để kết câu
   let s = k, e = k;
   while (s > 0 && !END.test(text[s - 1])) s--;
   while (e < text.length && !END.test(text[e])) e++;

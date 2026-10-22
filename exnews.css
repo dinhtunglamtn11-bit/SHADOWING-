@@ -230,3 +230,4 @@ body.cueedit #cueList { outline: 3px dashed var(--accent); outline-offset: -6px;
 .nsel[hidden] { display: none; }
 .nsel .btn { padding: 2px 10px; }
 .nsa { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+#nMain.nview #nFolder, #nMain.nview #nAudio, #nMain.nview #nVideo, #nMain.nview #nLink { display: none; }

@@ -639,4 +639,16 @@ export default {
   "Gắn link này": "Attach this link",
   "Hoặc chọn một video đã có trong thư viện:": "Or choose a video that's already in the library:",
   "Xem video bên cạnh": "Watch video beside the note",
+  "Hãy chuyển sang chế độ Sửa, bôi đen chữ rồi mới gắn được video / link / âm thanh": "Switch to Edit mode and select some text before attaching a video / link / audio",
+  // ===== lookup.js: tra từ Anh / Nhật / Hàn =====
+  "Bật rồi chạm vào từ trong phụ đề để tra nghĩa và thêm từ vào sổ thẻ (Trung tra offline; Anh, Nhật, Hàn tra bằng Wiktionary, cần mạng)": "Turn on, then tap a word in the subtitles to look it up and add it to your cards (Chinese is looked up offline; English, Japanese and Korean use Wiktionary and need internet)",
+  "Bật rồi chạm vào từ để tra nghĩa": "Turn on, then tap a word to look up its meaning",
+  "Bật rồi chạm vào từ (chế độ Xem) để tra nghĩa": "Turn on, then tap a word (View mode) to look up its meaning",
+  "Chạm vào từ để tra nghĩa (cần có mạng ở lần tra đầu của mỗi từ)": "Tap a word to look it up (needs internet the first time you look up each word)",
+  "Đang tra…": "Looking up…",
+  "Không tra được: từ này chưa có trong máy và đang không có mạng.": "Could not look it up: this word isn't saved on this device and you're offline.",
+  "Không có mục từ này trong Wiktionary. Thử chạm vào chữ khác trong từ.": "This word isn't in Wiktionary. Try tapping a different character in the word.",
+  "Không tra được: đang không có mạng": "Could not look it up: you're offline",
+  "Không có mục từ “{}”": "No entry for “{}”",
+  "Wiktionary tiếng Anh (CC BY-SA 4.0), nghĩa tiếng Anh. Cần mạng ở lần tra đầu, từ đã tra được lưu lại trong máy.": "Wiktionary (CC BY-SA 4.0), meanings in English. Needs internet the first time; looked-up words are saved on this device.",
 }

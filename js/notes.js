@@ -66,6 +66,7 @@ function setMode(m) {
   $('#nPreview').hidden = m !== 'view';
   $('#nTools').hidden = m !== 'edit';
   $('#nSelBar').hidden = m !== 'edit';
+  $('#nMain').classList.toggle('nview', m === 'view'); // chế độ Xem: ẩn các nút gắn link (chỉ còn Tra từ, Đọc, Chạm câu)
   if (m === 'view') renderPreview(); else refreshEditor();
 }
 
@@ -275,8 +276,9 @@ export function init() {
   $('#nMode').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { simplifyNote(); flushSave(); setMode(b.dataset.m); } });
   $('#nNew').onclick = () => newNote('');
   $('#nList').onclick = openNoteList;
+  const needEdit = () => { if (mode === 'edit') return false; toast('Hãy chuyển sang chế độ Sửa, bôi đen chữ rồi mới gắn được video / link / âm thanh'); return true; };
   const attachAudio = () => {
-    if (!noteId) return;
+    if (!noteId || needEdit()) return;
     pending = targetRange();
     pickFile('audio/*').then(async ([f]) => {
       if (!f) return;
@@ -286,8 +288,8 @@ export function init() {
     });
   };
   $('#nAudio').onclick = attachAudio;
-  $('#nVideo').onclick = () => { if (!noteId) return; pending = targetRange(); openVideoPicker(false); };
-  $('#nLink').onclick = () => { if (!noteId) return; pending = targetRange(); openVideoPicker(true); };
+  $('#nVideo').onclick = () => { if (!noteId || needEdit()) return; pending = targetRange(); openVideoPicker(false); };
+  $('#nLink').onclick = () => { if (!noteId || needEdit()) return; pending = targetRange(); openVideoPicker(true); };
   $('#vidUrlGo').onclick = attachUrl;
   $('#vidUrl').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); attachUrl(); } });
   $('#vidList').addEventListener('click', e => {

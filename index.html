@@ -72,7 +72,7 @@
           <button class="btn" id="btnAlign" title="Tự động tạo phụ đề và canh giờ từng từ theo giọng nói">✨ Canh từ</button>
           <button class="btn" id="btnCard" title="Lưu câu đang chạy vào sổ thẻ để ôn lặp lại">📒 Lưu câu</button>
           <button class="btn" id="btnVocab" title="Liệt kê từ vựng trong phụ đề của video để chọn thêm vào sổ thẻ (tiếng Trung)">📚 Từ vựng</button>
-          <button class="btn" id="btnLookup" data-lookup title="Bật rồi chạm vào chữ Hán trong phụ đề để tra nghĩa và thêm từ vào sổ thẻ (tiếng Trung)">📖 Tra từ</button>
+          <button class="btn" id="btnLookup" data-lookup title="Bật rồi chạm vào từ trong phụ đề để tra nghĩa và thêm từ vào sổ thẻ (Trung tra offline; Anh, Nhật, Hàn tra bằng Wiktionary, cần mạng)">📖 Tra từ</button>
           <button class="btn" id="btnDict" title="Nghe từng câu rồi gõ lại">✍️ Chép chính tả</button>
           <button class="btn" id="btnSpeak" title="Ghi âm giọng bạn, nghe so sánh và chấm phát âm">🎙 Luyện nói</button>
           <button class="btn" id="btnFrame">🖥 Ngang (YouTube)</button>
@@ -221,7 +221,7 @@
       <div class="row" id="nwTools" hidden>
         <button class="btn" data-readall title="Đọc to bài bằng giọng máy (tiếng Trung, Nhật, Hàn, Anh). Chạm câu để nghe riêng">🔊 Đọc</button>
         <button class="btn" data-tapread title="Bật rồi chạm vào một câu để nghe câu đó (tắt Tra từ khi dùng)">👆 Chạm câu</button>
-        <button class="btn" data-lookup title="Bật rồi chạm vào chữ Hán để tra nghĩa">📖 Tra từ</button>
+        <button class="btn" data-lookup title="Bật rồi chạm vào từ để tra nghĩa">📖 Tra từ</button>
       </div>
       <div id="worldRoot"></div>
     </div>
@@ -244,7 +244,7 @@
           <button class="btn" id="nAudio" title="Bôi đen chữ trước, rồi chọn file âm thanh để gắn vào chữ đó">🔊 Gắn âm thanh</button>
           <button class="btn" id="nVideo" title="Bôi đen chữ trước, rồi chọn một video trong thư viện để gắn vào chữ đó">🎬 Gắn video</button>
           <button class="btn" id="nLink" title="Bôi đen chữ trước, rồi dán link YouTube / TikTok / .mp4 để gắn vào chữ đó">🔗 Gắn link video</button>
-          <button class="btn" data-lookup title="Bật rồi chạm vào chữ Hán (chế độ Xem) để tra nghĩa">📖 Tra từ</button>
+          <button class="btn" data-lookup title="Bật rồi chạm vào từ (chế độ Xem) để tra nghĩa">📖 Tra từ</button>
           <button class="btn" data-readall title="Đọc to cả ghi chú bằng giọng máy (tiếng Trung, Nhật, Hàn). Chạm câu để nghe riêng">🔊 Đọc</button>
           <button class="btn" data-tapread title="Bật rồi chạm vào một câu trong chế độ Xem để nghe câu đó (tắt Tra từ khi dùng)">👆 Chạm câu</button>
           <span id="nSaved" class="dim"></span>
@@ -308,7 +308,7 @@
     <label class="dim lkmean">Nghĩa (bạn có thể sửa trước khi thêm)<input id="lkMean" type="text"></label>
     <div class="row"><button class="btn" id="lkSay">🔊 Nghe</button><button class="btn primary" id="lkAdd">＋ Thêm vào thẻ</button></div>
     <div class="row"><button class="btn primary" id="lkWorld" hidden title="Lưu từ kèm câu chứa nó vào danh sách từ vựng riêng của Thế giới của tôi">🌍 Lưu vào từ vựng Thế giới</button></div>
-    <small class="dim">Từ điển CC-CEDICT (CC BY-SA 4.0), nghĩa tiếng Anh.</small>
+    <small class="dim" id="lkSrc">Từ điển CC-CEDICT (CC BY-SA 4.0), nghĩa tiếng Anh.</small>
   </div>
 </aside>
 

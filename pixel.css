@@ -482,6 +482,9 @@ body { height: calc(100dvh / var(--zf, 1)); }
 #lkPop .sh { align-items: baseline; }
 #lkWord { font-family: var(--pf); font-size: 34px; line-height: 1; font-weight: 400; }
 #lkPy { font-size: 20px; color: #ffe9a8; }
+#lkWord, #lkPy { min-width: 0; overflow-wrap: anywhere; }
+#lkPy[data-ipa] { font-family: system-ui, "Segoe UI", "Noto Sans", "DejaVu Sans", sans-serif; font-size: 16px; }
+#lkPop .sh { flex-wrap: wrap; }
 #lkPop .sb { overflow-y: auto; padding: 8px 10px 10px; }
 #lkCands { gap: 6px; margin-bottom: 6px; }
 #lkCands .chip { font-size: 22px; }
