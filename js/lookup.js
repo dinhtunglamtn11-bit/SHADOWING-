@@ -10,7 +10,7 @@ import * as cards from './cards.js';
 import * as store from './store.js';
 import * as wvocab from './wvocab.js';
 
-const BLOCK = '#now .l1, #cueList .cue .m, #nPreview, #docBody, .qtext, .qback, .qexp, #rvBody .rvbig, .nw-text, .nw-ttl';
+const BLOCK = '#now .l1, #cueList .cue .m, #nPreview, #docBody, .qtext, .qback, .qexp, #rvBody .rvbig, .nw-text, .nw-ttl, .sp-text';
 // ký tự nào của từng ngôn ngữ thì chạm vào mới tra
 const IS = {
   zh: /\p{Script=Han}/u,

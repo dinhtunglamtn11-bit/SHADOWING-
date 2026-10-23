@@ -3,7 +3,7 @@
 // - File (video, PDF, âm thanh): chỉ lưu trong máy này, không đồng bộ.
 import { bus, vnDate, addDays } from './util.js';
 
-const COLS = ['items', 'folders', 'days', 'prefs', 'cards', 'sets', 'hw', 'wsets', 'articles', 'wfolders', 'tests', 'mistakes', 'wwords'];
+const COLS = ['items', 'folders', 'days', 'prefs', 'cards', 'sets', 'hw', 'wsets', 'articles', 'wfolders', 'tests', 'mistakes', 'wwords', 'posts'];
 const mem = Object.fromEntries(COLS.map(c => [c, new Map()]));
 let idb = null;
 let sync = null;
@@ -46,9 +46,9 @@ export function put(c, id, patch) {
 // Xóa mềm: giữ lại 30 ngày trong "Thùng rác" rồi mới dọn (purge) phần nội dung
 export const del = (c, id) => put(c, id, { deleted: true, deletedAt: Date.now(), purged: false });
 export const undelete = (c, id) => put(c, id, { deleted: false, deletedAt: 0, purged: false });
-export const TRASHABLE = ['items', 'folders', 'cards', 'sets', 'wsets', 'articles', 'wfolders', 'tests', 'mistakes', 'wwords'];
+export const TRASHABLE = ['items', 'folders', 'cards', 'sets', 'wsets', 'articles', 'wfolders', 'tests', 'mistakes', 'wwords', 'posts'];
 export const listDeleted = c => [...mem[c]].filter(([, d]) => d.deleted && !d.purged).map(([id, d]) => ({ id, ...d }));
-const BLANK = { cues: '', body: '', text: '', front: '', back: [], title: '', name: '', src: '', fileName: '', assetId: '', qtext: '', source: '', qj: '', label: '', word: '', pron: '', meaning: '', sentence: '' };
+const BLANK = { cues: '', body: '', text: '', front: '', back: [], title: '', name: '', src: '', fileName: '', assetId: '', qtext: '', source: '', qj: '', label: '', word: '', pron: '', meaning: '', sentence: '', comments: [] };
 export function purge(c, id) { if (mem[c].has(id)) put(c, id, { ...BLANK, deleted: true, purged: true }); }
 export function purgeOld(days = 30, max = 300) {
   const lim = Date.now() - days * 864e5; let n = 0;

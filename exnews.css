@@ -231,3 +231,60 @@ body.cueedit #cueList { outline: 3px dashed var(--accent); outline-offset: -6px;
 .nsel .btn { padding: 2px 10px; }
 .nsa { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 #nMain.nview #nFolder, #nMain.nview #nAudio, #nMain.nview #nVideo, #nMain.nview #nLink { display: none; }
+
+/* ===== Thư viện: mỗi mục là một thanh to, chỉ hiện 3 mục mới nhất, bấm vào thanh mới hiện thêm ===== */
+.lbs { display: flex; flex-direction: column; gap: 16px; margin-top: 12px; }
+.lb { background: var(--panel); border: var(--px) solid var(--ink); clip-path: var(--np); padding: 0 0 10px; }
+.lbh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 8px 10px; cursor: pointer; color: var(--ink); border-bottom: var(--px) solid var(--ink);
+  background: var(--cc, #7ec3ff) repeating-linear-gradient(45deg, rgba(255, 255, 255, .22) 0 6px, transparent 6px 12px); }
+.lba { font-size: 24px; }
+.lbn { font-family: var(--pf); font-weight: 400; font-size: 26px; line-height: 1.1; min-width: 0; overflow-wrap: anywhere; }
+.lbc { font-family: var(--pf); font-size: 20px; line-height: 1.2; padding: 0 8px 2px; color: #fff; background: var(--ink); }
+.lbx { width: 22px; text-align: center; font-size: 18px; }
+.lbh .btn { padding: 1px 9px 3px; min-height: 0; font-size: 18px; }
+.lb .cards { grid-template-columns: 1fr; gap: 8px; padding: 10px 12px 0; margin: 0; }
+.lb .card .ci b { white-space: normal; overflow-wrap: anywhere; }
+.lbm { display: block; margin: 10px auto 0; }
+.lbe { margin-top: 4px; padding: 8px 10px; background: var(--panel2); border: 2px dashed var(--line); }
+.lbe summary { cursor: pointer; font-size: 20px; }
+.lbr { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 2px; border-top: 2px dashed var(--line); }
+.lbr .btn { padding: 1px 9px 3px; min-height: 0; font-size: 18px; }
+
+/* ===== Thế giới: chuyển Article / Social, bố cục đọc bài ===== */
+#wSec { margin: 4px 0 10px; }
+#nwTools .btn[hidden] { display: none; }
+.nw-bar { align-items: center; }
+.nw-lay.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 10px; }
+.nw-lay.split .nw-read, .nw-lay.split .nw-qsec { max-width: none; margin: 0; }
+.nw-lay.split .nw-left, .nw-lay.split .nw-right { max-height: calc(100dvh - 150px); overflow-y: auto; padding-right: 4px; }
+.wrap:has(.nw-lay.split) { max-width: min(1400px, 100%); }
+@media (max-width: 899px) {
+  #nwLay { display: none; }
+  .nw-lay.split { display: block; }
+  .nw-lay.split .nw-left, .nw-lay.split .nw-right { max-height: none; overflow: visible; }
+  .nw-lay.split .nw-read { max-width: 760px; margin: 10px auto 0; }
+  .nw-lay.split .nw-qsec { max-width: 860px; margin: 22px auto 0; }
+}
+
+/* ===== Social: lướt dọc như TikTok ===== */
+.sp-wrap { max-width: 640px; margin: 10px auto 0; }
+.sp-fl { margin: 8px 0 2px; }
+.sp-feed { height: calc(100dvh - 340px); min-height: 380px; overflow-y: auto; scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-behavior: contain; outline: none;
+  background: var(--panel); border: var(--px) solid var(--ink); }
+.sp { height: 100%; display: flex; scroll-snap-align: start; scroll-snap-stop: always; border-bottom: 4px double var(--line); }
+.sp-in { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 16px 16px 12px 18px; overflow-y: auto; border-left: 10px solid var(--cc, #7ec3ff); }
+.sp-h { display: flex; align-items: center; gap: 10px; }
+.sp-av { flex: none; display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; font-size: 30px; background: var(--cc, #7ec3ff); border: 3px solid var(--ink); }
+.sp-who { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.sp-who b { font-family: var(--pf); font-weight: 400; font-size: 24px; line-height: 1; }
+.sp-text { flex: 1 0 auto; font-size: 22px; line-height: 1.6; overflow-wrap: anywhere; }
+.sp-tags { font-size: 17px; color: #7ec3ff; overflow-wrap: anywhere; }
+.sp-act { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 6px; }
+.sp-cm { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 2px dashed var(--line); }
+.sp-cl { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+.sp-c { display: flex; align-items: baseline; gap: 8px; padding: 6px 8px; background: var(--field); }
+.sp-ct { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sp-c .btn { padding: 0 8px 2px; min-height: 0; font-size: 16px; }
+.sp-ci { flex: 1; min-width: 0; }
+.sp-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 10px; }
+body.lookup .sp-text { cursor: help; }

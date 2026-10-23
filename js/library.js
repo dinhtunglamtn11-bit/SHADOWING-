@@ -7,10 +7,13 @@ import * as notes from './notes.js';
 import * as tree from './tree.js';
 import * as lessons from './lessons.js';
 
-let tab = 'video', folder = 'all', editId = null, linkFolder = null;
+let tab = 'video', editId = null, linkFolder = null, showEmpty = false;
+const SHOW = 3;                // mỗi thanh chỉ hiện 3 mục mới nhất, bấm vào thanh mới hiện thêm mục cũ hơn
+const OPEN = new Set();        // các thanh đang mở rộng (tab + id thư mục)
+const COLORS = ['#ff8f3a', '#5fd068', '#ff8fc0', '#7ec3ff', '#a98bff', '#ffd84d', '#ff7b88', '#4fd1c5'];
+const colorOf = n => COLORS[[...String(n || '')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % COLORS.length];
 const lang = it => it.lang || 'zh';
 const byRecent = (a, b) => (b.u || 0) - (a.u || 0);
-const curFolder = () => (folder === 'all' ? '' : folder);
 
 function itemsOf(t) {
   return store.list('items').filter(i =>
@@ -25,23 +28,31 @@ function render() {
   $('#libMain').hidden = isLesson; $('#lessonBox').hidden = !isLesson;
   if (isLesson) { lessons.render($('#lessonBox'), { openDoc, openEdit, addDocs, addLink: openLinkDialog }); return; }
   const all = itemsOf(tab), folders = foldersOf(getLang());
-  if (folder !== 'all' && folder !== '' && !folders.some(f => f.id === folder)) folder = 'all';
-  const cnt = id => all.filter(i => (i.folder || '') === id).length;
-  const chip = (id, name, n) => `<button class="chip ${folder === id ? 'on' : ''}" data-f="${id}">${esc(name)} <small>${n}</small></button>`;
-  $('#folderBar').innerHTML =
-    chip('all', 'Tất cả', all.length) + chip('', 'Chưa phân mục', cnt('')) +
-    folders.map(f => chip(f.id, f.name, cnt(f.id))).join('') +
-    '<button class="chip add" id="newFolder">＋ Mục mới</button>' +
-    (folder && folder !== 'all' ? '<button class="chip add" id="renFolder">✎ Đổi tên</button><button class="chip add" id="delFolder">🗑 Xóa mục</button>' : '');
-
   const q = ($('#libSearch').value || '').trim().toLowerCase();
-  const shown = (folder === 'all' ? all : all.filter(i => (i.folder || '') === folder))
-    .filter(i => !q || (i.title || '').toLowerCase().includes(q) || (i.body || '').toLowerCase().includes(q)).sort(byRecent);
+  const home = i => (folders.some(f => f.id === i.folder) ? i.folder : ''); // mục không còn thư mục thì về “Chưa phân mục”
+  const group = list => { const m = new Map(); for (const i of list) { const k = home(i); (m.get(k) || m.set(k, []).get(k)).push(i); } return m; };
+  const byAll = group(all);
+  const hit = group(all.filter(i => !q || (i.title || '').toLowerCase().includes(q) || (i.body || '').toLowerCase().includes(q)).sort(byRecent));
+  const order = [['', 'Chưa phân mục'], ...folders.map(f => [f.id, f.name])];
+  const bars = order.filter(([id]) => hit.has(id)), empty = q ? [] : order.filter(([id]) => id && !byAll.has(id));
+
   const addLabel = { video: '＋ Thêm video', pdf: '＋ Thêm tài liệu (PDF, TXT)', note: '＋ Ghi chú mới' }[tab];
   $('#libAdd').textContent = addLabel;
   $('#libLink').hidden = tab !== 'video';
-  $('#libItems').innerHTML = shown.length ? shown.map(card).join('') :
-    `<div class="empty">Chưa có mục nào cho ${esc(langInfo().name)}.<br>Bấm nút “${addLabel}” ở trên.</div>`;
+  const bar = ([id, name]) => {
+    const list = hit.get(id), open = !!q || OPEN.has(tab + id), rest = list.slice(SHOW);
+    const tools = `<button class="btn" data-add="${id}" title="Thêm vào mục này">＋</button>${tab === 'video' ? `<button class="btn" data-lnk="${id}" title="Thêm bằng link vào mục này">🔗</button>` : ''}` +
+      (id ? `<button class="btn" data-ren="${id}" title="Đổi tên mục">✎</button><button class="btn" data-del="${id}" title="Xóa mục (nội dung bên trong không bị xóa)">🗑</button>` : '');
+    return `<section class="lb ${open ? 'open' : ''}" data-lb="${esc(id)}" style="--cc:${colorOf(name)}">
+      <div class="lbh" data-tg="${esc(id)}" role="button" tabindex="0"><span class="lba">${id ? '📁' : '📂'}</span><b class="lbn ${id ? 'gt' : ''}">${esc(name)}</b><small class="lbc">${list.length}</small><span class="grow"></span>${tools}<span class="lbx">${rest.length ? (open ? '▲' : '▼') : ''}</span></div>
+      <div class="cards">${list.slice(0, SHOW).map(card).join('')}</div>
+      ${open && rest.length ? `<div class="cards lbmore">${rest.map(card).join('')}</div>` : ''}
+      ${rest.length && !q ? `<button class="btn lbm" data-tg="${esc(id)}">${open ? '▲ Thu gọn' : `▼ Xem thêm ${rest.length} mục cũ hơn`}</button>` : ''}</section>`;
+  };
+  const rows = empty.map(([id, name]) => `<div class="lbr"><span class="gt grow">${esc(name)}</span><button class="btn" data-add="${id}">＋ Thêm</button>${tab === 'video' ? `<button class="btn" data-lnk="${id}">🔗</button>` : ''}<button class="btn" data-ren="${id}">✎</button><button class="btn" data-del="${id}">🗑</button></div>`).join('');
+  $('#libItems').innerHTML = (bars.length ? bars.map(bar).join('') :
+    `<div class="empty">${q ? 'Không tìm thấy mục nào.' : `Chưa có mục nào cho ${esc(langInfo().name)}.<br>Bấm nút “${addLabel}” ở trên.`}</div>`) +
+    (empty.length ? `<details class="lbe" ${showEmpty ? 'open' : ''}><summary>Mục trống (${empty.length})</summary>${rows}</details>` : '');
   // trạng thái: có file trong máy / phát từ link / cần chọn lại file
   $$('#libItems .card[data-asset]').forEach(el => {
     const a = el.dataset.asset, hasSrc = el.dataset.src === '1', b = $('[data-loc]', el);
@@ -160,27 +171,43 @@ export function openEdit(id) {
 
 export function init() {
   $('#eExercises').onclick = () => { const id = editId; $('#editDlg').close(); bus.emit('nav', 'review'); document.dispatchEvent(new CustomEvent('exercises-for', { detail: id })); };
-  $('#libTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.t; folder = 'all'; render(); } });
-  $('#folderBar').addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.f !== undefined) { folder = b.dataset.f; render(); return; }
-    if (b.id === 'newFolder') {
-      const name = (prompt('Tên mục mới (ví dụ: HSK 3, Phim, TikTok):') || '').trim();
-      if (!name) return;
-      const id = uid(); store.put('folders', id, { name, lang: getLang() }); folder = id; render();
-    } else if (b.id === 'renFolder') {
-      const f = store.get('folders', folder); const name = (prompt('Tên mới:', f?.name) || '').trim();
-      if (name) { store.put('folders', folder, { name }); render(); }
-    } else if (b.id === 'delFolder') {
-      const f = store.get('folders', folder);
-      if (!confirm(`Xóa mục "${f?.name}"? Các mục con sẽ chuyển về “Chưa phân mục” (thư mục con, nếu có, được giữ lại).`)) return;
-      tree.removeFolder(folder, getLang(), false); folder = 'all'; render();
+  $('#libTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.t; showEmpty = false; render(); } });
+  $('#newFolder').onclick = () => {
+    const name = (prompt('Tên mục mới (ví dụ: HSK 3, Phim, TikTok):') || '').trim();
+    if (!name) return;
+    store.put('folders', uid(), { name, lang: getLang() });
+    showEmpty = true; render(); // mục mới còn trống nên nằm trong “Mục trống”: mở sẵn để thêm nội dung vào
+    toast(`Đã tạo mục “${name}”`);
+  };
+  // thanh thư mục: bấm vào thanh để mở / thu gọn; nút ＋ 🔗 ✎ 🗑 ở đầu mỗi thanh
+  const addInto = (id, link) => {
+    if (link) openLinkDialog(id);
+    else if (tab === 'video') pickAndAdd(id).then(render);
+    else if (tab === 'pdf') addDocs(id).then(render);
+    else notes.newNote(id);
+  };
+  $('#libItems').addEventListener('click', e => {
+    const b = e.target.closest('[data-add],[data-lnk],[data-ren],[data-del]');
+    if (b) {
+      e.stopPropagation();
+      const d = b.dataset, id = d.add ?? d.lnk ?? d.ren ?? d.del, f = store.get('folders', id);
+      if (d.add !== undefined) addInto(id, false);
+      else if (d.lnk !== undefined) addInto(id, true);
+      else if (d.ren !== undefined) { const name = (prompt('Tên mới:', f?.name) || '').trim(); if (name) { store.put('folders', id, { name }); render(); } }
+      else if (confirm(`Xóa mục "${f?.name}"? Các mục con sẽ chuyển về “Chưa phân mục” (thư mục con, nếu có, được giữ lại).`)) { tree.removeFolder(id, getLang(), false); render(); }
+      return;
     }
+    const t = e.target.closest('[data-tg]');
+    if (t && !e.target.closest('.card')) { const k = tab + t.dataset.tg; OPEN.has(k) ? OPEN.delete(k) : OPEN.add(k); render(); }
+  });
+  $('#libItems').addEventListener('keydown', e => {
+    const t = e.target.closest('.lbh[data-tg]');
+    if (t && t === e.target && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); t.click(); }
   });
   $('#libAdd').onclick = () => {
-    if (tab === 'video') pickAndAdd(curFolder()).then(render);
-    else if (tab === 'pdf') addDocs(curFolder()).then(render);
-    else notes.newNote(curFolder());
+    if (tab === 'video') pickAndAdd('').then(render);
+    else if (tab === 'pdf') addDocs('').then(render);
+    else notes.newNote('');
   };
   $('#libSearch').addEventListener('input', render);
   $('#libLink').onclick = () => openLinkDialog(null);
@@ -190,7 +217,7 @@ export function init() {
     const k = classifySrc(url).kind;
     if (k === 'link' && !confirm('Link này không phát trực tiếp được trong app (chỉ mở sang tab mới).\nVẫn lưu vào thư viện?')) return;
     $('#lSave').disabled = true;
-    const id = await addByLink(url, $('#lTitle').value.trim(), linkFolder ?? curFolder());
+    const id = await addByLink(url, $('#lTitle').value.trim(), linkFolder ?? '');
     $('#lSave').disabled = false;
     if (!id) return;
     linkFolder = null;
@@ -229,7 +256,7 @@ export function init() {
   };
   $('#docBack').onclick = () => bus.emit('nav', 'library');
   bus.on('store', c => { if (document.body.dataset.view === 'library' && (c === 'items' || c === 'folders' || c === 'sets' || c === 'tests' || c === '*')) render(); });
-  bus.on('lang', () => { folder = 'all'; render(); });
+  bus.on('lang', () => { OPEN.clear(); showEmpty = false; render(); });
   bus.on('show', v => { if (v === 'library') render(); });
   render();
 }

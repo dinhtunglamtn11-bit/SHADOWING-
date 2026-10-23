@@ -142,6 +142,49 @@ export const NEWS_SYNTAX = `=== Tiêu đề bài đọc
 TN: Câu hỏi? | *đáp án đúng | sai | sai | sai ~ giải thích
 DS: Nhận định | đúng`;
 
+// Prompt tạo nhiều bài đăng ngắn kiểu mạng xã hội (mục Social của Thế giới, không có câu hỏi).
+// opts: { lang, fields (tên các lĩnh vực, cách nhau dấu phẩy), posts (số bài mỗi lĩnh vực), level, source }
+export function socialPrompt({ lang, fields = '', posts = 3, level = '', source = '' }) {
+  const list = fields ? fields.split(/\s*[,;，、]\s*/).filter(Boolean) : [];
+  const intro = source
+    ? `Hãy đọc phần NGUỒN ở cuối rồi viết lại thành các bài đăng ngắn bằng ${lname(lang)} như trên mạng xã hội, chia theo lĩnh vực.`
+    : `Hãy viết các bài đăng ngắn bằng ${lname(lang)} như trên mạng xã hội (TikTok, Facebook, Instagram), chia theo lĩnh vực${list.length ? `: ${list.join(', ')}` : ' (tự chọn 3–5 lĩnh vực đa dạng: đời sống, công nghệ, du lịch, ẩm thực, thể thao…)'}. Mỗi lĩnh vực ${posts} bài.`;
+  return `Bạn là người viết nội dung mạng xã hội bằng ${lname(lang)}. ${intro}
+Mỗi bài dài khoảng 2–6 câu, giọng tự nhiên, gần gũi${level ? `, độ khó từ vựng phù hợp trình độ ${level}` : ''}, có thể kèm emoji và hashtag.
+
+ĐỊNH DẠNG ĐẦU RA (rất quan trọng): chỉ trả về nội dung trong MỘT khối code, không giải thích thêm.
+
+# Tên lĩnh vực
+@tên: Tên người đăng (bịa cho tự nhiên)
+@biểu tượng: 🐼
+@tag: #hashtag1 #hashtag2
+Nội dung bài đăng thứ nhất (có thể nhiều dòng).
+---
+@tên: Một người khác
+Nội dung bài đăng thứ hai.
+
+# Tên lĩnh vực khác
+Nội dung bài đăng…
+
+QUY TẮC:
+- Dòng bắt đầu bằng “# ” (có dấu cách) là tên một lĩnh vực mới; các bài trong cùng lĩnh vực cách nhau bằng một dòng chỉ có ba dấu gạch ngang ---.
+- Các dòng @tên, @biểu tượng (một emoji), @tag đều không bắt buộc và phải nằm ngay đầu bài, trước nội dung.
+- KHÔNG tạo câu hỏi, KHÔNG dịch sang tiếng Việt; chỉ viết nội dung bằng ${lname(lang)}.
+${lang === 'zh' ? '- Chữ Hán dùng GIẢN THỂ.\n' : ''}${source ? `\nNGUỒN:\n${source}` : ''}`;
+}
+
+export const SOCIAL_SYNTAX = `# Công nghệ
+@tên: Minh Anh
+@biểu tượng: 🤖
+@tag: #AI #học_tập
+Nội dung bài đăng thứ nhất.
+---
+@tên: Bảo
+Nội dung bài đăng thứ hai.
+
+# Du lịch
+Nội dung bài đăng thứ ba.`;
+
 // Vẽ bảng chọn dạng bài + khung prompt vào host.
 // ctx: { state:{kinds,count}, kinds?:[các dạng được chọn], fields?:[{id,label,type,placeholder,value,min,max}], source?():Promise<string>,
 //        build({kinds,count,f,source}):string, onPaste(text), pasteLabel? }

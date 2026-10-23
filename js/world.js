@@ -13,6 +13,7 @@ import { runSheet, timeHtml, wireTime, readTime } from './exsheet.js';
 import { setPrompt, newsPrompt, promptPanel, NEWS_SYNTAX } from './exprompts.js';
 import { pix } from './pixicons.js';
 import * as wvocab from './wvocab.js';
+import * as social from './social.js';
 
 const DAY = 864e5;
 const WD = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
@@ -168,8 +169,29 @@ S: ごはんと / みそ汁と / 魚が / あります | Có cơm, súp miso và
 };
 
 // ---------- khung chung ----------
-const tools = on => { const t = $('#nwTools'); if (t) t.hidden = !on; };
+// lookupOnly: chỉ giữ nút Tra từ (Social không có “Đọc” cả trang)
+const tools = (on, lookupOnly = false) => {
+  const t = $('#nwTools');
+  if (!t) return;
+  t.hidden = !on;
+  $$('[data-readall],[data-tapread]', t).forEach(b => { b.hidden = lookupOnly; });
+};
 const dateLine = () => { const d = new Date(); return `${WD[d.getDay()]}, ${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`; };
+
+// Thế giới có 2 mục: Article (bài đọc + câu hỏi) và Social (lướt bài đăng ngắn, không câu hỏi)
+const store0 = k => { try { return localStorage.getItem(k); } catch { return null; } };
+const save0 = (k, v) => { try { localStorage.setItem(k, v); } catch { /* bỏ qua */ } };
+let sec = store0('worldSec') === 'social' ? 'social' : 'article';
+const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="social" class="${sec === 'social' ? 'on' : ''}">📱 Social</button></div>`;
+function bindSec() {
+  $$('#wSec button', root).forEach(b => {
+    b.onclick = () => { if (b.dataset.s === sec) return; sec = b.dataset.s; save0('worldSec', sec); mode = 'feed'; render(); scrollTo(0, 0); };
+  });
+}
+
+// Bố cục khi đọc bài: cùng một trang (câu hỏi nằm dưới bài) hoặc chia đôi (bài bên trái, câu hỏi bên phải); giới hạn thời gian làm bài
+const getLay = () => (store0('worldLay') === 'split' ? 'split' : 'stack');
+const getTime = () => Math.max(0, Math.min(300, Math.round(+store0('worldTime')) || 0));
 
 export function render() {
   root = $('#worldRoot');
@@ -180,7 +202,9 @@ export function render() {
   if (mode === 'test') return drawTestBuilder();
   if (mode === 'edit') return drawEditor();
   if (mode === 'import') return drawImport();
-  mode = 'feed'; drawFeed();
+  mode = 'feed';
+  if (sec === 'social') { tools(true, true); social.render(root, { bar: secBar, bindBar: bindSec }); return; }
+  drawFeed();
 }
 
 // ---------- trang chủ ----------
@@ -206,7 +230,7 @@ function drawFeed() {
   const list = all.filter(a => inF(a) && (!filter.unread || !a.done)).sort((a, b) => (b.created || 0) - (a.created || 0));
   const done = all.filter(a => a.done).length, sc = all.filter(a => a.best != null);
   const avg = sc.length ? Math.round(sc.reduce((n, a) => n + a.best, 0) / sc.length) : null;
-  const head = `<div class="nw-mast"><div class="nw-art">${pix('a_world')}</div><div class="nw-name">THẾ GIỚI CỦA TÔI</div><div class="nw-date">${dateLine()}</div>${all.length ? `<div class="nw-stats"><span>${all.length} bài</span><span>Đã đọc ${done}/${all.length}</span>${avg != null ? `<span>⭐ Điểm TB ${avg}%</span>` : ''}</div>` : ''}</div>`;
+  const head = `${secBar()}<div class="nw-mast"><div class="nw-art">${pix('a_world')}</div><div class="nw-name">THẾ GIỚI CỦA TÔI</div><div class="nw-date">${dateLine()}</div>${all.length ? `<div class="nw-stats"><span>${all.length} bài</span><span>Đã đọc ${done}/${all.length}</span>${avg != null ? `<span>⭐ Điểm TB ${avg}%</span>` : ''}</div>` : ''}</div>`;
   if (!all.length) {
     root.innerHTML = `${head}<div class="empty"><div class="emptyart">${pix('a_world')}</div>Chưa có bài ${esc(langInfo().name)} nào.<br>Viết bài, nhập nhiều bài một lúc bằng cú pháp (kèm prompt nhờ AI), hoặc thêm vài bài mẫu để xem thử.
       <div class="row c" style="margin-top:12px"><button class="btn primary" id="nwAdd">＋ Viết bài</button><button class="btn" id="nwImport">📥 Nhập nhiều bài</button><button class="btn" id="nwSample">✨ Thêm bài mẫu</button></div></div>`;
@@ -224,6 +248,7 @@ function drawFeed() {
 }
 
 function bindFeed() {
+  bindSec();
   $('#nwAdd')?.addEventListener('click', () => { editId = null; mode = 'edit'; drawEditor(); });
   $('#nwImport')?.addEventListener('click', () => { mode = 'import'; drawImport(); });
   $('#nwSample')?.addEventListener('click', () => { const n = importArts(parseNews(SAMPLES[getLang()] || SAMPLES.zh).arts); toast(`Đã thêm ${n} bài mẫu`); drawFeed(); });
@@ -276,24 +301,36 @@ function openArticle(id) {
   if (!a.lastRead || Date.now() - a.lastRead > 36e5) store.put('articles', id, { lastRead: Date.now() });
   const L = a.lang || 'zh', bcp = langInfo(L).bcp, f = folderOf(a);
   const qs = build(parseSet(a.qtext || ''), { shuffle: false, listen: true, count: 0 }, rngOf('wd' + id + Date.now()));
-  root.innerHTML = `<div class="row"><button class="btn" id="nwBack">← Thế giới của tôi</button><span class="grow"></span><button class="btn" id="nwRand" title="Chọn ngẫu nhiên một chủ đề rồi mở một bài trong đó">🎲 Chủ đề ngẫu nhiên</button></div>
-    <article class="nw-read">
+  const lay = getLay(), limit = getTime();
+  root.innerHTML = `<div class="row nw-bar"><button class="btn" id="nwBack">← Thế giới của tôi</button>
+      <div class="seg" id="nwLay"><button data-l="stack" class="${lay === 'stack' ? 'on' : ''}" title="Bài đọc và câu hỏi nằm cùng một trang: đọc xong kéo xuống làm bài">☰ Cùng trang</button><button data-l="split" class="${lay === 'split' ? 'on' : ''}" title="Bài đọc ở bên trái, câu hỏi ở bên phải (màn hình rộng)">◫ Chia đôi</button></div>
+      ${timeHtml('nwTime', limit)}<span class="grow"></span><button class="btn" id="nwRand" title="Chọn ngẫu nhiên một chủ đề rồi mở một bài trong đó">🎲 Chủ đề ngẫu nhiên</button></div>
+    <div class="nw-lay ${lay}" id="nwLayBox"><div class="nw-left"><article class="nw-read">
       <div class="nw-hero" style="--cc:${colorOf(a)}"><span class="nw-emoji big">${esc(a.emoji || '📰')}</span>${f ? `<span class="nw-tag">${esc(f.name)}</span>` : ''}</div>
       <h1 class="nw-ttl" lang="${bcp}">${esc(a.title)}</h1>
       <div class="nw-by dim">${a.source ? `<span class="nw-src">${esc(a.source)}</span> · ` : ''}⏱ ${minutes(a)} phút đọc${a.best != null ? ` · ⭐ điểm cao nhất ${a.best}%` : ''}</div>
       <div class="nw-text" id="newsBody" data-aid="${id}" lang="${bcp}">${bodyHtml(a)}</div>
-    </article>
-    <div class="nw-qsec"><div class="nw-sec">✍️ Câu hỏi về bài đọc</div>${qs.length ? '<div id="nwSheet"></div>'
-      : `<div class="qcard nw-cta"><div class="dim">Bài này chưa có câu hỏi. Bấm “Sửa bài” để thêm (hoặc dùng prompt nhờ AI tạo câu hỏi).</div><div class="row"><button class="btn primary" id="nwMark">✔ Đánh dấu đã đọc xong</button></div></div>`}</div>
+    </article></div>
+    <div class="nw-right"><div class="nw-qsec"><div class="nw-sec">✍️ Câu hỏi về bài đọc</div>${qs.length ? '<div id="nwSheet"></div>'
+      : `<div class="qcard nw-cta"><div class="dim">Bài này chưa có câu hỏi. Bấm “Sửa bài” để thêm (hoặc dùng prompt nhờ AI tạo câu hỏi).</div><div class="row"><button class="btn primary" id="nwMark">✔ Đánh dấu đã đọc xong</button></div></div>`}</div></div></div>
     <div class="row"><button class="btn" id="nwEdit">✎ Sửa bài</button><button class="btn" id="nwDel">🗑 Xóa bài</button></div>`;
   $('#nwBack').onclick = () => { mode = 'feed'; drawFeed(); scrollTo(0, 0); };
   $('#nwRand').onclick = () => randomTopic(id);
+  $$('#nwLay button', root).forEach(b => b.onclick = () => { // đổi bố cục tại chỗ, không làm mất câu đã trả lời
+    save0('worldLay', b.dataset.l);
+    $$('#nwLay button', root).forEach(x => x.classList.toggle('on', x === b));
+    $('#nwLayBox', root).className = 'nw-lay ' + b.dataset.l;
+  });
+  wireTime(root, 'nwTime');
+  const setTime = () => { const m = readTime(root, 'nwTime'); save0('worldTime', m); toast(m ? `Giới hạn ${m} phút: bài được làm lại từ đầu` : 'Đã bỏ giới hạn thời gian'); openArticle(id); };
+  $('#nwTime').addEventListener('change', () => { if ($('#nwTime').value !== 'custom') setTime(); });
+  $('#nwTimeMin').addEventListener('change', setTime);
   $('#nwEdit').onclick = () => { editId = id; mode = 'edit'; drawEditor(); };
   $('#nwDel').onclick = () => { if (confirm('Xóa bài này? (vào Thùng rác, giữ 30 ngày)')) { store.del('articles', id); mode = 'feed'; drawFeed(); } };
   $('#nwMark')?.addEventListener('click', () => { finishRead(id, null); toast('Đã đánh dấu đã đọc xong ✓'); $('#nwMark').disabled = true; });
   if (qs.length) {
     const run = () => runSheet($('#nwSheet'), {
-      qs, lang: L, title: '', src: a.title, submitLabel: 'Hoàn thành bài đọc',
+      qs, lang: L, title: '', src: a.title, submitLabel: 'Hoàn thành bài đọc', timeLimit: limit,
       onDone: r => finishRead(id, r.pct),
       onAgain: () => openArticle(id),
       extra: [{ label: '🎲 Chủ đề ngẫu nhiên', fn: () => randomTopic(id) }],
@@ -467,6 +504,7 @@ function drawTestBuilder() {
 export function init() {
   root = $('#worldRoot');
   bus.on('show', v => { if (v === 'world') render(); });
-  bus.on('lang', () => { wvocab.reset(); mode = 'feed'; curId = null; filter.folder = ''; filter.unread = false; if (document.body.dataset.view === 'world') render(); });
-  bus.on('store', c => { if ((c === 'articles' || c === 'wfolders' || c === '*') && document.body.dataset.view === 'world' && mode === 'feed') drawFeed(); });
+  social.init();
+  bus.on('lang', () => { wvocab.reset(); social.reset(); mode = 'feed'; curId = null; filter.folder = ''; filter.unread = false; if (document.body.dataset.view === 'world') render(); });
+  bus.on('store', c => { if ((c === 'articles' || c === 'wfolders' || c === '*') && document.body.dataset.view === 'world' && mode === 'feed' && sec === 'article') drawFeed(); });
 }
