@@ -293,6 +293,18 @@ export function checkIcons() {
 export const iconNames = () => Object.keys(ICONS);
 
 const cache = new Map();
+// Mỗi biểu tượng chỉ được định nghĩa MỘT lần trong một “bảng ký hiệu” (sprite) ẩn; mỗi chỗ dùng chỉ là <svg><use/></svg> (2 phần tử)
+// thay vì cả chục khối vuông. Trang có hàng trăm biểu tượng (danh sách bộ bài tập, thư viện…) nhờ vậy nhẹ hơn ~20 lần: vẽ nhanh, ít bộ nhớ.
+let sprite = null;
+function defineSymbol(name, w, h, rects) {
+  if (!sprite) {
+    sprite = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    sprite.setAttribute('aria-hidden', 'true');
+    sprite.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden');
+    (document.body || document.documentElement).prepend(sprite);
+  }
+  sprite.insertAdjacentHTML('beforeend', `<symbol id="pxs-${name}" viewBox="0 0 ${w} ${h}">${rects}</symbol>`);
+}
 export function pix(name) {
   const rows = ICONS[name];
   if (!rows) return '';
@@ -309,8 +321,9 @@ export function pix(name) {
       x = e;
     }
   });
+  defineSymbol(name, w, h, rects);
   // kích thước = số điểm × --z (CSS), nên mỗi ngữ cảnh chọn cỡ điểm ảnh nguyên (2px, 3px…) cho nét sắc
-  const svg = `<svg class="pix" viewBox="0 0 ${w} ${h}" style="--w:${w};--h:${h}" shape-rendering="crispEdges" aria-hidden="true">${rects}</svg>`;
+  const svg = `<svg class="pix" viewBox="0 0 ${w} ${h}" style="--w:${w};--h:${h}" shape-rendering="crispEdges" aria-hidden="true"><use href="#pxs-${name}"/></svg>`;
   cache.set(name, svg);
   return svg;
 }

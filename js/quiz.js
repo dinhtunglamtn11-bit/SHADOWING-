@@ -40,13 +40,36 @@ export function meaningOf(lines, lang) {
 }
 
 // ---------- gom tài liệu ----------
-async function gather(lang) {
+// Phụ đề đã phân tích, nhớ theo video (JSON.parse phụ đề dài mất vài mili-giây mỗi video, mỗi lần ra đề)
+const cueCache = new Map();
+function cuesOf(it) {
+  const c = cueCache.get(it.id);
+  if (c && c.src === it.cues) return c.cs;
+  let cs = []; try { cs = JSON.parse(it.cues); } catch { /* phụ đề hỏng: bỏ qua */ }
+  cueCache.set(it.id, { src: it.cues, cs });
+  return cs;
+}
+// Nạp sẵn phụ đề các video lúc rảnh (từng lát ngắn, không chặn giao diện) để lần ra đề đầu tiên không phải phân tích lúc bạn đang chờ
+export function warm() {
+  const vids = store.list('items').filter(it => it.type === 'video' && (it.lang || 'zh') === getLang() && it.cues).slice(0, 40);
+  let i = 0;
+  const slice = () => {
+    const t = performance.now();
+    while (i < vids.length && performance.now() - t < 6) cuesOf(vids[i++]);
+    if (i < vids.length) setTimeout(slice, 40);
+  };
+  setTimeout(slice, 300);
+}
+const MAX_VIDEOS = 30; // một đề chỉ có 10 câu: lấy ngẫu nhiên tối đa 30 video là đủ phong phú, thư viện hàng trăm video vẫn ra đề tức thì
+
+async function gather(lang, rnd) {
   const mats = [];
-  for (const it of store.list('items')) {
-    if (it.type !== 'video' || (it.lang || 'zh') !== lang || !it.cues) continue;
-    let cs = []; try { cs = JSON.parse(it.cues); } catch {}
-    const has = await store.hasAsset(it.assetId);
-    cs.forEach((c, i) => { if ((c.lines[0] || '').trim().length >= 2) mats.push({ itemId: it.id, idx: i, lines: c.lines, t0: c.start, t1: c.end, has }); });
+  const vids = store.list('items').filter(it => it.type === 'video' && (it.lang || 'zh') === lang && it.cues);
+  const pick = vids.length > MAX_VIDEOS ? shuffle(vids, rnd).slice(0, MAX_VIDEOS) : vids;
+  const have = await store.assetKeys(); // một lần đọc cho mọi video, thay vì hỏi từng file
+  for (const it of pick) {
+    const has = !!it.assetId && have.has(it.assetId);
+    cuesOf(it).forEach((c, i) => { if ((c.lines[0] || '').trim().length >= 2) mats.push({ itemId: it.id, idx: i, lines: c.lines, t0: c.start, t1: c.end, has }); });
   }
   for (const cd of cards.allCards(lang)) if (cd.type === 'manual') mats.push({ itemId: null, idx: -1, lines: [cd.front, ...(cd.back || [])], has: false });
   return mats;
@@ -81,7 +104,7 @@ function tokenPool(mats, lang) {
 // ---------- ra đề ----------
 export async function generate(lang, seed) {
   const rnd = rngOf(seed);
-  const mats = await gather(lang);
+  const mats = await gather(lang, rnd);
   if (mats.length < 4) return { error: 'Cần ít nhất 4 câu có phụ đề (từ video hoặc thẻ) để ra bài tập. Hãy thêm video có phụ đề cho ' + langInfo(lang).name + '.' };
   const weak = new Set(cards.allCards(lang).filter(c => c.weak && c.itemId).map(c => c.itemId + ':' + c.idx));
   const ordered = shuffle(mats, rnd).sort((a, b) => (weak.has(b.itemId + ':' + b.idx) ? 1 : 0) - (weak.has(a.itemId + ':' + a.idx) ? 1 : 0));

@@ -55,8 +55,8 @@ function onClick(e) {
   last = now;
   let x = e.clientX, y = e.clientY;
   if (!x && !y) { const r = el.getBoundingClientRect(); x = r.left + r.width / 2; y = r.top + r.height / 2; } // bấm bằng bàn phím
-  const accent = getComputedStyle(el).getPropertyValue('--c').trim() || '#ffd84d';
-  requestAnimationFrame(() => burst(x, y, accent));
+  // mọi việc nặng (đọc màu nút, dựng hạt) để sau khung hình kế tiếp: lệnh bấm trả về ngay, không bị chậm
+  requestAnimationFrame(() => burst(x, y, getComputedStyle(el).getPropertyValue('--c').trim() || '#ffd84d'));
 }
 
 export function init() {

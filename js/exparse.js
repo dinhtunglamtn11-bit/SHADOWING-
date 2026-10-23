@@ -38,7 +38,19 @@ export function splitBy(s, sep) { // tách theo sep, bỏ qua \sep
 const TRUE = ['dung', 'd', 'true', 't', 'yes', 'y', '1'], FALSE = ['sai', 's', 'false', 'f', 'no', 'n', '0'];
 const nl = s => s.replace(/\\n/g, '\n');
 
+// Phân tích một đoạn bài tập thành câu hỏi. Kết quả được nhớ theo nội dung (chỉ đọc, không ai sửa nó) nên vẽ lại danh sách
+// hàng chục bộ bài tập không phải phân tích lại từng bộ mỗi lần bấm.
+const parsedMemo = new Map();
 export function parseSet(text) {
+  let r = parsedMemo.get(text);
+  if (!r) {
+    r = parseSetRaw(text);
+    parsedMemo.set(text, r);
+    if (parsedMemo.size > 300) parsedMemo.delete(parsedMemo.keys().next().value);
+  }
+  return r;
+}
+function parseSetRaw(text) {
   const qs = [], vocab = [], errors = [];
   let title = '';
   text.split(/\r?\n/).forEach((raw, li) => {

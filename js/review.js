@@ -139,7 +139,7 @@ export function init() {
   $('#ttsRate').value = String(prefs.ttsRate || 0.9);
   $('#ttsRate').onchange = e => { prefs.ttsRate = parseFloat(e.target.value) || 0.9; savePrefs(); };
   bus.on('prefs', () => { $('#ttsRate').value = String(prefs.ttsRate || 0.9); });
-  bus.on('show', v => { deckN = 60; if (v === 'review') render(); else updateBadge(); });
+  bus.on('show', v => { deckN = 60; if (v === 'review') { render(); quiz.warm(); } else updateBadge(); });
   bus.on('lang', () => { session = null; mistakeui.reset(); if (document.body.dataset.view === 'review') render(); updateBadge(); });
   bus.on('store', c => { if (c === 'cards' || c === 'items' || c === '*') { updateBadge(); if (document.body.dataset.view === 'review' && tab === 'deck') renderDeck(); } });
   updateBadge();

@@ -134,6 +134,11 @@ export async function putAsset(id, blob, name = '') {
   if (urls.has(id)) { URL.revokeObjectURL(urls.get(id)); urls.delete(id); }
 }
 export async function getAsset(id) { return idb && id ? req(os('assets').get(id)) : undefined; }
+// Mã của MỌI file đang có trong máy, đọc một lần (hỏi từng file một với hàng trăm video là hàng trăm lần đọc IndexedDB nối tiếp, chậm nhất trên điện thoại)
+export async function assetKeys() {
+  if (!idb) return new Set();
+  try { return new Set(await req(os('assets').getAllKeys())); } catch { return new Set(); }
+}
 export async function hasAsset(id) { return !!(idb && id && (await req(os('assets').getKey(id)))); }
 export async function delAsset(id) {
   if (!idb || !id) return;

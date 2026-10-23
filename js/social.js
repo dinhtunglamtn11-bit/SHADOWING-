@@ -18,6 +18,8 @@ const hash = s => [...String(s || '')].reduce((h, c) => (h * 31 + c.charCodeAt(0
 const colorOf = p => COLORS[hash(p.field || p.name) % COLORS.length];
 const postsOf = lang => store.list('posts').filter(p => (p.lang || 'zh') === lang);
 
+const PAGE = 12;
+let paged = PAGE;
 let root = null, ctx = null, view = 'feed', fld = '';
 const openC = new Set(); // các bài đang mở khung bình luận
 
@@ -186,10 +188,11 @@ function drawFeed(keepScroll) {
   }
   const chip = (id, name, n, user) => `<button class="chip ${fld === id ? 'on' : ''}" data-f="${esc(id)}"><span class="${user ? 'gt' : ''}">${esc(name)}</span> <small>${n}</small></button>`;
   const list = shown();
+  if (!keepScroll) paged = PAGE;
   root.innerHTML = `${bar}
     <div class="row"><button class="btn primary" id="spImport">📥 Nhập nhiều bài</button><button class="btn" id="spNew">＋ Đăng bài</button></div>
     <div class="chips sp-fl">${chip('', 'Tất cả', all.length)}${fields.map(f => chip(f, f, all.filter(p => p.field === f).length, true)).join('')}${chip('_saved', '⭐ Đã lưu', saved)}</div>
-    ${list.length ? `<div class="sp-wrap"><div id="spFeed" class="sp-feed" tabindex="0" data-sig="${list.map(p => p.id).join(',')}">${list.map(postHtml).join('')}</div>
+    ${list.length ? `<div class="sp-wrap"><div id="spFeed" class="sp-feed" tabindex="0" data-sig="${list.map(p => p.id).join(',')}" data-total="${list.length}">${list.slice(0, paged).map(postHtml).join('')}</div>
       <div class="sp-nav"><button class="btn" id="spUp">▲ Trước</button><span id="spPos" class="dim"></span><button class="btn" id="spDown">▼ Tiếp</button></div></div>` : '<div class="empty">Chưa có bài nào ở mục này.</div>'}`;
   bind();
   const feed = $('#spFeed', root);
@@ -199,8 +202,17 @@ function drawFeed(keepScroll) {
 function pos() {
   const feed = $('#spFeed', root), el = $('#spPos', root);
   if (!feed || !el) return;
-  const n = feed.children.length, i = Math.min(n - 1, Math.round(feed.scrollTop / Math.max(1, feed.clientHeight)));
+  const n = +feed.dataset.total || feed.children.length, i = Math.min(feed.children.length - 1, Math.round(feed.scrollTop / Math.max(1, feed.clientHeight)));
   el.textContent = `${i + 1} / ${n}`;
+}
+// Chỉ dựng 12 bài đầu cho nhanh; gần tới cuối thì dựng tiếp 12 bài nữa (lướt mãi không hết, như TikTok)
+function maybeMore(feed) {
+  if (feed.scrollTop + feed.clientHeight * 3 < feed.scrollHeight) return;
+  const list = shown();
+  if (paged >= list.length) return;
+  const next = list.slice(paged, paged + PAGE);
+  paged += next.length;
+  feed.insertAdjacentHTML('beforeend', next.map(postHtml).join(''));
 }
 function step(d) {
   const feed = $('#spFeed', root);
@@ -255,7 +267,7 @@ function bind() {
   feed.addEventListener('click', act);
   feed.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList.contains('sp-ci')) { e.preventDefault(); const card = e.target.closest('.sp'); sendComment(card, card.dataset.id, store.get('posts', card.dataset.id)); } });
   let raf = 0;
-  feed.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(pos); }, { passive: true });
+  feed.addEventListener('scroll', () => { maybeMore(feed); cancelAnimationFrame(raf); raf = requestAnimationFrame(pos); }, { passive: true });
 }
 
 // ---------- đăng một bài ----------
