@@ -8,7 +8,7 @@ import { M } from './media.js';
 import { currentCues, currentItemId, currentLang, setSpeakMode, selectCue, playCueOnce, refreshList } from './player.js';
 import { zhText } from './prefs.js';
 import { loadSimplifier } from './util.js';
-import { decodeAudio, transcribe } from './align.js';
+import { decodeAudio, transcribe, transcribeBg, warmBg } from './align.js';
 import { itemsOf, compareItems } from './dictation.js';
 import * as viz from './shadowviz.js';
 
@@ -156,6 +156,20 @@ async function compareAB() {
 }
 
 // ---------- chấm điểm ----------
+// Chấm một bản ghi so với câu gốc → { score, refHTML, typedHTML, heard }. Dùng chung cho khung Luyện nói và phần ghi âm khi học (bg: chạy ở luồng nền).
+export async function grade(blob, ref, lang, { bg = false, onStep, onLoad } = {}) {
+  onStep?.('Đang đọc bản ghi…');
+  const x = await decodeAudio(blob);
+  if (x.length < 8000) throw new Error('Bản ghi quá ngắn');
+  onStep?.('AI đang nghe giọng bạn…');
+  await loadSimplifier();
+  const heard = zhText(await (bg ? transcribeBg : transcribe)(x, { lang, model: $('#spModel').value, onLoad }), lang);
+  const A = await buildItems(ref, lang), B = await buildItems(heard, lang);
+  return { ...compareItems(A, B), heard };
+}
+// Tải sẵn mô hình AI ở luồng nền để câu đầu tiên chấm được ngay
+export const warmGrader = onLoad => warmBg($('#spModel').value, onLoad);
+
 async function score() {
   if (scoring) return;
   const a = await store.getAsset(recId(idx));
@@ -163,17 +177,7 @@ async function score() {
   scoring = true; setButtons();
   const lang = currentLang(), ref = cues()[idx].lines[0];
   try {
-    stat('Đang đọc bản ghi…');
-    const x = await decodeAudio(a.blob);
-    if (x.length < 8000) throw new Error('Bản ghi quá ngắn');
-    stat('AI đang nghe giọng bạn…');
-    await loadSimplifier();
-    const heard = zhText(await transcribe(x, {
-      lang, model: $('#spModel').value,
-      onLoad: (p, f) => stat(`Đang tải mô hình AI… ${Math.round(p)}% (${f.split('/').pop()}). Chỉ tải lần đầu.`),
-    }), lang);
-    const A = await buildItems(ref, lang), B = await buildItems(heard, lang);
-    const r = compareItems(A, B);
+    const r = await grade(a.blob, ref, lang, { onStep: stat, onLoad: (p, f) => stat(`Đang tải mô hình AI… ${Math.round(p)}% (${f.split('/').pop()}). Chỉ tải lần đầu.`) }), heard = r.heard;
     const sc = { ...scores() }; sc[idx] = Math.max(sc[idx] ?? 0, r.score);
     store.put('items', currentItemId(), { speak: sc });
     if (r.score < 60 && addCueCard(currentItemId(), idx, { weak: true })) toast('Câu này còn yếu, đã vào sổ ôn 📒');

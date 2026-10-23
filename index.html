@@ -37,10 +37,12 @@
 <body data-view="library">
 
 <header id="top">
+  <button id="btnBack" class="btn" title="Quay lại trang vừa xem" disabled>←</button>
   <b class="logo"><span data-ic="headphones"></span><span>SHADOW<i>ING</i></span></b>
   <div id="langs" class="chips"></div>
   <span class="grow"></span>
   <span id="sync"></span>
+  <button id="btnSfx" class="btn" title="Bật / tắt âm thanh nút bấm">🔊</button>
   <button id="btnTheme" class="btn" title="Đổi giao diện ngày / đêm"><span data-ic="moon"></span></button>
   <button id="btnSettings" class="btn" title="Cài đặt giao diện và ngôn ngữ">⚙</button>
   <button id="btnUser" class="btn">Đăng nhập</button>
@@ -103,6 +105,13 @@
           <button id="bNext" title="Câu sau">⏭</button>
           <button id="bLoop" title="Lặp câu">🔁</button>
           <button id="bHide" title="Ẩn dòng phiên âm / nghĩa (bấm để đổi: hiện hết, ẩn nghĩa, ẩn cả hai)">🙈</button>
+          <button id="bRec" title="Ghi âm khi học shadowing: bật lên rồi bấm Play và nói theo video, giọng bạn được ghi tự động từng câu (nên dùng tai nghe)">🎙</button>
+        </div>
+        <div id="recBar" class="subhint" hidden>
+          <span id="rbTxt"></span><span id="rbMeter"><i></i></span><span class="grow"></span>
+          <label class="dim" title="Mặc định chỉ ghi: bạn nghe lại và tự đánh giá, bấm 🎯 khi muốn chấm. Bật ô này nếu muốn máy tự chấm sau mỗi câu bạn nói (AI chạy ngay trên máy, không gửi âm thanh đi đâu). Chỉ lưu điểm lần nói gần nhất, không lưu bản ghi."><input type="checkbox" id="rbScoreOn"> Tự chấm</label>
+          <span id="rbBtns" hidden><button class="btn" id="rbPlay" title="Nghe lại giọng bạn ở câu vừa nói">▶ Giọng tôi</button><button class="btn" id="rbAB" title="Nghe bản gốc rồi tới giọng bạn để so sánh">⇄ Gốc → tôi</button><button class="btn" id="rbScore" title="Chấm điểm câu vừa nói">🎯 Chấm</button></span>
+          <div id="rbResult" hidden></div>
         </div>
         <div id="segBar" class="segbar" hidden>
           <div class="row between"><b id="sgNum"></b><span id="sgTime" class="dim"></span></div>
@@ -435,6 +444,13 @@
 
     <div class="uirow"><span>Tốc độ phát mặc định</span><div class="seg uiseg" data-k="rate"><button data-v="0.75">0.75×</button><button data-v="0.9">0.9×</button><button data-v="1">1×</button><button data-v="1.25">1.25×</button></div></div>
     <small class="dim">Mỗi video nhớ tốc độ riêng khi bạn đổi ở ⚙ trong màn Học; video chưa chọn thì dùng tốc độ này.</small>
+
+    <h3>Âm thanh nút bấm</h3>
+    <div class="uirow"><span>Âm thanh</span><div class="seg uiseg" data-k="sfx" data-nosfx><button data-v="1">Bật</button><button data-v="0">Tắt</button></div></div>
+    <div class="uirow"><span>Âm lượng</span><input id="sfxVol" type="range" min="0" max="100" step="5"></div>
+    <div class="uirow"><span>Kiểu âm</span><div class="seg uiseg" data-k="sfxKind" data-nosfx><button data-v="soft">Pixel mịn</button><button data-v="chip">Pixel cổ điển</button><button data-v="bubble">Nhẹ nhàng</button></div></div>
+    <div class="row"><button id="sfxTest" class="btn" data-nosfx>🔊 Thử âm</button></div>
+    <small class="dim">Âm thanh do máy tự tạo (không có file âm thanh) nên tự cập nhật cùng app. Bật / tắt, âm lượng và kiểu âm được đồng bộ giữa các máy khi đã đăng nhập. Thanh phát video và khung luyện nói luôn im lặng để không lẫn vào tiếng bạn đang nghe hoặc ghi âm.</small>
 
     <h3>Phím tắt (màn Học)</h3>
     <small class="dim">Bấm vào một phím rồi nhấn phím mới. Esc: hủy · Backspace: gỡ phím.</small>

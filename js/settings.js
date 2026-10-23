@@ -4,6 +4,7 @@ import { prefs, savePrefs } from './prefs.js';
 import { uiLang } from './i18n.js';
 import { pix } from './pixicons.js';
 import { getBk, setBk, checkReminder } from './backup.js';
+import * as sfx from './sfx.js';
 
 export const UI_DEFAULTS = { lang: 'vi', theme: 'day', pal: 'candy', px: '3', corner: 'notch', font: 'pixel', icons: 'pixel', bg: 'check', motion: 'on', zoom: '100', sub: '100', hl: 'yellow' };
 
@@ -28,11 +29,12 @@ export function applyUi(u = getUi()) {
 
 function markSegs(u) {
   const bk = getBk();
-  const cur = { ...u, ttsRate: String(prefs.ttsRate || 0.9), lang: uiLang, bk: String(bk.days), srs: prefs.srs || 'fsrs', retention: String(prefs.retention || 0.9), rate: String(prefs.rate || 1) };
+  const cur = { ...u, sfx: prefs.sfx ? '1' : '0', sfxKind: prefs.sfxKind || 'soft', ttsRate: String(prefs.ttsRate || 0.9), lang: uiLang, bk: String(bk.days), srs: prefs.srs || 'fsrs', retention: String(prefs.retention || 0.9), rate: String(prefs.rate || 1) };
   $('#bkLast').textContent = bk.last ? 'Lần sao lưu gần nhất: ' + new Date(bk.last).toLocaleDateString('vi-VN') : 'Chưa sao lưu lần nào trên máy này.';
   $$('#uiDlg .uiseg').forEach(sg => $$('button', sg).forEach(b => b.classList.toggle('on', String(cur[sg.dataset.k]) === b.dataset.v)));
   $('#uiGoal').value = prefs.goalMin || 15;
   $('#uiNew').value = prefs.newPerDay || 10;
+  $('#sfxVol').value = Math.round((prefs.sfxVol ?? 0.6) * 100);
 }
 
 export function init() {
@@ -54,6 +56,11 @@ export function init() {
     const k = b.parentElement.dataset.k, v = b.dataset.v;
     if (k === 'ttsRate') { prefs.ttsRate = parseFloat(v); savePrefs(); bus.emit('prefs'); markSegs(getUi()); return; }
     if (k === 'rate') { prefs.rate = parseFloat(v); savePrefs(); bus.emit('prefs'); markSegs(getUi()); return; }
+    if (k === 'sfx' || k === 'sfxKind') { // âm thanh nút bấm (đồng bộ qua prefs)
+      prefs[k] = k === 'sfx' ? +v : v; savePrefs(); bus.emit('prefs'); markSegs(getUi());
+      if (prefs.sfx) sfx.play('ok');
+      return;
+    }
     if (k === 'srs' || k === 'retention') { prefs[k] = k === 'srs' ? v : parseFloat(v); savePrefs(); bus.emit('prefs'); markSegs(getUi()); return; }
     if (k === 'bk') { setBk({ days: +v, snooze: 0 }); checkReminder(); markSegs(getUi()); return; }
     const u = getUi();
@@ -62,6 +69,10 @@ export function init() {
     if (k === 'lang') { toast('Đang đổi ngôn ngữ…'); setTimeout(() => location.reload(), 300); return; }
     applyUi(u); markSegs(u);
   });
+  // thanh âm lượng: kéo tới đâu lưu tới đó, thả tay thì kêu thử một tiếng
+  $('#sfxVol').oninput = e => { prefs.sfxVol = (+e.target.value || 0) / 100; };
+  $('#sfxVol').onchange = () => { savePrefs(); bus.emit('prefs'); sfx.play('tap', true); };
+  $('#sfxTest').onclick = () => { sfx.play('tap', true); setTimeout(() => sfx.play('ok', true), 220); };
   $('#uiGoal').onchange = e => { prefs.goalMin = Math.max(1, Math.min(600, +e.target.value || 15)); savePrefs(); bus.emit('prefs'); };
   $('#uiNew').onchange = e => { prefs.newPerDay = Math.max(1, Math.min(200, +e.target.value || 10)); savePrefs(); bus.emit('prefs'); };
   $('#uiReset').onclick = () => {

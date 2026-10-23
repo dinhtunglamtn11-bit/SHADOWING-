@@ -11,7 +11,7 @@ function readLang() {
 }
 export const uiLang = readLang();
 
-const SYMS = '\\s\\p{Extended_Pictographic}\\uFE0F\\u200D＋✔✓✕✗✎✂↩↺↻↶⇄←→↗⬇⬆▶⏭⏮■☰·✨—–';
+const SYMS = '\\s\\p{Extended_Pictographic}\\uFE0F\\u200D＋✔✓✕✗✎✂↩↺↻↶⇄←→↗⬇⬆▶⏭⏮■☰·✨—–▲▼';
 const AFFIX = new RegExp(`^([${SYMS}]*)([\\s\\S]*?)([${SYMS}]*)$`, 'u');
 const HAS_VI = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
 const isLetter = ch => !!ch && /\p{L}/u.test(ch);
@@ -21,7 +21,7 @@ const coreOf = s => { const m = AFFIX.exec(s); return m && m[2] ? m[2] : s; };
 
 // Câu nằm trong vùng này là nội dung của người dùng: gần như không dịch
 const USER_OK = new Set(['chưa có phiên âm', 'chưa có nghĩa', 'Đúng', 'Sai']);
-const USER_SEL = '.cue .m,.cue .s,#now .main:not(.small),#now .sub,.qtext,.qexp,.qopt,.qback,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.ci b,.lib .n b,.wd b,.gt,.nw-h,.nw-lead,.nw-tag,.nw-ttl,.nw-text,.nw-src,.nw-syn,.wchip,.slot,.qhint,.qtitle,.mbq,.mbsrc,.wvw,.wvp,#nSelBar .gt,.sp-text,.sp-ct,.sp-ci,.wvm,.wvs,.wvsrc,#msItem option,#wtFolder option:not(:first-child),.uipv,textarea,[contenteditable]';
+const USER_SEL = '.cue .m,.cue .s,#now .main:not(.small),#now .sub,.qtext,.qexp,.qopt,.qback,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.ci b,.lib .n b,.wd b,.gt,.nw-h,.nw-lead,.nw-tag,.nw-ttl,.nw-text,.nw-src,.nw-syn,.wchip,.slot,.qhint,.qtitle,.mbq,.mbsrc,.wvw,.wvp,#nSelBar .gt,#rbResult .line,.sp-text,.sp-ct,.sp-ci,.wvm,.wvs,.wvsrc,#msItem option,#wtFolder option:not(:first-child),.uipv,textarea,[contenteditable]';
 
 // Nạp từ điển của ngôn ngữ đang chọn (chỉ tải khi không dùng tiếng Việt)
 const EN_FILES = ['en-a', 'en-b', 'en-c', 'en-d'];

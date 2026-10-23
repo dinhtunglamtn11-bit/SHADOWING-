@@ -288,3 +288,58 @@ body.cueedit #cueList { outline: 3px dashed var(--accent); outline-offset: -6px;
 .sp-ci { flex: 1; min-width: 0; }
 .sp-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 10px; }
 body.lookup .sp-text { cursor: help; }
+
+/* ===== Hiệu ứng nút bấm: nhún khi rê chuột, lún khi bấm, ánh sáng quét qua nút chính, tia pixel khi bấm (fx.js).
+   Chỉ dùng transform / opacity / filter nên chạy trên GPU, không làm giật. Tắt hết khi chọn “Hiệu ứng chuyển động: Tắt”. ===== */
+.btn, .chip, .seg button { transition: transform .14s cubic-bezier(.34, 1.56, .64, 1), filter .12s; }
+.btn:hover:not(:disabled), .chip:hover, .seg button:hover:not(.on) { transform: translateY(-2px); }
+.btn:active:not(:disabled), .chip:active, .seg button:active { transform: translateY(2px) scale(.96); transition-duration: .04s; }
+#nav button { transition: transform .14s cubic-bezier(.34, 1.56, .64, 1), background .12s; }
+#nav button:active { transform: scale(.94); transition-duration: .04s; }
+#nav button.on i { display: inline-block; animation: navpop .38s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes navpop { 0% { transform: scale(.7); } 60% { transform: scale(1.22); } 100% { transform: scale(1); } }
+.btn.primary { position: relative; overflow: hidden; }
+.btn.primary::after { content: ''; position: absolute; inset: 0 -20%; pointer-events: none; transform: translateX(-110%);
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, .6) 50%, transparent 62%); }
+.btn.primary:hover:not(:disabled)::after { transform: translateX(110%); transition: transform .6s ease; }
+@keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -3px; } }
+.btn.big.primary:not(:hover):not(:active):not(:disabled) { animation: bob 2.2s ease-in-out infinite; }
+@keyframes vin { from { opacity: 0; transform: translateY(8px); } }
+.view.active { animation: vin .2s ease-out; }
+#fxLayer { position: fixed; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; background: transparent; overflow: hidden; pointer-events: none; z-index: 9999; contain: strict; }
+#fxLayer .fxr { position: absolute; width: 56px; height: 56px; box-sizing: border-box; border: 4px solid #ffd84d; will-change: transform, opacity; }
+#fxLayer .fxp { position: absolute; will-change: transform, opacity; }
+#btnBack { min-width: 44px; padding: 0 10px 3px; font-size: 28px; line-height: 1; }
+#btnBack:disabled { opacity: .35; filter: grayscale(.6); }
+#btnSfx { position: relative; }
+#btnSfx.off { opacity: .75; }
+#btnSfx.off::after { content: ''; position: absolute; left: 20%; right: 20%; top: 50%; border-top: 4px solid #d63b4b; transform: rotate(-38deg); pointer-events: none; }
+@media (max-width: 520px) { /* thêm nút Back và nút âm thanh: thu gọn thanh đầu trang để không tràn ngang */
+  #langs .lname { display: none; }
+  #langs .chip { padding: 3px 6px 1px; }
+  #btnBack { min-width: 34px; padding: 0 6px 2px; font-size: 22px; }
+  #btnSfx { padding: 2px 4px 4px; font-size: 17px; }
+  #btnUser { max-width: 66px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* ===== Ghi âm khi học shadowing: nút 🎙 ở thanh điều khiển, thanh trạng thái, nút nghe lại ở đầu câu ===== */
+#bar #bRec { --c: #ff7b88; --cl: #ffc0c7; --cd: #c2354a; }
+#bar #bRec.rec { animation: recpulse 1s ease-in-out infinite; }
+@keyframes recpulse { 50% { filter: brightness(1.3) saturate(1.3); } }
+#recBar { margin: 6px 0; padding: 6px 10px; font-size: 18px; }
+#rbMeter { display: inline-block; flex: none; width: 90px; height: 12px; background: var(--field); border: 3px solid var(--ink); }
+#rbMeter i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(90deg, #ff5a5f 0 6px, #c2354a 6px 8px); transition: width .08s steps(6); }
+#recBar .btn { padding: 1px 8px 3px; min-height: 0; font-size: 18px; }
+#rbBtns { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+#rbBtns[hidden] { display: none; }
+.cue .t .rb { margin-left: 6px; padding: 0 7px 2px; min-height: 0; font-size: 16px; line-height: 1.1; --c: #ff7b88; --cl: #ffc0c7; --cd: #c2354a; --ct: #3a0a14; }
+#rbResult { flex-basis: 100%; margin-top: 4px; }
+#rbResult .line { font-size: 22px; line-height: 1.5; margin: 2px 0 6px; white-space: pre-wrap; word-break: break-word; }
+#rbResult .score { font-size: 28px; font-weight: 700; }
+#rbResult .line .bad { text-decoration: underline wavy; }
+
+/* ===== Hiệu năng: danh sách dài chỉ dựng bố cục cho phần đang nhìn thấy (video 2000 câu: từ ~1,6 giây xuống mượt) ===== */
+#cueList .cue, #cueList .seghd { content-visibility: auto; contain-intrinsic-size: auto 72px; }
+#cueList .cue.ed { contain-intrinsic-size: auto 200px; }
+.sp, .lb .card { content-visibility: auto; contain-intrinsic-size: auto 90px; }
+.sp { contain-intrinsic-size: auto 420px; }

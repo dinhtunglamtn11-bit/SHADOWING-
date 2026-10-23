@@ -7,6 +7,7 @@ import { sayable, withSpeaker, say } from './tts.js';
 import { okAnswer, same, joiner, blanksOf, fullOf, cardOf, reshuffle } from './exrun.js';
 import { grabChip } from './dnd.js';
 import * as mistakes from './mistakes.js';
+import * as sfx from './sfx.js';
 import { KIND_LABEL, kindKey } from './exparse.js';
 
 // ---------- ô chọn giới hạn thời gian (dùng ở màn soạn bài kiểm tra) ----------
@@ -223,6 +224,7 @@ export function runSheet(box, o) {
     $$('[data-x]', box).forEach(b => b.onclick = () => o.extra[+b.dataset.x].fn());
     $('#shExit', box)?.addEventListener('click', () => o.onExit());
     $('#shTop', box).scrollIntoView({ block: 'start', behavior: 'smooth' });
+    setTimeout(() => sfx.play(pct >= 60 ? 'ok' : 'bad'), 160); // sau tiếng bấm nút nộp bài
     o.onDone?.({ ok, total: qs.length, pct, wrong, by: kt.by, used });
   }
 

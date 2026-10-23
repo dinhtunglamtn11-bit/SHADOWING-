@@ -33,6 +33,23 @@ export async function simplifyCues(cs, lang) {
 export const currentCues = () => cues;
 export const currentCueIndex = () => (cur >= 0 ? cur : Math.max(0, findCue(M.currentTime)));
 export const currentLang = () => itemLang;
+// Thời điểm bắt đầu / kết thúc của câu i trên đồng hồ video (đã cộng độ lệch phụ đề)
+export const cueSpan = i => (cues[i] ? { start: cues[i].start + off(), end: cues[i].end + off() } : null);
+// Câu nào đang có bản ghi tạm (ghi khi học shadowing, chỉ trong RAM): hiện nút ▶ nghe lại và 🎯 chấm điểm ở đầu câu
+let marks = new Set();
+const recBtns = i => `<button class="btn rb" data-rec="${i}" title="Nghe lại giọng bạn ở câu này">▶</button><button class="btn rb" data-sc="${i}" title="Chấm điểm câu này">🎯</button>`;
+export const setRecMarks = s => { marks = s; };
+export function markCue(i) {
+  const t = list.querySelector(`.cue[data-i="${i}"] .t`);
+  if (t && !t.querySelector('.rb')) t.insertAdjacentHTML('beforeend', recBtns(i));
+}
+// Điểm vừa chấm xong khi học shadowing: cập nhật huy hiệu 🎙 ở đầu câu ngay, khỏi vẽ lại cả danh sách
+export function markScore(i, score) {
+  const t = list.querySelector(`.cue[data-i="${i}"] .t`);
+  if (!t) return;
+  t.querySelector('.badge')?.remove();
+  t.insertAdjacentHTML('beforeend', ` <span class="badge">🎙 ${score}%</span>`);
+}
 const timedCount = cs => cs.filter(c => c.t).length;
 const titleText = (it, cs) => it.title + (cs.length && timedCount(cs) ? `  ✨ ${timedCount(cs)}/${cs.length} câu có giờ từng từ` : '');
 
@@ -124,6 +141,7 @@ export async function openItem(id) {
   itemId = id; itemLang = it.lang || getLang();
   try { cues = JSON.parse(it.cues || '[]'); } catch { cues = []; }
   cur = -1; lastRender = -1; passT = 0; counted = false; lastSaved = it.position || 0;
+  bus.emit('item', id); // báo cho phần ghi âm khi học bỏ bản ghi tạm của video cũ
   $('#offset').value = it.offset || 0;
   applyPrefs(); // nạp tốc độ riêng của video này
   $('#itemTitle').textContent = titleText(it, cues);
@@ -228,7 +246,7 @@ function renderList() {
     const hd = segOn && starts.has(i)
       ? `<div class="seghd ${starts.get(i) === segIdx ? 'on' : ''}" data-k="${starts.get(i)}"><span>Đoạn ${starts.get(i) + 1} · ${fmtS(c.start)}</span>${i ? `<button class="cut" data-uncut="${i}" title="Bỏ mốc này (gộp với đoạn trên)">✕ gộp</button>` : ''}</div>` : '';
     const cut = segOn && i && !starts.has(i) ? `<button class="cut" data-cut="${i}" title="Chia đoạn ở đây (câu này bắt đầu đoạn mới)">✂</button>` : '';
-    return hd + `<div class="cue" data-i="${i}"><div class="t">${fmt(c.start)}${sp[i] != null ? ` <span class="badge">🎙 ${sp[i]}%</span>` : ''}${cut}</div><div class="m">${esc(c.lines[0])}</div>` +
+    return hd + `<div class="cue" data-i="${i}"><div class="t">${fmt(c.start)}${sp[i] != null ? ` <span class="badge">🎙 ${sp[i]}%</span>` : ''}${marks.has(i) ? recBtns(i) : ''}${cut}</div><div class="m">${esc(c.lines[0])}</div>` +
       c.lines.slice(1).map(l => `<div class="s">${esc(l)}</div>`).join('') + '</div>';
   }).join('');
 }
@@ -511,7 +529,7 @@ function step() {
   }
 }
 // rAF cho chữ chạy mượt; bộ định giờ dự phòng cho lúc trình duyệt ngưng vẽ (thu nhỏ, khóa màn hình…)
-function loop() { step(); requestAnimationFrame(loop); }
+function loop() { if (!M.paused || document.body.dataset.view === 'player') step(); requestAnimationFrame(loop); } // đang ở trang khác và video không chạy: khỏi tính từng khung hình
 
 function persistPos() {
   if (!itemId || !cues.length) return;
@@ -572,6 +590,8 @@ export function init() {
     if (timedCount(c)) toast(`Phụ đề có sẵn giờ từng từ ở ${timedCount(c)}/${c.length} câu`);
   };
   list.addEventListener('click', e => {
+    const recB = e.target.closest('[data-rec],[data-sc]');
+    if (recB) { e.stopPropagation(); bus.emit(recB.dataset.rec != null ? 'playRec' : 'scoreRec', +(recB.dataset.rec ?? recB.dataset.sc)); return; } // nghe lại / chấm giọng mình, không tua video
     const cutB = e.target.closest('[data-cut]'), unB = e.target.closest('[data-uncut]');
     if (cutB) { e.stopPropagation(); setSegments([...segs, +cutB.dataset.cut]); return; }          // chia đoạn: câu này mở đầu đoạn mới
     if (unB) { e.stopPropagation(); const k = +unB.dataset.uncut; setSegments(segs.filter(s => s !== k)); return; } // gộp lại

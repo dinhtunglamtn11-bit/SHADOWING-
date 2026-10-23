@@ -106,10 +106,11 @@ document.addEventListener('keydown', e => {
 });
 
 // ---------- sổ thẻ ----------
+let deckN = 60; // sổ thẻ hàng trăm thẻ: chỉ dựng 60 thẻ đầu, bấm “Hiện thêm” mới dựng tiếp (900 thẻ từng gây đứng máy ~2 giây)
 function renderDeck() {
-  const lang = getLang(), list = cards.allCards(lang).sort((a, b) => a.due - b.due), now = Date.now();
+  const lang = getLang(), all = cards.allCards(lang).sort((a, b) => a.due - b.due), list = all.slice(0, deckN), now = Date.now();
   const when = c => (!c.last ? 'thẻ mới' : c.due <= now ? 'đến hạn' : 'ôn sau ' + Math.max(1, Math.ceil((c.due - now) / 864e5)) + ' ngày');
-  body().innerHTML = `<div class="row"><button class="btn primary" id="dkAdd">＋ Thêm thẻ</button><span class="grow"></span><span class="dim">${list.length} thẻ ${esc(langInfo().name)}</span></div>
+  body().innerHTML = `<div class="row"><button class="btn primary" id="dkAdd">＋ Thêm thẻ</button><span class="grow"></span><span class="dim">${all.length} thẻ ${esc(langInfo().name)}</span></div>
     <div id="dkForm" class="qcard" hidden>
       <label class="dim">Mặt trước (từ/câu)<input id="dkFront" type="text" lang="${langInfo().bcp}"></label>
       <label class="dim">Phiên âm (không bắt buộc)<input id="dkPron" type="text"></label>
@@ -117,7 +118,9 @@ function renderDeck() {
       <div class="row"><button class="btn primary" id="dkSave">Lưu thẻ</button><button class="btn" id="dkCancel">Hủy</button></div>
     </div>
     <div class="cards">${list.length ? list.map(c => `<div class="card" style="cursor:default"><div class="ci"><b lang="${langInfo(c.lang).bcp}" style="white-space:normal">${sayable(c.front, c.lang)}</b><span class="dim">${esc((c.back || []).join(' · '))}</span><span class="dim">${c.weak ? '<span class="bad">câu yếu</span> · ' : ''}${when(c)}${c.title ? ' · ' + esc(c.title) : ''}</span></div><button class="btn" data-del="${c.id}" title="Xóa thẻ">🗑</button></div>`).join('')
-      : '<div class="empty">Chưa có thẻ nào. Bấm “＋ Thêm thẻ”, hoặc ở màn 🎧 Học bấm “📒 Lưu câu”.</div>'}</div>`;
+      : '<div class="empty">Chưa có thẻ nào. Bấm “＋ Thêm thẻ”, hoặc ở màn 🎧 Học bấm “📒 Lưu câu”.</div>'}</div>
+    ${all.length > list.length ? `<div class="row c"><button class="btn" id="dkMore">▼ Hiện thêm ${Math.min(60, all.length - list.length)} thẻ (còn ${all.length - list.length})</button></div>` : ''}`;
+  $('#dkMore')?.addEventListener('click', () => { deckN += 60; const y = scrollY; renderDeck(); scrollTo(0, y); });
   $('#dkAdd').onclick = () => { $('#dkForm').hidden = false; $('#dkFront').focus(); };
   $('#dkCancel').onclick = () => { $('#dkForm').hidden = true; };
   $('#dkSave').onclick = () => {
@@ -136,7 +139,7 @@ export function init() {
   $('#ttsRate').value = String(prefs.ttsRate || 0.9);
   $('#ttsRate').onchange = e => { prefs.ttsRate = parseFloat(e.target.value) || 0.9; savePrefs(); };
   bus.on('prefs', () => { $('#ttsRate').value = String(prefs.ttsRate || 0.9); });
-  bus.on('show', v => { if (v === 'review') render(); else updateBadge(); });
+  bus.on('show', v => { deckN = 60; if (v === 'review') render(); else updateBadge(); });
   bus.on('lang', () => { session = null; mistakeui.reset(); if (document.body.dataset.view === 'review') render(); updateBadge(); });
   bus.on('store', c => { if (c === 'cards' || c === 'items' || c === '*') { updateBadge(); if (document.body.dataset.view === 'review' && tab === 'deck') renderDeck(); } });
   updateBadge();

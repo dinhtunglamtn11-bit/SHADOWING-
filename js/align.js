@@ -323,6 +323,38 @@ export async function transcribe(x, { lang, model = 'Xenova/whisper-base', onLoa
   return (r.text || '').trim();
 }
 
+// ---------- Whisper chạy nền (Web Worker): nghe giọng mà giao diện không bị khựng ----------
+// Dùng khi vừa chấm vừa phát video (ghi âm khi học). Không chạy được worker thì tự quay về cách chạy ngay trên trang.
+let bgW = null, bgSeq = 0;
+const bgWait = new Map();
+function bgWorker() {
+  if (bgW) return bgW;
+  bgW = new Worker(new URL('./asrworker.js', import.meta.url), { type: 'module' });
+  bgW.onmessage = ({ data }) => {
+    const w = bgWait.get(data.id);
+    if (!w) return;
+    if (data.type === 'load') { w.onLoad?.(data.p, data.f); return; }
+    bgWait.delete(data.id);
+    if (data.type === 'done') w.res(data.text); else w.rej(new Error(data.msg));
+  };
+  bgW.onerror = () => {
+    const err = new Error('Không chạy được AI nền');
+    for (const w of bgWait.values()) w.rej(err);
+    bgWait.clear(); bgW.terminate(); bgW = null;
+  };
+  return bgW;
+}
+const bgCall = (msg, onLoad) => new Promise((res, rej) => {
+  const id = ++bgSeq;
+  bgWait.set(id, { res, rej, onLoad });
+  try { bgWorker().postMessage({ id, ...msg }); } catch (e) { bgWait.delete(id); rej(e); }
+});
+export const warmBg = (model = 'Xenova/whisper-base', onLoad) => bgCall({ type: 'warm', model }, onLoad);
+export async function transcribeBg(x, { lang, model = 'Xenova/whisper-base', onLoad } = {}) {
+  try { return await bgCall({ type: 'run', lang, model, audio: x }, onLoad); }
+  catch (e) { if (!/AI nền/.test(e.message)) throw e; return transcribe(x, { lang, model, onLoad }); }
+}
+
 const norm = s => s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 
 // Ghép từ nhận ra (có giờ) với chữ trong phụ đề. Trả về mảng giờ (giây, tính từ đầu đoạn âm thanh) hoặc null.

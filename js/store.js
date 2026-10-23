@@ -32,6 +32,17 @@ export async function initStore() {
 
 const saveLocal = (c, id, data) => { if (idb) os('docs', 'readwrite').put({ k: c + '/' + id, c, id, data }); };
 
+// Gom thông báo “dữ liệu đổi”: nhập / xóa / khôi phục hàng trăm mục trong một vòng lặp chỉ vẽ lại màn hình MỘT lần
+// (trước đây mỗi lần ghi là một lần vẽ lại: 360 video mất gần 2 giây).
+const dirty = new Set();
+let flushing = false;
+function notify(c) {
+  dirty.add(c);
+  if (flushing) return;
+  flushing = true;
+  queueMicrotask(() => { flushing = false; const cs = [...dirty]; dirty.clear(); for (const x of cs) bus.emit('store', x); });
+}
+
 export const get = (c, id) => mem[c].get(id);
 export const list = c => [...mem[c]].filter(([, d]) => !d.deleted).map(([id, d]) => ({ id, ...d }));
 
@@ -40,7 +51,7 @@ export function put(c, id, patch) {
   mem[c].set(id, next);
   saveLocal(c, id, next);
   push(c, id, { ...patch, u: next.u }, true); // chỉ gửi phần thay đổi để nhẹ (vị trí phát lưu thường xuyên)
-  bus.emit('store', c);
+  notify(c);
   return next;
 }
 // Xóa mềm: giữ lại 30 ngày trong "Thùng rác" rồi mới dọn (purge) phần nội dung
@@ -65,7 +76,7 @@ export function restore(c, id, data) {
   if (l && (l.u || 0) >= (data.u || 0)) return false;
   const d = { ...data }; delete d.id;
   mem[c].set(id, d); saveLocal(c, id, d); push(c, id, d);
-  bus.emit('store', c);
+  notify(c);
   return true;
 }
 export const dump = () => Object.fromEntries(COLS.map(c => [c, [...mem[c]].map(([id, d]) => ({ id, ...d }))]));
