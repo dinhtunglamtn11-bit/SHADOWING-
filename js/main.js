@@ -63,7 +63,7 @@ const btnBack = $('#btnBack');
 const topDialog = () => [...document.querySelectorAll('dialog[open]')].pop();
 const lookupOpen = () => { const p = $('#lkPop'); return !!p && !p.hidden; };
 const sideOpen = () => document.body.classList.contains('side-open');
-const pageBack = () => [...document.querySelectorAll('.view.active button')].find(b => /^\s*←/.test(b.textContent) && b.offsetParent);
+const pageBack = () => [...document.querySelectorAll('.view.active button')].find(b => /^\s*←/.test(b.textContent) && b.getClientRects().length); // getClientRects: đúng cả với nút nằm trong khung cố định (toàn màn hình)
 const canBack = () => !!(topDialog() || lookupOpen() || sideOpen() || pageBack() || trail.length);
 function goBack() {
   const d = topDialog();

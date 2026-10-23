@@ -18,8 +18,8 @@ const hash = s => [...String(s || '')].reduce((h, c) => (h * 31 + c.charCodeAt(0
 const colorOf = p => COLORS[hash(p.field || p.name) % COLORS.length];
 const postsOf = lang => store.list('posts').filter(p => (p.lang || 'zh') === lang);
 
-const PAGE = 12;
-let paged = PAGE;
+const PAGE = 8, MAX_DOM = 40; // mỗi lượt rút 8 bài; trên trang chỉ giữ tối đa ~40 bài gần nhất
+let bag = [], lastId = '', base = 0, trimT = 0, full = false;
 let root = null, ctx = null, view = 'feed', fld = '';
 const openC = new Set(); // các bài đang mở khung bình luận
 
@@ -170,59 +170,119 @@ function postHtml(p) {
   </div></article>`;
 }
 
-function shown() {
-  const all = postsOf(getLang()).sort((a, b) => (b.created || 0) - (a.created || 0));
+// Các bài đang được phép xuất hiện: theo bộ lọc lĩnh vực / Đã lưu
+function eligible() {
+  const all = postsOf(getLang());
   return fld === '_saved' ? all.filter(p => p.saved) : fld ? all.filter(p => (p.field || '') === fld) : all;
 }
 
-function drawFeed(keepScroll) {
-  const lang = getLang(), all = postsOf(lang), fields = [...new Set(all.map(p => p.field || '').filter(Boolean))].sort((a, b) => a.localeCompare(b));
+// ---------- lướt NGẪU NHIÊN, KHÔNG GIỚI HẠN ----------
+// “Túi bài”: xáo trộn mọi bài đủ điều kiện rồi rút dần; hết túi thì xáo lại túi mới (bài cuối túi cũ không bị rút lại ngay).
+// Nhờ vậy mọi bài đều được xem một lượt trước khi lặp lại, và lướt mãi không hết.
+const shuffleIds = ids => { for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; } return ids; };
+function draw(n) {
+  const out = [];
+  for (let guard = 0; out.length < n && guard < n * 4; guard++) {
+    if (!bag.length) {
+      const pool = shuffleIds(eligible().map(p => p.id));
+      if (!pool.length) break;
+      if (pool.length > 1 && pool[0] === lastId) pool.push(pool.shift());
+      bag = pool;
+    }
+    const id = bag.shift(), p = store.get('posts', id);
+    if (p && !p.deleted) { out.push({ ...p, id }); lastId = id; }
+  }
+  return out;
+}
+
+const chipsHtml = (all, fields, saved) => {
+  const chip = (id, name, n, user) => `<button class="chip ${fld === id ? 'on' : ''}" data-f="${esc(id)}"><span class="${user ? 'gt' : ''}">${esc(name)}</span> <small>${n}</small></button>`;
+  return chip('', 'Tất cả', all.length) + fields.map(f => chip(f, f, all.filter(p => p.field === f).length, true)).join('') + chip('_saved', '⭐ Đã lưu', saved);
+};
+const fieldsOf = all => [...new Set(all.map(p => p.field || '').filter(Boolean))].sort((a, b) => a.localeCompare(b));
+function refreshChips() { // đổi số đếm ở các nút lọc sau khi lưu / bỏ lưu / xóa bài, không vẽ lại cả trang
+  const el = $('.sp-fl', root);
+  if (!el) return;
+  const all = postsOf(getLang());
+  el.innerHTML = chipsHtml(all, fieldsOf(all), all.filter(p => p.saved).length);
+  $$('.sp-fl [data-f]', root).forEach(c => { c.onclick = () => { fld = c.dataset.f; drawFeed(); }; });
+}
+
+function drawFeed() {
+  const lang = getLang(), all = postsOf(lang), fields = fieldsOf(all);
   if (fld && fld !== '_saved' && !fields.includes(fld)) fld = '';
-  const saved = all.filter(p => p.saved).length;
-  const old = keepScroll ? $('#spFeed', root)?.scrollTop : 0;
+  setFull(false);
   const bar = ctx.bar();
   if (!all.length) {
     root.innerHTML = `${bar}<div class="empty"><div class="emptyart">${pix('a_world')}</div>Chưa có bài Social ${esc(langInfo().name)} nào.<br>Nhập nhiều bài một lúc bằng cú pháp (kèm prompt nhờ AI), tự đăng một bài, hoặc thêm vài bài mẫu để xem thử.
       <div class="row c" style="margin-top:12px"><button class="btn primary" id="spImport">📥 Nhập nhiều bài</button><button class="btn" id="spNew">＋ Đăng bài</button><button class="btn" id="spSample">✨ Thêm bài mẫu</button></div></div>`;
     bind(); return;
   }
-  const chip = (id, name, n, user) => `<button class="chip ${fld === id ? 'on' : ''}" data-f="${esc(id)}"><span class="${user ? 'gt' : ''}">${esc(name)}</span> <small>${n}</small></button>`;
-  const list = shown();
-  if (!keepScroll) paged = PAGE;
+  bag = []; base = 0; lastId = '';
+  const first = draw(PAGE);
   root.innerHTML = `${bar}
-    <div class="row"><button class="btn primary" id="spImport">📥 Nhập nhiều bài</button><button class="btn" id="spNew">＋ Đăng bài</button></div>
-    <div class="chips sp-fl">${chip('', 'Tất cả', all.length)}${fields.map(f => chip(f, f, all.filter(p => p.field === f).length, true)).join('')}${chip('_saved', '⭐ Đã lưu', saved)}</div>
-    ${list.length ? `<div class="sp-wrap"><div id="spFeed" class="sp-feed" tabindex="0" data-sig="${list.map(p => p.id).join(',')}" data-total="${list.length}">${list.slice(0, paged).map(postHtml).join('')}</div>
-      <div class="sp-nav"><button class="btn" id="spUp">▲ Trước</button><span id="spPos" class="dim"></span><button class="btn" id="spDown">▼ Tiếp</button></div></div>` : '<div class="empty">Chưa có bài nào ở mục này.</div>'}`;
+    <div class="row"><button class="btn primary" id="spImport">📥 Nhập nhiều bài</button><button class="btn" id="spNew">＋ Đăng bài</button><button class="btn" id="spFull" title="Chỉ hiện bài đọc và các nút tương tác, không có thư mục hay thanh phía trên (bấm Esc hoặc nút ← Thoát để quay lại)">📺 Đọc toàn màn hình</button></div>
+    <div class="chips sp-fl">${chipsHtml(all, fields, all.filter(p => p.saved).length)}</div>
+    ${first.length ? `<div class="dim sp-hint">Lướt ngẫu nhiên, không giới hạn: bài nào cũng được xem một lượt rồi mới xáo lại.</div>
+      <div class="sp-wrap" id="spWrap"><div class="spf-bar"><button class="btn" id="spfClose">← Thoát</button><span class="grow"></span><button class="btn" id="spfLookup" data-lookup title="Bật rồi chạm vào từ trong bài để tra nghĩa">📖 Tra từ</button></div>
+        <div id="spFeed" class="sp-feed" tabindex="0">${first.map(postHtml).join('')}</div>
+        <div class="sp-nav"><button class="btn" id="spUp">▲ Trước</button><span id="spPos" class="dim"></span><button class="btn" id="spDown">▼ Tiếp</button></div></div>` : '<div class="empty">Chưa có bài nào ở mục này.</div>'}`;
   bind();
-  const feed = $('#spFeed', root);
-  if (feed) { if (old) { feed.style.scrollBehavior = 'auto'; feed.scrollTop = old; feed.style.scrollBehavior = ''; } pos(); }
+  pos();
 }
 
 function pos() {
   const feed = $('#spFeed', root), el = $('#spPos', root);
   if (!feed || !el) return;
-  const n = +feed.dataset.total || feed.children.length, i = Math.min(feed.children.length - 1, Math.round(feed.scrollTop / Math.max(1, feed.clientHeight)));
-  el.textContent = `${i + 1} / ${n}`;
+  const i = Math.min(feed.children.length - 1, Math.round(feed.scrollTop / Math.max(1, feed.clientHeight)));
+  el.textContent = `🎲 Bài số ${base + i + 1}`;
 }
-// Chỉ dựng 12 bài đầu cho nhanh; gần tới cuối thì dựng tiếp 12 bài nữa (lướt mãi không hết, như TikTok)
+// Gần tới cuối thì rút thêm bài từ túi (không bao giờ hết); bài quá cũ ở phía trên được gỡ bớt để trang luôn nhẹ
 function maybeMore(feed) {
   if (feed.scrollTop + feed.clientHeight * 3 < feed.scrollHeight) return;
-  const list = shown();
-  if (paged >= list.length) return;
-  const next = list.slice(paged, paged + PAGE);
-  paged += next.length;
+  const next = draw(PAGE);
+  if (!next.length) return;
   feed.insertAdjacentHTML('beforeend', next.map(postHtml).join(''));
+  clearTimeout(trimT);
+  trimT = setTimeout(() => trim(feed), 250);
+}
+function trim(feed) {
+  const extra = feed.children.length - MAX_DOM;
+  if (extra < PAGE || !feed.isConnected) return;
+  const h = feed.clientHeight, k = Math.floor(extra / PAGE) * PAGE;
+  if (h < 50 || feed.scrollTop < (k + 2) * h) return; // chỉ gỡ khi bài đang đọc còn cách chỗ gỡ ít nhất 2 bài
+  const st = feed.scrollTop;
+  for (let i = 0; i < k; i++) feed.firstElementChild.remove();
+  feed.style.scrollBehavior = 'auto'; feed.scrollTop = Math.max(0, st - k * h); feed.style.scrollBehavior = ''; // đặt lại vị trí tuyệt đối (trình duyệt có thể đã tự co scrollTop khi bớt nội dung)
+  base += k;
 }
 function step(d) {
   const feed = $('#spFeed', root);
   if (feed) feed.scrollBy({ top: d * feed.clientHeight, behavior: 'smooth' });
 }
 
+// ---------- đọc toàn màn hình: chỉ còn bài đọc và nút tương tác ----------
+function setFull(on) {
+  const wrap = root ? $('#spWrap', root) : null, feed = root ? $('#spFeed', root) : null; // root còn null khi Social chưa được mở lần nào
+  full = !!on && !!wrap;
+  document.body.classList.toggle('sp-reading', full);
+  if (!wrap) return;
+  const idx = feed ? Math.round(feed.scrollTop / Math.max(1, feed.clientHeight)) : 0;
+  wrap.classList.toggle('full', full);
+  if (feed) { feed.style.scrollBehavior = 'auto'; feed.scrollTop = idx * feed.clientHeight; feed.style.scrollBehavior = ''; } // giữ nguyên bài đang đọc khi đổi khung
+  if (full) {
+    $('#spfLookup').classList.toggle('on', document.body.classList.contains('lookup'));
+    try { document.documentElement.requestFullscreen?.({ navigationUI: 'hide' })?.catch(() => {}); } catch { /* không hỗ trợ: vẫn là toàn khung của app */ }
+    setTimeout(() => $('#spFeed')?.focus({ preventScroll: true }), 50);
+  } else if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  pos();
+}
+
 function redraw(id) {
-  const el = $(`.sp[data-id="${id}"]`, root), p = store.get('posts', id);
-  if (!el || !p) return;
-  el.outerHTML = postHtml({ ...p, id });
+  const p = store.get('posts', id);
+  const els = $$(`.sp[data-id="${id}"]`, root);
+  if (!els.length || !p) return;
+  els.forEach(el => { el.outerHTML = postHtml({ ...p, id }); });
   const cm = $(`.sp[data-id="${id}"] .sp-cl`, root);
   if (cm) cm.scrollTop = cm.scrollHeight;
 }
@@ -233,7 +293,7 @@ function act(e) {
   const card = b.closest('.sp'), id = card.dataset.id, p = store.get('posts', id);
   if (!p) return;
   const a = b.dataset.a, was = p.saved;
-  if (a === 'save') { store.put('posts', id, { saved: was ? 0 : Date.now() }); toast(was ? 'Đã bỏ lưu' : 'Đã lưu ⭐', 1500); redraw(id); }
+  if (a === 'save') { store.put('posts', id, { saved: was ? 0 : Date.now() }); toast(was ? 'Đã bỏ lưu' : 'Đã lưu ⭐', 1500); redraw(id); refreshChips(); }
   else if (a === 'cmt') { openC.has(id) ? openC.delete(id) : openC.add(id); redraw(id); $(`.sp[data-id="${id}"] .sp-ci`, root)?.focus(); }
   else if (a === 'say') say(p.body.replace(/#\S+/g, ' '), langInfo(p.lang || 'zh').bcp);
   else if (a === 'send') sendComment(card, id, p);
@@ -242,9 +302,17 @@ function act(e) {
     redraw(id);
   } else if (a === 'del') {
     if (!confirm('Xóa bài này? (vào Thùng rác, giữ 30 ngày)')) return;
-    store.del('posts', id); openC.delete(id);
-    drawFeed(true);
+    store.del('posts', id); openC.delete(id); bag = bag.filter(x => x !== id);
+    removeShown();
   }
+}
+// Gỡ khỏi trang các bài đã bị xóa (ở đây hoặc từ máy khác); hết bài thì vẽ lại trang
+function removeShown() {
+  const feed = $('#spFeed', root);
+  if (!feed) return;
+  [...feed.children].forEach(el => { const p = store.get('posts', el.dataset.id); if (!p || p.deleted) el.remove(); });
+  if (!feed.children.length) { drawFeed(); return; } // bỏ lưu bài cuối trong mục “Đã lưu” thì bài vẫn hiện tới khi bạn rời mục đó
+  refreshChips(); pos();
 }
 function sendComment(card, id, p) {
   const inp = $('.sp-ci', card), text = (inp?.value || '').trim();
@@ -260,6 +328,9 @@ function bind() {
   $('#spNew')?.addEventListener('click', () => { view = 'compose'; drawCompose(); scrollTo(0, 0); });
   $('#spSample')?.addEventListener('click', () => { const n = importPosts(parseSocial(SAMPLES[getLang()] || SAMPLES.zh).posts); toast(`Đã thêm ${n} bài mẫu`); drawFeed(); });
   $$('.sp-fl [data-f]', root).forEach(c => { c.onclick = () => { fld = c.dataset.f; drawFeed(); }; });
+  $('#spFull', root)?.addEventListener('click', () => setFull(true));
+  $('#spfClose', root)?.addEventListener('click', () => setFull(false));
+  $('#spfLookup', root)?.addEventListener('click', () => document.querySelector('#nwTools [data-lookup]')?.click()); // dùng chung nút Tra từ của Thế giới
   $('#spUp', root)?.addEventListener('click', () => step(-1));
   $('#spDown', root)?.addEventListener('click', () => step(1));
   const feed = $('#spFeed', root);
@@ -356,19 +427,24 @@ export function render(rt, c) {
   if (view === 'compose') return drawCompose();
   drawFeed();
 }
-export function reset() { view = 'feed'; fld = ''; openC.clear(); }
+export function reset() { setFull(false); view = 'feed'; fld = ''; openC.clear(); }
+// Rời Social (sang mục Article, trang khác): thoát chế độ toàn màn hình
+export const leave = () => setFull(false);
 
 export function init() {
-  // phím ↑ ↓ để lướt khi đang xem Social (không chặn khi đang gõ chữ)
+  // phím ↑ ↓ để lướt khi đang xem Social (không chặn khi đang gõ chữ); Esc thoát chế độ toàn màn hình
   document.addEventListener('keydown', e => {
     if (document.body.dataset.view !== 'world' || !$('#spFeed') || e.target.closest('input,textarea,select,dialog')) return;
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); step(1); }
     else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); step(-1); }
+    else if (e.key === 'Escape' && full && !document.querySelector('dialog[open]') && document.querySelector('#lkPop')?.hidden !== false) setFull(false);
   });
-  // bài thêm / bớt từ máy khác: vẽ lại, giữ vị trí đang xem
+  bus.on('show', v => { if (v !== 'world') setFull(false); });
+  // bài bị xóa từ máy khác: gỡ khỏi trang; bài mới thêm từ máy khác sẽ có mặt trong túi bài ở lần xáo kế tiếp
   bus.on('store', c => {
-    if ((c !== 'posts' && c !== '*') || document.body.dataset.view !== 'world') return;
-    const feed = $('#spFeed');
-    if (feed && feed.dataset.sig !== shown().map(p => p.id).join(',')) drawFeed(true);
+    if ((c !== 'posts' && c !== '*') || document.body.dataset.view !== 'world' || !$('#spFeed')) return;
+    const ids = new Set(eligible().map(p => p.id));
+    bag = bag.filter(id => ids.has(id));
+    removeShown();
   });
 }

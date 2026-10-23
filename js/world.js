@@ -185,7 +185,7 @@ let sec = store0('worldSec') === 'social' ? 'social' : 'article';
 const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="social" class="${sec === 'social' ? 'on' : ''}">📱 Social</button></div>`;
 function bindSec() {
   $$('#wSec button', root).forEach(b => {
-    b.onclick = () => { if (b.dataset.s === sec) return; sec = b.dataset.s; save0('worldSec', sec); mode = 'feed'; render(); scrollTo(0, 0); };
+    b.onclick = () => { if (b.dataset.s === sec) return; social.leave(); sec = b.dataset.s; save0('worldSec', sec); mode = 'feed'; render(); scrollTo(0, 0); };
   });
 }
 

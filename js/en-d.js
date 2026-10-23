@@ -761,6 +761,12 @@ export default {
   "Chấm điểm câu vừa nói": "Score the line you just said",
   "Đã bật ghi âm khi học: bấm Play và nói theo video. Bản ghi chỉ là tạm thời, hết video là xóa; muốn chấm điểm thì bấm 🎯.": "Record-while-studying is on: press Play and speak along with the video. Recordings are temporary and deleted when the video ends; tap 🎯 when you want a score.",
   "Chấm điểm cần tải mô hình AI (khoảng 80 MB, chỉ lần đầu, sau đó dùng offline được). Tải bây giờ?": "Scoring needs the AI model (about 80 MB, first time only, then it works offline). Download it now?",
+  // ===== social.js: lướt ngẫu nhiên không giới hạn, đọc toàn màn hình =====
+  "Chỉ hiện bài đọc và các nút tương tác, không có thư mục hay thanh phía trên (bấm Esc hoặc nút ← Thoát để quay lại)": "Shows only the posts and their buttons, with no folders or bars above (press Esc or the ← Exit button to go back)",
+  "Đọc toàn màn hình": "Full-screen reading",
+  "Bật rồi chạm vào từ trong bài để tra nghĩa": "Turn on, then tap a word in the post to look up its meaning",
+  "Lướt ngẫu nhiên, không giới hạn: bài nào cũng được xem một lượt rồi mới xáo lại.": "Random, endless scrolling: every post is shown once before the order is shuffled again.",
+  "Bài số {}": "Post #{}",
   // ===== sfx.js: âm thanh nút bấm =====
   "Âm thanh nút bấm": "Button sounds",
   "Âm thanh": "Sound",
