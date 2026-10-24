@@ -351,8 +351,40 @@ button, .btn, .chip, a, summary, select, input, label, [role=button], [role=tab]
 #rbResult .score { font-size: 28px; font-weight: 700; }
 #rbResult .line .bad { text-decoration: underline wavy; }
 
+/* ===== Nền trang đọc bài (Cài đặt → Nền trang đọc bài) và định dạng chữ trong bài ===== */
+:root { --rc-red: #c62828; --rc-orange: #d35400; --rc-green: #1b7a35; --rc-blue: #1c58c4; --rc-purple: #7b2fc4; --rc-pink: #c2186b;
+  --rh-yellow: #fff176; --rh-green: #a5e8a0; --rh-blue: #a9d4ff; --rh-pink: #ffb8d6; --rh-orange: #ffc98a; --rh-purple: #d9c2ff; }
+:root[data-rd=dark], :root[data-rd=default][data-theme=night] { --rc-red: #ff8a80; --rc-orange: #ffb066; --rc-green: #7ee08f; --rc-blue: #8ec1ff; --rc-purple: #c9a6ff; --rc-pink: #ff9ccb; }
+:root[data-rd=white] { --rd-bg: #ffffff; --rd-fg: #111111; --rd-dim: #555555; }
+:root[data-rd=paper] { --rd-bg: #f6ecd2; --rd-fg: #3a2a14; --rd-dim: #6d5a3a; }
+:root[data-rd=green] { --rd-bg: #d8ecd3; --rd-fg: #12301a; --rd-dim: #3d5e45; }
+:root[data-rd=dark] { --rd-bg: #15141f; --rd-fg: #f3eed9; --rd-dim: #b5afc9; }
+:root[data-rd=white] .nw-read, :root[data-rd=paper] .nw-read, :root[data-rd=green] .nw-read, :root[data-rd=dark] .nw-read { background: var(--rd-bg); color: var(--rd-fg); padding: 16px 20px 20px; border: var(--px) solid var(--ink); }
+:root[data-rd=white] .nw-read :is(.nw-ttl, .nw-text, p), :root[data-rd=paper] .nw-read :is(.nw-ttl, .nw-text, p), :root[data-rd=green] .nw-read :is(.nw-ttl, .nw-text, p), :root[data-rd=dark] .nw-read :is(.nw-ttl, .nw-text, p) { color: var(--rd-fg); }
+:root[data-rd=white] .nw-read :is(.dim, .nw-by, .nw-src), :root[data-rd=paper] .nw-read :is(.dim, .nw-by, .nw-src), :root[data-rd=green] .nw-read :is(.dim, .nw-by, .nw-src), :root[data-rd=dark] .nw-read :is(.dim, .nw-by, .nw-src) { color: var(--rd-dim); }
+.rc-red { color: var(--rc-red); } .rc-orange { color: var(--rc-orange); } .rc-green { color: var(--rc-green); } .rc-blue { color: var(--rc-blue); } .rc-purple { color: var(--rc-purple); } .rc-pink { color: var(--rc-pink); }
+.rh { color: #111 !important; padding: 0 3px; }
+.rh-yellow { background: var(--rh-yellow); } .rh-green { background: var(--rh-green); } .rh-blue { background: var(--rh-blue); } .rh-pink { background: var(--rh-pink); } .rh-orange { background: var(--rh-orange); } .rh-purple { background: var(--rh-purple); }
+.nw-text b { font-weight: 700; }
+/* ô nhập bài rộng + thanh định dạng */
+.edwide { width: 100%; min-height: 55vh; resize: vertical; box-sizing: border-box; line-height: 1.6; font-size: 18px; }
+.rtbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 8px; background: var(--panel2, var(--panel)); border: 2px dashed var(--line); }
+.rtbar .btn { padding: 1px 12px 3px; min-height: 0; font-size: 20px; }
+.rtgrp { display: inline-flex; align-items: center; gap: 4px; }
+.rtgrp small { font-family: var(--pf); font-size: 17px; margin-right: 2px; }
+.rtsw { width: 24px; height: 24px; padding: 0; border: 3px solid var(--ink); cursor: pointer; }
+.rtsw[class*=rc-] { background: currentColor; }
+.edpv { padding: 14px 16px; background: var(--panel); border: var(--px) solid var(--ink); max-height: 60vh; overflow: auto; }
+
 /* ===== Hiệu năng: danh sách dài chỉ dựng bố cục cho phần đang nhìn thấy (video 2000 câu: từ ~1,6 giây xuống mượt) ===== */
 #cueList .cue, #cueList .seghd { content-visibility: auto; contain-intrinsic-size: auto 72px; }
 #cueList .cue.ed { contain-intrinsic-size: auto 200px; }
 .sp, .lb .card, #rvBody .grp .card, #rvBody .cards .card, .nw-card { content-visibility: auto; contain-intrinsic-size: auto 90px; }
 .sp { contain-intrinsic-size: auto 420px; }
+
+/* bút highlight tạm thời khi đọc bài */
+.hlbar { position: sticky; top: 0; z-index: 5; margin-bottom: 8px; }
+.hlbar[hidden] { display: none; }
+.hlbar .btn { padding: 1px 10px 3px; min-height: 0; font-size: 18px; }
+mark.hltmp { color: inherit; }
+.rtbar[hidden] { display: none; }

@@ -7,10 +7,11 @@ import { openSide } from './side.js';
 import { addByLink } from './player.js';
 import { zhText } from './prefs.js';
 import { loadSimplifier } from './util.js';
+import { inline as richInline, plain, TEXT_COLORS, HL_COLORS } from './richtext.js';
 
 // [[video:ID|chữ]]  hoặc  [[video:ID@12.5|chữ]] (mở video từ giây 12.5)  |  [[audio:ID|chữ]]
 const TOK = /\[\[(audio|video):([A-Za-z0-9]+)(?:@(\d+(?:\.\d+)?))?(?:\|([^\]]*))?\]\]/g;
-const stripTok = s => s.replace(/\[\[(?:audio|video):[^|\]]*\|?([^\]]*)\]\]/g, '$1');
+const stripTok = s => plain(s.replace(/\[\[(?:audio|video):[^|\]]*\|?([^\]]*)\]\]/g, '$1'));
 let noteId = null, mode = 'edit', saveT = null;
 let pending = { s: 0, e: 0 };  // đoạn chữ sẽ được gắn link (chốt lúc mở hộp thoại)
 let lastSel = null;             // đoạn chữ vừa bôi đen (nhớ lại cả khi bấm nút làm ô soạn mất vùng chọn, nhất là trên điện thoại)
@@ -65,6 +66,7 @@ function setMode(m) {
   $('#nBox').hidden = m !== 'edit';
   $('#nPreview').hidden = m !== 'view';
   $('#nTools').hidden = m !== 'edit';
+  $('#nFmt').hidden = m !== 'edit';
   $('#nSelBar').hidden = m !== 'edit';
   $('#nMain').classList.toggle('nview', m === 'view'); // chế độ Xem: ẩn các nút gắn link (chỉ còn Tra từ, Đọc, Chạm câu)
   if (m === 'view') renderPreview(); else refreshEditor();
@@ -127,7 +129,7 @@ function targetRange() {
 }
 
 // ---------- hiển thị ----------
-const fmtText = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+const fmtText = s => richInline(esc(s));
 function inline(line) {
   let out = '', last = 0;
   for (const m of line.matchAll(TOK)) {
@@ -265,6 +267,29 @@ export function init() {
   const ta = $('#nBody');
   $('#nTitle').addEventListener('input', queueSave);
   ta.addEventListener('input', () => { queueSave(); renderHL(); autoGrow(); readSel(); });
+  // thanh định dạng: bọc phần đang bôi đen bằng ký hiệu; bỏ định dạng thì gỡ ký hiệu nhưng giữ nguyên link
+  const fmt = $('#nFmt');
+  const wrapSel = (open, close) => {
+    const s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+    ta.value = v.slice(0, s) + open + v.slice(s, e) + close + v.slice(e);
+    ta.focus(); ta.setSelectionRange(s + open.length, e + open.length);
+    ta.dispatchEvent(new Event('input'));
+  };
+  fmt.addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });
+  fmt.addEventListener('click', e => {
+    const b = e.target.closest('[data-f]'); if (!b) return;
+    const f = b.dataset.f;
+    if (f === 'x') {
+      const s = ta.selectionStart, e2 = ta.selectionEnd;
+      if (s === e2) { toast('Hãy bôi đen đoạn chữ cần bỏ định dạng'); return; }
+      const t = plain(ta.value.slice(s, e2));
+      ta.value = ta.value.slice(0, s) + t + ta.value.slice(e2);
+      ta.focus(); ta.setSelectionRange(s, s + t.length);
+      ta.dispatchEvent(new Event('input'));
+    } else if (f === 'b') wrapSel('**', '**');
+    else if (f === 'i') wrapSel('*', '*');
+    else { const [k, c] = f.split(':'); wrapSel(`{{${k}:${c}|`, '}}'); }
+  });
   ta.addEventListener('change', simplifyNote);
   $('#nTitle').addEventListener('change', simplifyNote);
   for (const ev of ['select', 'keyup', 'mouseup', 'touchend', 'focus']) ta.addEventListener(ev, readSel);

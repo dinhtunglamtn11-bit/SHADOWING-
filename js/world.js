@@ -14,6 +14,7 @@ import { setPrompt, newsPrompt, promptPanel, NEWS_SYNTAX } from './exprompts.js'
 import { pix } from './pixicons.js';
 import * as wvocab from './wvocab.js';
 import * as social from './social.js';
+import { inline, plain, TEXT_COLORS, HL_COLORS } from './richtext.js';
 
 const DAY = 864e5;
 const WD = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
@@ -31,11 +32,11 @@ const foldersOf = lang => store.list('wfolders').filter(f => (f.lang || 'zh') ==
 const folderOf = a => { const f = a.folder && store.get('wfolders', a.folder); return f && !f.deleted ? f : null; };
 const colorOf = a => COLORS[hash(folderOf(a)?.name || a.title || '') % COLORS.length];
 const colorOfName = n => COLORS[hash(n || '') % COLORS.length];
-const minutes = a => { const b = a.body || ''; return Math.max(1, Math.round((b.match(CJK) || []).length / 320 + b.replace(CJK, ' ').split(/\s+/).filter(Boolean).length / 180)); };
-const leadOf = a => (a.body || '').replace(/\s+/g, ' ').trim().slice(0, 110);
+const minutes = a => { const b = plain(a.body); return Math.max(1, Math.round((b.match(CJK) || []).length / 320 + b.replace(CJK, ' ').split(/\s+/).filter(Boolean).length / 180)); };
+const leadOf = a => plain(a.body).replace(/\s+/g, ' ').trim().slice(0, 110);
 const qCount = a => { const p = parseSet(a.qtext || ''); return p.qs.length + (p.vocab.length >= 2 ? p.vocab.length * 2 : 0); };
 const paras = b => String(b || '').split(/\n{2,}/).map(x => x.trim()).filter(Boolean);
-const bodyHtml = a => paras(a.body).map(p => `<p>${esc(p)}</p>`).join('');
+const bodyHtml = a => paras(a.body).map(p => `<p>${inline(esc(p))}</p>`).join('');
 
 function ensureFolder(name, lang) {
   name = (name || '').trim();
@@ -305,7 +306,7 @@ function openArticle(id) {
   root.innerHTML = `<div class="row nw-bar"><button class="btn" id="nwBack">← Thế giới của tôi</button>
       <div class="seg" id="nwLay"><button data-l="stack" class="${lay === 'stack' ? 'on' : ''}" title="Bài đọc và câu hỏi nằm cùng một trang: đọc xong kéo xuống làm bài">☰ Cùng trang</button><button data-l="split" class="${lay === 'split' ? 'on' : ''}" title="Bài đọc ở bên trái, câu hỏi ở bên phải (màn hình rộng)">◫ Chia đôi</button></div>
       ${timeHtml('nwTime', limit)}<span class="grow"></span><button class="btn" id="nwRand" title="Chọn ngẫu nhiên một chủ đề rồi mở một bài trong đó">🎲 Chủ đề ngẫu nhiên</button></div>
-    <div class="nw-lay ${lay}" id="nwLayBox"><div class="nw-left"><article class="nw-read">
+    <div class="nw-lay ${lay}" id="nwLayBox"><div class="nw-left"><div class="rtbar hlbar" id="hlBar"><small class="dim">🖍 Bôi đen chữ rồi chọn màu (chỉ tạm thời):</small>${HL_COLORS.map(c => `<button class="rtsw rh-${c}" data-hl="${c}" title="Tô chữ đang bôi đen"></button>`).join('')}<button class="btn" data-hl="x" title="Xóa highlight ở đoạn đang bôi đen (không bôi đen thì xóa hết)">⌫ Xóa</button></div><article class="nw-read">
       <div class="nw-hero" style="--cc:${colorOf(a)}"><span class="nw-emoji big">${esc(a.emoji || '📰')}</span>${f ? `<span class="nw-tag">${esc(f.name)}</span>` : ''}</div>
       <h1 class="nw-ttl" lang="${bcp}">${esc(a.title)}</h1>
       <div class="nw-by dim">${a.source ? `<span class="nw-src">${esc(a.source)}</span> · ` : ''}⏱ ${minutes(a)} phút đọc${a.best != null ? ` · ⭐ điểm cao nhất ${a.best}%` : ''}</div>
@@ -322,6 +323,7 @@ function openArticle(id) {
     $('#nwLayBox', root).className = 'nw-lay ' + b.dataset.l;
   });
   wireTime(root, 'nwTime');
+  wireHighlighter();
   const setTime = () => { const m = readTime(root, 'nwTime'); save0('worldTime', m); toast(m ? `Giới hạn ${m} phút: bài được làm lại từ đầu` : 'Đã bỏ giới hạn thời gian'); openArticle(id); };
   $('#nwTime').addEventListener('change', () => { if ($('#nwTime').value !== 'custom') setTime(); });
   $('#nwTimeMin').addEventListener('change', setTime);
@@ -331,7 +333,7 @@ function openArticle(id) {
   if (qs.length) {
     const run = () => runSheet($('#nwSheet'), {
       qs, lang: L, title: '', src: a.title, submitLabel: 'Hoàn thành bài đọc', timeLimit: limit,
-      onDone: r => finishRead(id, r.pct),
+      onDone: r => { clearHighlights(); finishRead(id, r.pct); },
       onAgain: () => openArticle(id),
       extra: [{ label: '🎲 Chủ đề ngẫu nhiên', fn: () => randomTopic(id) }],
       onExit: () => { mode = 'feed'; drawFeed(); scrollTo(0, 0); }, exitLabel: '🌍 Thế giới của tôi',
@@ -340,6 +342,53 @@ function openArticle(id) {
   }
   scrollTo(0, 0);
 }
+
+// ---------- bút highlight tạm thời: chỉ tồn tại trong DOM khi đang đọc/làm bài, không lưu ----------
+function clearHighlights(hideBar = true) {
+  const body = $('#newsBody');
+  if (!body) return;
+  $$('mark.hltmp', body).forEach(m => m.replaceWith(...m.childNodes));
+  body.normalize();
+  if (hideBar) $('#hlBar')?.setAttribute('hidden', ''); // nộp bài xong thì bút cũng tắt
+}
+function paintSel(color) {
+  const body = $('#newsBody'), sel = getSelection();
+  if (!body || !sel.rangeCount || sel.isCollapsed) return false;
+  const r = sel.getRangeAt(0);
+  if (!body.contains(r.commonAncestorContainer)) return false;
+  const nodes = [], w = document.createTreeWalker(r.commonAncestorContainer.nodeType === 3 ? r.commonAncestorContainer.parentNode : r.commonAncestorContainer, NodeFilter.SHOW_TEXT);
+  for (let n = w.nextNode(); n; n = w.nextNode()) if (r.intersectsNode(n) && n.nodeValue.trim()) nodes.push(n);
+  if (r.commonAncestorContainer.nodeType === 3 && !nodes.length) nodes.push(r.commonAncestorContainer);
+  for (const n of nodes) {
+    const s = n === r.startContainer ? r.startOffset : 0, e = n === r.endContainer ? r.endOffset : n.nodeValue.length;
+    if (e <= s) continue;
+    const mid = n.splitText(s); mid.splitText(e - s);
+    const old = mid.parentNode.closest?.('mark.hltmp');
+    if (old) { old.className = `rh rh-${color} hltmp`; continue; } // tô đè màu khác lên chữ đã tô
+    const m = document.createElement('mark'); m.className = `rh rh-${color} hltmp`;
+    mid.replaceWith(m); m.append(mid);
+  }
+  sel.removeAllRanges();
+  return true;
+}
+function eraseSel() {
+  const body = $('#newsBody'), sel = getSelection();
+  if (!body) return;
+  const r = sel.rangeCount && !sel.isCollapsed && body.contains(sel.getRangeAt(0).commonAncestorContainer) ? sel.getRangeAt(0) : null;
+  $$('mark.hltmp', body).forEach(m => { if (!r || r.intersectsNode(m)) m.replaceWith(...m.childNodes); });
+  body.normalize();
+  sel.removeAllRanges();
+}
+function wireHighlighter() {
+  const bar = $('#hlBar'); if (!bar) return;
+  bar.addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-hl]'); if (!b) return;
+    if (b.dataset.hl === 'x') eraseSel();
+    else if (!paintSel(b.dataset.hl)) toast('Hãy bôi đen chữ trong bài đọc trước');
+  });
+}
+bus.on('nav', () => clearHighlights(false)); // rời trang đọc sang mục khác: tự xóa highlight
 
 function finishRead(id, pct) {
   const a = store.get('articles', id); if (!a) return;
@@ -357,13 +406,48 @@ function drawEditor() {
       <label class="dim">Tiêu đề<input id="edTitle" type="text" value="${esc(a?.title || '')}" placeholder="Tiêu đề bài đọc"></label>
       <div class="row"><label class="dim grow">Thư mục chủ đề<select id="edFolder"><option value="">Chưa phân loại</option>${folders.map(f => `<option value="${f.id}" ${a?.folder === f.id ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}<option value="_new">＋ Thư mục mới…</option></select></label><label class="dim">Biểu tượng bài<input id="edEmoji" type="text" value="${esc(a?.emoji || '')}" maxlength="4" style="width:72px" placeholder="📰"></label>
         <label class="dim grow">Nguồn<input id="edSrc" type="text" value="${esc(a?.source || '')}" placeholder="(không bắt buộc)"></label></div>
-      <label class="dim">Nội dung bài (các đoạn cách nhau một dòng trống)<textarea id="edBody" rows="12" spellcheck="false" placeholder="Dán hoặc gõ bài đọc ở đây…">${esc(a?.body || '')}</textarea></label>
+      <div class="dim">Nội dung bài (các đoạn cách nhau một dòng trống)</div>
+      <div class="rtbar" id="edBar">
+        <button class="btn" data-f="b" title="Chữ đậm (bôi đen chữ rồi bấm)"><b>B</b></button><button class="btn" data-f="i" title="Chữ nghiêng"><i>I</i></button>
+        <span class="rtgrp" title="Tô màu chữ"><small>Chữ</small>${TEXT_COLORS.map(c => `<button class="rtsw rc-${c}" data-f="c:${c}" title="Tô màu chữ"></button>`).join('')}</span>
+        <span class="rtgrp" title="Tô nền như bút dạ quang"><small>Nền</small>${HL_COLORS.map(c => `<button class="rtsw rh-${c}" data-f="h:${c}" title="Tô nền (bút dạ quang)"></button>`).join('')}</span>
+        <button class="btn" data-f="x" title="Bỏ định dạng của đoạn đang bôi đen">✕ Bỏ định dạng</button><span class="grow"></span><button class="btn" id="edPv" title="Xem bài sẽ hiện thế nào khi đọc">👁 Xem trước</button>
+      </div>
+      <textarea id="edBody" class="edwide" rows="18" spellcheck="false" placeholder="Dán hoặc gõ bài đọc ở đây…">${esc(a?.body || '')}</textarea>
+      <div id="edPreview" class="nw-text edpv" hidden></div>
+      <div class="dim">Cách dùng: bôi đen chữ rồi bấm nút định dạng. Chữ đậm viết **như vậy**, nghiêng *như vậy*, màu {{c:red|như vậy}}, tô nền {{h:yellow|như vậy}}.</div>
       <details class="help"><summary>🤖 Nhờ AI tạo câu hỏi cho bài này (prompt)</summary><div id="edAiHost"></div></details>
       <label class="dim">Câu hỏi (mỗi dòng một câu: TN, DS, S, G, Đ, K, N, NG — cú pháp giống “Bài tập của tôi”)<textarea id="edQ" class="mono" rows="9" spellcheck="false" placeholder="TN: Câu hỏi? | *đáp án đúng | sai | sai | sai ~ giải thích">${esc(a?.qtext || '')}</textarea></label>
       <div id="edCheck" class="dim"></div>
       <div class="row"><button class="btn primary" id="edSave">💾 Lưu</button><button class="btn" id="edRead">💾 Lưu và đọc</button><button class="btn" id="edCancel">Hủy</button></div>
     </div>`;
   const q = $('#edQ'), body = $('#edBody'), fsel = $('#edFolder');
+  // thanh định dạng: bọc phần đang bôi đen bằng ký hiệu (không bôi đen thì chèn ký hiệu rỗng và đặt con trỏ ở giữa)
+  const wrap = (open, close) => {
+    const s = body.selectionStart, e = body.selectionEnd, v = body.value;
+    body.value = v.slice(0, s) + open + v.slice(s, e) + close + v.slice(e);
+    body.focus(); body.setSelectionRange(s + open.length, e + open.length);
+    body.dispatchEvent(new Event('input'));
+  };
+  const clearFmt = () => {
+    const s = body.selectionStart, e = body.selectionEnd;
+    if (s === e) { toast('Hãy bôi đen đoạn chữ cần bỏ định dạng'); return; }
+    const t = plain(body.value.slice(s, e));
+    body.value = body.value.slice(0, s) + t + body.value.slice(e);
+    body.focus(); body.setSelectionRange(s, s + t.length);
+    body.dispatchEvent(new Event('input'));
+  };
+  const showPv = () => { $('#edPreview').innerHTML = bodyHtml({ body: body.value }) || '<span class="dim">Chưa có nội dung.</span>'; };
+  $('#edBar').addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); }); // bấm nút không làm mất phần đang bôi đen
+  $('#edBar').addEventListener('click', e => {
+    const b = e.target.closest('[data-f]');
+    if (!b) return;
+    const f = b.dataset.f;
+    if (f === 'b') wrap('**', '**'); else if (f === 'i') wrap('*', '*'); else if (f === 'x') clearFmt();
+    else { const [k, c] = f.split(':'); wrap(`{{${k}:${c}|`, '}}'); }
+  });
+  $('#edPv').onclick = () => { const p = $('#edPreview'); p.hidden = !p.hidden; if (!p.hidden) showPv(); };
+  body.addEventListener('input', () => { if (!$('#edPreview').hidden) showPv(); });
   fsel.onchange = () => {
     if (fsel.value !== '_new') return;
     const name = (prompt('Tên thư mục chủ đề mới:') || '').trim();
@@ -381,7 +465,7 @@ function drawEditor() {
   $('#edAiHost').closest('details').addEventListener('toggle', e => {
     if (!e.target.open || panel) return;
     panel = promptPanel($('#edAiHost'), {
-      state: pkQ, source: async () => body.value.trim(),
+      state: pkQ, source: async () => plain(body.value).trim(),
       build: o => setPrompt({ lang, kinds: o.kinds, count: o.count, title: $('#edTitle').value.trim(), source: o.source }),
       onPaste: text => { q.value = q.value.trim() ? q.value.replace(/\s+$/, '') + '\n' + text : text; check(); toast('Đã dán vào ô câu hỏi ✓'); },
     });

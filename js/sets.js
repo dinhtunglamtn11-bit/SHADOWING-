@@ -12,6 +12,7 @@ import { trLines } from './i18n.js';
 import { parseSet, build, countKinds, buildTest } from './exparse.js';
 import { runSheet, timeHtml, wireTime, readTime } from './exsheet.js';
 import { pix } from './pixicons.js';
+import { plain } from './richtext.js';
 import { runQuiz } from './exrun.js';
 import { KIND_ORDER, setPrompt, promptPanel } from './exprompts.js';
 
@@ -178,7 +179,7 @@ async function sourceOf(id) {
   if (!it || it.deleted) return '';
   let t = '';
   try {
-    if (it.type === 'note') t = (it.body || '').replace(/\[\[(?:audio|video):[^|\]]*\|?([^\]]*)\]\]/g, '$1');
+    if (it.type === 'note') t = plain((it.body || '').replace(/\[\[(?:audio|video):[^|\]]*\|?([^\]]*)\]\]/g, '$1'));
     else if (it.type === 'video' && it.cues) t = JSON.parse(it.cues).map(c => (c.lines || [])[0] || '').filter(Boolean).join('\n');
     else if (it.type === 'text' && it.assetId) { const a = await store.getAsset(it.assetId); if (a?.blob) t = await a.blob.text(); }
   } catch { /* không đọc được thì để trống */ }

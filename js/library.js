@@ -4,6 +4,7 @@ import * as store from './store.js';
 import * as tracker from './tracker.js';
 import { pickAndAdd, openItem, addByLink } from './player.js';
 import * as notes from './notes.js';
+import { plain } from './richtext.js';
 import * as tree from './tree.js';
 import * as lessons from './lessons.js';
 
@@ -69,7 +70,7 @@ function card(i) {
   if (i.type === 'video') {
     const pct = i.duration ? Math.round(100 * (i.position || 0) / i.duration) + '% · ' : '';
     meta = `${i.cueCount || 0} câu · ${pct}${i.frame === 'portrait' ? 'khung dọc' : 'khung ngang'}${i.src ? ' · ' + hostOf(i.src) : ''}`;
-  } else if (i.type === 'note') meta = ((i.body || '').replace(/\[\[(?:audio|video):[^|\]]*\|?([^\]]*)\]\]/g, '$1').trim().slice(0, 60) || 'Ghi chú trống');
+  } else if (i.type === 'note') meta = (plain((i.body || '').replace(/\[\[(?:audio|video):[^|\]]*\|?([^\]]*)\]\]/g, '$1')).trim().slice(0, 60) || 'Ghi chú trống');
   else meta = (i.type === 'pdf' ? 'PDF' : 'Văn bản') + (i.size ? ' · ' + fmtMB(i.size) : '');
   const hasAsset = i.type !== 'note';
   return `<div class="card" data-id="${i.id}" data-type="${i.type}" ${hasAsset ? `data-asset="${i.assetId || ''}" data-src="${i.src ? 1 : 0}"` : ''}>

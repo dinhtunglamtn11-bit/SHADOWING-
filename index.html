@@ -21,7 +21,7 @@
   try {
     var u = JSON.parse(localStorage.getItem('ui') || 'null');
     if (!u) u = { theme: localStorage.getItem('theme') === 'night' ? 'night' : 'day' };
-    var D = { pal: 'candy', px: '3', corner: 'notch', font: 'pixel', icons: 'pixel', bg: 'check', motion: 'on', hl: 'yellow' };
+    var D = { pal: 'candy', px: '3', corner: 'notch', font: 'pixel', icons: 'pixel', bg: 'check', motion: 'on', hl: 'yellow', rd: 'default' };
     for (var k in D) d.dataset[k] = u[k] || D[k];
     var t = u.theme || 'day';
     if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day';
@@ -257,6 +257,12 @@
           <button class="btn" data-tapread title="Bật rồi chạm vào một câu trong chế độ Xem để nghe câu đó (tắt Tra từ khi dùng)">👆 Chạm câu</button>
           <span id="nSaved" class="dim"></span>
         </div>
+        <div class="rtbar" id="nFmt">
+          <button class="btn" data-f="b" title="Chữ đậm (bôi đen chữ rồi bấm)"><b>B</b></button><button class="btn" data-f="i" title="Chữ nghiêng"><i>I</i></button>
+          <span class="rtgrp" title="Tô màu chữ"><small>Chữ</small><button class="rtsw rc-red" data-f="c:red" title="Tô màu chữ"></button><button class="rtsw rc-orange" data-f="c:orange" title="Tô màu chữ"></button><button class="rtsw rc-green" data-f="c:green" title="Tô màu chữ"></button><button class="rtsw rc-blue" data-f="c:blue" title="Tô màu chữ"></button><button class="rtsw rc-purple" data-f="c:purple" title="Tô màu chữ"></button><button class="rtsw rc-pink" data-f="c:pink" title="Tô màu chữ"></button></span>
+          <span class="rtgrp" title="Tô nền như bút dạ quang"><small>Nền</small><button class="rtsw rh-yellow" data-f="h:yellow" title="Tô nền (bút dạ quang)"></button><button class="rtsw rh-green" data-f="h:green" title="Tô nền (bút dạ quang)"></button><button class="rtsw rh-blue" data-f="h:blue" title="Tô nền (bút dạ quang)"></button><button class="rtsw rh-pink" data-f="h:pink" title="Tô nền (bút dạ quang)"></button><button class="rtsw rh-orange" data-f="h:orange" title="Tô nền (bút dạ quang)"></button><button class="rtsw rh-purple" data-f="h:purple" title="Tô nền (bút dạ quang)"></button></span>
+          <button class="btn" data-f="x" title="Bỏ định dạng của đoạn đang bôi đen">✕ Bỏ định dạng</button>
+        </div>
         <div id="nSelBar" class="nsel"></div>
         <div id="nBox" class="nbox"><div id="nHL" aria-hidden="true"></div><textarea id="nBody" placeholder="Viết ở đây. Dòng bắt đầu bằng # là tiêu đề, **chữ** là in đậm.&#10;Muốn gắn link: bôi đen một từ, rồi bấm 🎬 Gắn video, 🔗 Gắn link video hoặc 🔊 Gắn âm thanh. Chữ đã gắn được tô màu; sang chế độ Xem, bấm vào chữ đó là video hiện bên cạnh."></textarea></div>
         <div id="nPreview" class="preview" hidden></div>
@@ -432,6 +438,8 @@
     <h3>Cỡ chữ</h3>
     <div class="uirow"><span>Giao diện</span><div class="seg uiseg" data-k="zoom"><button data-v="90">90%</button><button data-v="100">100%</button><button data-v="115">115%</button><button data-v="130">130%</button></div></div>
     <div class="uirow"><span>Phụ đề đang chạy</span><div class="seg uiseg" data-k="sub"><button data-v="80">80%</button><button data-v="100">100%</button><button data-v="125">125%</button><button data-v="150">150%</button></div></div>
+    <div class="uirow"><span>Nền trang đọc bài</span><div class="seg uiseg" data-k="rd"><button data-v="default">Theo giao diện</button><button data-v="white">Trắng · chữ đen</button><button data-v="paper">Giấy · chữ nâu</button><button data-v="green">Xanh dịu</button><button data-v="dark">Đen · chữ sáng</button></div></div>
+    <small class="dim">Áp dụng cho nửa bài đọc ở Thế giới → Article, để đọc dễ hơn hoặc tập trung hơn.</small>
     <div class="uipv" lang="zh-CN"><div class="main"><span class="w">你好，</span><span class="w on">今天</span><span class="w">天气很好</span></div><div class="sub l2">nǐ hǎo jīn tiān tiān qì hěn hǎo</div><div class="sub l3">Xin chào, hôm nay thời tiết rất đẹp</div></div>
 
     <h3>Học tập</h3>
