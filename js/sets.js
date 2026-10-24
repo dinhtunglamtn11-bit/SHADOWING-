@@ -79,8 +79,8 @@ const goBack = () => { runner = null; mode = 'list'; if (backTo) { const f = bac
 const runOpts = { shuffle: true, listen: true, count: 0, kind: 'all' };
 const pk = { kinds: ['TN', 'DS', 'S', 'K', 'N', 'G'], count: 5 };
 
-const SHORT = { mc: 'Trắc nghiệm', tf: 'Đúng/Sai', type: 'Tự luận', fill: 'Điền từ', order: 'Sắp xếp câu', listen: 'Nghe-chọn', listentype: 'Nghe-gõ', cloze: 'Kéo thả', vocab: 'Từ vựng' };
-const KIND_FILTER = [['all', 'Tất cả dạng'], ['mc', 'Trắc nghiệm'], ['tf', 'Đúng/Sai'], ['type', 'Tự luận'], ['fill', 'Điền từ'], ['order', 'Sắp xếp câu'], ['cloze', 'Kéo thả'], ['listen', 'Có nghe']];
+const SHORT = { mc: 'Trắc nghiệm', multi: 'Chọn nhiều', tf: 'Đúng/Sai', type: 'Tự luận', fill: 'Điền từ', order: 'Sắp xếp câu', listen: 'Nghe-chọn', listentype: 'Nghe-gõ', cloze: 'Kéo thả', vocab: 'Từ vựng' };
+const KIND_FILTER = [['all', 'Tất cả dạng'], ['mc', 'Trắc nghiệm'], ['multi', 'Chọn nhiều'], ['tf', 'Đúng/Sai'], ['type', 'Tự luận'], ['fill', 'Điền từ'], ['order', 'Sắp xếp câu'], ['cloze', 'Kéo thả'], ['listen', 'Có nghe']];
 const kindOfQ = q => (q.listen ? 'listen' : q.kind);
 
 const setsOf = lang => store.list('sets').filter(s => (s.lang || 'zh') === lang).sort((a, b) => (b.u || 0) - (a.u || 0));

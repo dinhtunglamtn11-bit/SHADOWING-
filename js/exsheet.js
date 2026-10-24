@@ -27,7 +27,7 @@ export function readTime(root, id) {
 }
 const clock = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
-const initState = q => (q.kind === 'order' ? { placed: [] } : q.kind === 'cloze' ? { slots: blanksOf(q).map(() => null), focus: null }
+const initState = q => (q.kind === 'multi' ? { picks: [] } : q.kind === 'order' ? { placed: [] } : q.kind === 'cloze' ? { slots: blanksOf(q).map(() => null), focus: null }
   : q.kind === 'fill' ? { typed: blanksOf(q).map(() => '') } : q.kind === 'type' ? { typed: '' } : { sel: null });
 
 // o: { qs (mỗi câu có thể có sec = tên phần), lang, title, intro, submitLabel, onDone({ok,total,pct}), onExit, exitLabel, onAgain, extra:[{label, fn}] }
@@ -42,6 +42,7 @@ export function runSheet(box, o) {
   const answered = i => {
     const q = qs[i], s = st[i];
     if (q.kind === 'mc' || q.kind === 'tf') return s.sel != null;
+    if (q.kind === 'multi') return s.picks.length > 0;
     if (q.kind === 'type') return !!s.typed.trim();
     if (q.kind === 'fill') return s.typed.some(t => t.trim());
     if (q.kind === 'order') return s.placed.length > 0;
@@ -55,6 +56,10 @@ export function runSheet(box, o) {
     if (q.kind === 'mc') {
       b = `<div class="qlabel">${esc(q.label || 'Chọn đáp án đúng')}</div>${q.listen ? listenRow : `<div class="qtext" lang="${bcp}">${q.sayPrompt || !q.label ? sayable(q.prompt, L) : esc(q.prompt)}</div>`}` +
         `<div class="qopts">${q.options.map((op, k) => `<button class="qopt ${g ? (op.ok ? 'right' : s.sel === k ? 'wrong' : '') : s.sel === k ? 'sel' : ''}" data-o="${k}" ${dis} lang="${bcp}"><i>${String.fromCharCode(65 + k)}</i><span>${withSpeaker(op.t, L)}</span></button>`).join('')}</div>`;
+    } else if (q.kind === 'multi') {
+      const n = q.options.filter(o => o.ok).length;
+      b = `<div class="qlabel">Chọn TẤT CẢ đáp án đúng (có ${n} đáp án đúng)</div><div class="qtext" lang="${bcp}">${sayable(q.prompt, L)}</div>` +
+        `<div class="qopts">${q.options.map((op, k) => { const on = s.picks.includes(k); return `<button class="qopt ${g ? (op.ok ? 'right' : on ? 'wrong' : '') : on ? 'sel' : ''}" data-m="${k}" ${dis} lang="${bcp}"><i>${g ? (op.ok ? '✓' : on ? '✗' : '') : on ? '✓' : ''}</i><span>${withSpeaker(op.t, L)}</span></button>`; }).join('')}</div>`;
     } else if (q.kind === 'tf') {
       const cls = v => (g ? (q.ans === v ? 'right' : s.sel === v ? 'wrong' : '') : s.sel === v ? 'sel' : '');
       b = `<div class="qlabel">Đúng hay sai?</div><div class="qtext" lang="${bcp}">${sayable(q.prompt, L)}</div>` +
@@ -130,6 +135,7 @@ export function runSheet(box, o) {
     if (!n || res) { if (n) wireSay(n, i); return; }
     $$('[data-o]', n).forEach(b => b.onclick = () => { s.sel = +b.dataset.o; redo(i); });
     $$('[data-tf]', n).forEach(b => b.onclick = () => { s.sel = b.dataset.tf === '1'; redo(i); });
+    $$('[data-m]', n).forEach(b => b.onclick = () => { const k = +b.dataset.m; s.picks = s.picks.includes(k) ? s.picks.filter(x => x !== k) : [...s.picks, k]; redo(i); });
     $('.sin', n)?.addEventListener('input', e => { s.typed = e.target.value; count(); });
     $$('.fin', n).forEach(inp => inp.addEventListener('input', e => { s.typed[+inp.dataset.b] = e.target.value; count(); }));
     $('.exreset', n)?.addEventListener('click', () => { st[i] = initState(q); redo(i); });
@@ -182,6 +188,7 @@ export function runSheet(box, o) {
     const q = qs[i], s = st[i];
     if (q.kind === 'mc') return { ok: !!q.options[s.sel]?.ok };
     if (q.kind === 'tf') return { ok: s.sel === q.ans };
+    if (q.kind === 'multi') return { ok: q.options.every((o, k) => o.ok === s.picks.includes(k)) }; // chọn đủ và không chọn thừa
     if (q.kind === 'type') return { ok: !!s.typed.trim() && okAnswer(s.typed, q.answers, L) };
     if (q.kind === 'fill') { const each = blanksOf(q).map((p, k) => !!(s.typed[k] || '').trim() && okAnswer(s.typed[k], p.a, L)); return { ok: each.every(Boolean), each }; }
     if (q.kind === 'order') { const words = s.placed.map(id => q.bank.find(b => b.id === id).t); return { ok: q.answers.some(a => a.length === words.length && a.every((w, k) => same(w, words[k], L))) }; }

@@ -2,9 +2,10 @@
 // Dùng cho “Bài tập của tôi” (từng video / tài liệu) và “Tin tức”.
 import { $, $$, esc, toast, LANGS } from './util.js';
 
-export const KIND_ORDER = ['TN', 'DS', 'S', 'G', 'Đ', 'K', 'N', 'NG', 'T'];
+export const KIND_ORDER = ['TN', 'NN', 'DS', 'S', 'G', 'Đ', 'K', 'N', 'NG', 'T'];
 export const KIND_INFO = {
   TN: { name: 'Trắc nghiệm (4 đáp án)', syntax: 'TN: câu hỏi | *đáp án đúng | đáp án sai | đáp án sai | đáp án sai', rule: 'đúng 4 đáp án, chỉ MỘT đáp án có dấu * ở đầu; đáp án sai phải hợp lý, dễ nhầm; đổi vị trí đáp án đúng ngẫu nhiên' },
+  NN: { name: 'Chọn nhiều đáp án', syntax: 'NN: câu hỏi | *đáp án đúng | *đáp án đúng | đáp án sai | đáp án sai', rule: '4–6 đáp án, có từ 2 đáp án đúng trở lên (mỗi đáp án đúng có dấu * ở đầu) và ít nhất 1 đáp án sai; người học phải chọn đủ mọi đáp án đúng mới được điểm; nên ghi rõ trong câu hỏi là chọn nhiều đáp án' },
   DS: { name: 'Đúng / Sai', syntax: 'DS: nhận định | đúng (hoặc sai)', rule: 'sau dấu | chỉ ghi “đúng” hoặc “sai”; khoảng một nửa số câu là “sai”' },
   S: { name: 'Sắp xếp câu', syntax: 'S: từ / từ / từ / từ | gợi ý bằng tiếng Việt', rule: 'cắt một câu hoàn chỉnh thành các từ/cụm từ cách nhau bằng dấu /, viết đúng thứ tự (phần mềm tự xáo trộn); phần gợi ý là nghĩa tiếng Việt của câu; có thể thêm từ gây nhiễu bằng cách đặt dấu + trước từ, ví dụ +的' },
   G: { name: 'Tự luận ngắn (gõ đáp án)', syntax: 'G: câu hỏi hoặc từ tiếng Việt | đáp án / đáp án chấp nhận khác', rule: 'đáp án ngắn (một từ hoặc một câu ngắn); các cách viết đúng khác nhau cách nhau bằng dấu /' },
@@ -19,6 +20,7 @@ export const KIND_INFO = {
 export const EX = {
   zh: {
     TN: 'TN: “Cảm ơn” nói thế nào? | *谢谢 | 你好 | 再见 | 对不起',
+    NN: 'NN: Chọn TẤT CẢ lời chào | *你好 | *早上好 | 谢谢 | 再见',
     DS: 'DS: 再见 nghĩa là “Xin chào” | sai ~ 再见 (zàijiàn) là tạm biệt',
     S: 'S: 我 / 喜欢 / 学 / 中文 | Tôi thích học tiếng Trung',
     G: 'G: Xin chào | 你好 / nǐ hǎo',
@@ -30,6 +32,7 @@ export const EX = {
   },
   en: {
     TN: 'TN: What do you eat in the morning? | *breakfast | library | weather | neighbour',
+    NN: 'NN: Chọn TẤT CẢ món ăn | *breakfast | *dinner | library | weather',
     DS: 'DS: A library is a place to buy food | sai ~ Library là thư viện',
     S: 'S: I / like / to / read / books | Tôi thích đọc sách',
     G: 'G: bữa sáng | breakfast',
@@ -41,6 +44,7 @@ export const EX = {
   },
   ko: {
     TN: 'TN: “Cảm ơn” nói thế nào? | *감사합니다 | 안녕하세요 | 죄송합니다 | 안녕히 가세요',
+    NN: 'NN: Chọn TẤT CẢ lời chào | *안녕하세요 | *안녕히 가세요 | 감사합니다 | 죄송합니다',
     DS: 'DS: 안녕하세요 nghĩa là “Tạm biệt” | sai',
     S: 'S: 저는 / 학생 / 입니다 | Tôi là học sinh',
     G: 'G: Xin lỗi | 죄송합니다',
@@ -52,6 +56,7 @@ export const EX = {
   },
   ja: {
     TN: 'TN: “Cảm ơn” nói thế nào? | *ありがとう | こんにちは | すみません | さようなら',
+    NN: 'NN: Chọn TẤT CẢ lời chào | *こんにちは | *おはよう | ありがとう | すみません',
     DS: 'DS: こんにちは nghĩa là “Tạm biệt” | sai',
     S: 'S: 私は / 学生 / です | Tôi là học sinh',
     G: 'G: Xin lỗi | すみません',
@@ -140,6 +145,7 @@ export const NEWS_SYNTAX = `=== Tiêu đề bài đọc
 Đoạn văn thứ hai.
 --- hỏi
 TN: Câu hỏi? | *đáp án đúng | sai | sai | sai ~ giải thích
+NN: Chọn tất cả đáp án đúng | *đúng | *đúng | sai | sai
 DS: Nhận định | đúng`;
 
 // Prompt tạo nhiều bài đăng ngắn kiểu mạng xã hội (mục Social của Thế giới, không có câu hỏi).

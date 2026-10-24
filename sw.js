@@ -1,5 +1,5 @@
 // Service worker: ưu tiên mạng (luôn lấy bản mới), mất mạng thì dùng bản đã lưu.
-const CACHE = 'shadowing-v35';
+const CACHE = 'shadowing-v36';
 const DICT_CACHE = 'shadowing-dict'; // từ điển ~9 MB: giữ riêng để không bị xóa mỗi lần cập nhật app
 const SHELL = [
   './', 'index.html', 'styles.css', 'pixel.css', 'exnews.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',

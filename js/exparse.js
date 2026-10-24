@@ -2,6 +2,7 @@
 //
 // Mỗi dòng là một câu hỏi, bắt đầu bằng LOẠI: rồi các phần cách nhau bằng dấu |
 //   TN: câu hỏi | *đúng | sai | sai | sai       trắc nghiệm (thường 4 đáp án), dấu * trước đáp án đúng
+//   NN: câu hỏi | *đúng | *đúng | sai | sai       chọn NHIỀU đáp án (đánh * cho mọi đáp án đúng; phải chọn đủ và không chọn thừa)
 //   DS: nhận định | đúng                          đúng / sai
 //   G:  câu hỏi | đáp án / đáp án khác            tự luận ngắn (gõ đáp án)
 //   Đ:  Tôi [go/goes] to [school]                 điền từ vào chỗ trống bằng cách gõ
@@ -20,6 +21,7 @@ const ALIAS = {
   s: 'order', sx: 'order', sapxep: 'order', order: 'order',
   n: 'listen', nghe: 'listen', ng: 'listentype', ngg: 'listentype',
   k: 'cloze', kt: 'cloze', cloze: 'cloze', keo: 'cloze',
+  nn: 'multi', nhieu: 'multi', multi: 'multi', cn: 'multi',
 };
 export const flat = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
 const kindOf = k => ALIAS[flat(k)];
@@ -78,6 +80,14 @@ function parseSetRaw(text) {
       if (options.some(o => !o.t)) return err('có đáp án bị trống');
       if (options.filter(o => o.ok).length !== 1) return err('phải đánh dấu * đúng một đáp án đúng');
       qs.push(kind === 'mc' ? { kind: 'mc', prompt: nl(f[0]), options, explain, line: n } : { kind: 'mc', listen: f[0], label: 'Nghe và chọn đáp án đúng', options, explain, line: n });
+    } else if (kind === 'multi') {
+      if (f.length < 3) return err('chọn nhiều đáp án cần dạng: NN: câu hỏi | *đúng | *đúng | sai | sai');
+      const options = f.slice(1).map(x => ({ t: x.replace(/^\*\s*/, ''), ok: x.startsWith('*') }));
+      if (options.some(o => !o.t)) return err('có đáp án bị trống');
+      const good = options.filter(o => o.ok).length;
+      if (!good) return err('phải đánh dấu * ít nhất một đáp án đúng');
+      if (good === options.length) return err('cần có ít nhất một đáp án sai (không đánh dấu *)');
+      qs.push({ kind: 'multi', prompt: nl(f[0]), options, explain, line: n });
     } else if (kind === 'fill') {
       const sent = nl(f[0] || ''), parts = []; let last = 0, blanks = 0;
       for (const b of sent.matchAll(/\[([^\]]+)\]/g)) {
@@ -130,7 +140,7 @@ function mcFrom(prompt, correct, pool, rnd, extra = {}) {
 // Ra đề: trộn đáp án / từ, sinh câu từ vựng. opts: { shuffle, listen, count }
 export function build(parsed, opts, rnd) {
   const out = parsed.qs.map(q => {
-    if (q.kind === 'mc') return { ...q, options: shuffle(q.options, rnd) };
+    if (q.kind === 'mc' || q.kind === 'multi') return { ...q, options: shuffle(q.options, rnd) };
     if (q.kind === 'order') return { ...q, bank: shuffle([...q.answers[0], ...q.decoys].map((t, id) => ({ t, id })), rnd) };
     if (q.kind === 'cloze') {
       const words = q.parts.filter(p => typeof p !== 'string').map(p => p.a[0]);
@@ -173,5 +183,5 @@ export function buildTest(sets, { mode = 'random', count = 0, listen = true } = 
 }
 
 // Phân loại một câu đã dựng theo “dạng câu” (để thống kê điểm theo dạng và lọc trong Sổ lỗi)
-export const KIND_LABEL = { mc: 'Trắc nghiệm', tf: 'Đúng/Sai', type: 'Tự luận', fill: 'Điền từ', order: 'Sắp xếp câu', listen: 'Nghe-chọn', listentype: 'Nghe-gõ', cloze: 'Kéo thả', vocab: 'Từ vựng' };
+export const KIND_LABEL = { mc: 'Trắc nghiệm', multi: 'Chọn nhiều đáp án', tf: 'Đúng/Sai', type: 'Tự luận', fill: 'Điền từ', order: 'Sắp xếp câu', listen: 'Nghe-chọn', listentype: 'Nghe-gõ', cloze: 'Kéo thả', vocab: 'Từ vựng' };
 export const kindKey = q => (q.kind === 'mc' ? (q.listen ? 'listen' : q.card ? 'vocab' : 'mc') : q.kind === 'type' ? (q.listen ? 'listentype' : 'type') : q.kind);

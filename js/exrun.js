@@ -25,6 +25,7 @@ export function cardOf(q, lang) {
   if (q.card) return q.card;
   const ex = q.explain ? [q.explain] : [];
   if (q.kind === 'mc') return { front: q.prompt || q.listen, back: [q.options.find(o => o.ok).t, ...ex] };
+  if (q.kind === 'multi') return { front: q.prompt, back: [q.options.filter(o => o.ok).map(o => o.t).join(' / '), ...ex] };
   if (q.kind === 'tf') return { front: q.prompt, back: [q.ans ? 'Đúng' : 'Sai', ...ex] };
   if (q.kind === 'type') return { front: q.prompt || q.listen, back: [q.listen ? '' : q.answers.join(' / '), ...ex] };
   if (q.kind === 'fill' || q.kind === 'cloze') return { front: fullOf(q, lang), back: [q.hint, ...ex] };
@@ -55,13 +56,14 @@ export function runQuiz(box0, o) {
   let S = null;
   const me = { get S() { return S; }, get box() { return box; } };
   const begin = qs => { S = { qs, i: 0, res: [], st: [], done: false }; cur = me; draw(); };
-  const stOf = (q, i) => (S.st[i] ??= q.kind === 'order' ? { placed: [] } : { slots: blanksOf(q).map(() => null), focus: null });
+  const stOf = (q, i) => (S.st[i] ??= q.kind === 'multi' ? { picks: [] } : q.kind === 'order' ? { placed: [] } : { slots: blanksOf(q).map(() => null), focus: null });
 
   function promptOf(q) {
     if (q.kind === 'mc') {
       if (q.listen) return `<div class="qlabel">${esc(q.label)}</div>${listenRow()}`;
       return `<div class="qlabel">${esc(q.label || 'Chọn đáp án đúng')}</div><div class="qtext" lang="${bcp}">${q.sayPrompt || !q.label ? sayable(q.prompt, L) : esc(q.prompt)}</div>`;
     }
+    if (q.kind === 'multi') return `<div class="qlabel">Chọn TẤT CẢ đáp án đúng (có ${q.options.filter(o => o.ok).length} đáp án đúng)</div><div class="qtext" lang="${bcp}">${sayable(q.prompt, L)}</div>`;
     if (q.kind === 'tf') return `<div class="qlabel">Đúng hay sai?</div><div class="qtext" lang="${bcp}">${sayable(q.prompt, L)}</div>`;
     if (q.kind === 'type') return q.listen ? `<div class="qlabel">${esc(q.label)}</div>${listenRow()}` : `<div class="qlabel">Gõ đáp án</div><div class="qtext" lang="${bcp}">${sayable(q.prompt, L)}</div>`;
     return '';
@@ -76,6 +78,10 @@ export function runQuiz(box0, o) {
     let body = promptOf(q);
     if (q.kind === 'mc') {
       body += `<div class="qopts">${q.options.map((op, k) => `<button class="qopt ${answered ? (op.ok ? 'right' : r.sel === k ? 'wrong' : '') : ''}" data-o="${k}" ${answered ? 'disabled' : ''} lang="${bcp}"><i>${k + 1}</i><span>${withSpeaker(op.t, L)}</span></button>`).join('')}</div>`;
+    } else if (q.kind === 'multi') {
+      const st = stOf(q, i);
+      body += `<div class="qopts">${q.options.map((op, k) => { const on = (answered ? r.picks : st.picks).includes(k); return `<button class="qopt ${answered ? (op.ok ? 'right' : on ? 'wrong' : '') : on ? 'sel' : ''}" data-m="${k}" ${answered ? 'disabled' : ''} lang="${bcp}"><i>${answered ? (op.ok ? '✓' : on ? '✗' : '') : on ? '✓' : k + 1}</i><span>${withSpeaker(op.t, L)}</span></button>`; }).join('')}</div>`;
+      if (!answered) body += '<div class="row"><button class="btn primary" id="msSubmit">Kiểm tra</button></div>';
     } else if (q.kind === 'tf') {
       body += `<div class="qopts two"><button class="qopt ${answered ? (q.ans === true ? 'right' : r.sel === true ? 'wrong' : '') : ''}" data-tf="1" ${answered ? 'disabled' : ''}><i>1</i><span>Đúng</span></button>` +
         `<button class="qopt ${answered ? (q.ans === false ? 'right' : r.sel === false ? 'wrong' : '') : ''}" data-tf="0" ${answered ? 'disabled' : ''}><i>2</i><span>Sai</span></button></div>`;
@@ -124,6 +130,7 @@ export function runQuiz(box0, o) {
     $('#msQuit', box).onclick = () => { stop(); o.onExit?.(); };
     $$('[data-side]', box).forEach(b => b.onclick = () => { stop(); o.side[+b.dataset.side].fn(); });
     $$('[data-o]', box).forEach(b => b.onclick = () => finish(q.options[+b.dataset.o].ok, { sel: +b.dataset.o }));
+    $$('[data-m]', box).forEach(b => b.onclick = () => { const st = stOf(q, i), k = +b.dataset.m; st.picks = st.picks.includes(k) ? st.picks.filter(x => x !== k) : [...st.picks, k]; draw(); });
     $$('[data-tf]', box).forEach(b => b.onclick = () => finish((b.dataset.tf === '1') === q.ans, { sel: b.dataset.tf === '1' }));
     $('#msSubmit', box)?.addEventListener('click', submit);
     const inputs = $$('#msIn, .fin', box);
@@ -205,7 +212,11 @@ export function runQuiz(box0, o) {
   }
   function submit() {
     const q = S.qs[S.i];
-    if (q.kind === 'type') {
+    if (q.kind === 'multi') {
+      const st = stOf(q, S.i);
+      if (!st.picks.length) { toast('Hãy chọn ít nhất một đáp án'); return; }
+      finish(q.options.every((o, k) => o.ok === st.picks.includes(k)), { picks: [...st.picks] });
+    } else if (q.kind === 'type') {
       const v = $('#msIn', box).value;
       if (!v.trim()) { toast('Hãy gõ đáp án'); return; }
       finish(okAnswer(v, q.answers, L), { typed: v });
@@ -262,7 +273,8 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.closest('button')) return; // để nút tự xử lý
   if (S.res[S.i] != null) { if (e.key === 'Enter') $('#msNext', box)?.click(); return; }
   if (/^[1-9]$/.test(e.key)) {
-    if (q.kind === 'mc' && +e.key <= q.options.length) $$('[data-o]', box)[+e.key - 1]?.click();
+    if (q.kind === 'multi' && +e.key <= q.options.length) $$('[data-m]', box)[+e.key - 1]?.click();
+    else if (q.kind === 'mc' && +e.key <= q.options.length) $$('[data-o]', box)[+e.key - 1]?.click();
     else if (q.kind === 'tf' && (e.key === '1' || e.key === '2')) $$('[data-tf]', box)[+e.key - 1]?.click();
-  } else if (e.key === 'Enter' && (q.kind === 'order' || q.kind === 'cloze')) $('#msSubmit', box)?.click();
+  } else if (e.key === 'Enter' && (q.kind === 'order' || q.kind === 'cloze' || q.kind === 'multi')) $('#msSubmit', box)?.click();
 });

@@ -767,6 +767,11 @@ export default {
   "Bật rồi chạm vào từ trong bài để tra nghĩa": "Turn on, then tap a word in the post to look up its meaning",
   "Lướt ngẫu nhiên, không giới hạn: bài nào cũng được xem một lượt rồi mới xáo lại.": "Random, endless scrolling: every post is shown once before the order is shuffled again.",
   "Bài số {}": "Post #{}",
+  // ===== dạng câu mới: chọn nhiều đáp án (NN) =====
+  "Chọn TẤT CẢ đáp án đúng (có {} đáp án đúng)": "Select ALL the correct answers ({} correct)",
+  "Chọn nhiều đáp án": "Multiple answers",
+  "Chọn nhiều": "Multi-select",
+  "Hãy chọn ít nhất một đáp án": "Pick at least one answer",
   // ===== sfx.js: âm thanh nút bấm =====
   "Âm thanh nút bấm": "Button sounds",
   "Âm thanh": "Sound",

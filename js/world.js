@@ -19,7 +19,7 @@ const DAY = 864e5;
 const WD = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
 const COLORS = ['#ff8f3a', '#5fd068', '#ff8fc0', '#7ec3ff', '#a98bff', '#ffd84d', '#ff7b88', '#4fd1c5'];
 const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu;
-const SHORT = { mc: 'Trắc nghiệm', tf: 'Đúng/Sai', type: 'Tự luận', fill: 'Điền từ', order: 'Sắp xếp câu', listen: 'Nghe-chọn', listentype: 'Nghe-gõ', cloze: 'Kéo thả', vocab: 'Từ vựng' };
+const SHORT = { mc: 'Trắc nghiệm', multi: 'Chọn nhiều', tf: 'Đúng/Sai', type: 'Tự luận', fill: 'Điền từ', order: 'Sắp xếp câu', listen: 'Nghe-chọn', listentype: 'Nghe-gõ', cloze: 'Kéo thả', vocab: 'Từ vựng' };
 
 let root = null, mode = 'feed', curId = null, editId = null;
 const filter = { folder: '', unread: false }; // folder: '' = tất cả, '_none' = chưa phân loại, hoặc id thư mục
