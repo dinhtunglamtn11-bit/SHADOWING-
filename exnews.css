@@ -388,3 +388,12 @@ button, .btn, .chip, a, summary, select, input, label, [role=button], [role=tab]
 .hlbar .btn { padding: 1px 10px 3px; min-height: 0; font-size: 18px; }
 mark.hltmp { color: inherit; }
 .rtbar[hidden] { display: none; }
+
+/* thụt đầu dòng + gạch đầu dòng */
+.ln { display: block; position: relative; margin-left: calc(var(--lv, 0) * 1.5em); white-space: pre-wrap; }
+.ln.li { padding-left: 1.3em; }
+.ln .bu { position: absolute; left: 0; }
+.nw-text[lang^=zh] p, .nw-text[lang^=ja] p, .nw-text[lang^=ko] p { text-indent: 0; }
+.nw-text[lang^=zh] p .ln:not(.li):not(.in), .nw-text[lang^=ja] p .ln:not(.li):not(.in), .nw-text[lang^=ko] p .ln:not(.li):not(.in) { text-indent: 2em; }
+.preview p.ln { margin-top: 0; margin-bottom: 0; }
+.rtbar .btn.ind { min-width: 34px; }

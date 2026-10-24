@@ -849,5 +849,8 @@ export default {
   "Highlight the selected text": "高亮选中的文字",
   "Remove highlights from the selection (or all, if nothing is selected)": "清除选中部分的高亮（未选中则全部清除）",
   "⌫ Erase": "⌫ 清除",
+  "Outdent (Shift+Tab)": "减少缩进 (Shift+Tab)",
+  "Indent (Tab): every 2 spaces is one level": "增加缩进 (Tab)：每 2 个空格为一级",
+  "Toggle bullets on the selected lines": "为选中的行开关项目符号",
   "Select some text in the article first": "请先选中文章中的文字",
 }

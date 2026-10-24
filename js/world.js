@@ -14,7 +14,7 @@ import { setPrompt, newsPrompt, promptPanel, NEWS_SYNTAX } from './exprompts.js'
 import { pix } from './pixicons.js';
 import * as wvocab from './wvocab.js';
 import * as social from './social.js';
-import { inline, plain, TEXT_COLORS, HL_COLORS } from './richtext.js';
+import { inline, plain, TEXT_COLORS, HL_COLORS, lineInfo, lineCls, lineBu, indentLines, bulletLines, tabKey } from './richtext.js';
 
 const DAY = 864e5;
 const WD = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
@@ -35,8 +35,9 @@ const colorOfName = n => COLORS[hash(n || '') % COLORS.length];
 const minutes = a => { const b = plain(a.body); return Math.max(1, Math.round((b.match(CJK) || []).length / 320 + b.replace(CJK, ' ').split(/\s+/).filter(Boolean).length / 180)); };
 const leadOf = a => plain(a.body).replace(/\s+/g, ' ').trim().slice(0, 110);
 const qCount = a => { const p = parseSet(a.qtext || ''); return p.qs.length + (p.vocab.length >= 2 ? p.vocab.length * 2 : 0); };
-const paras = b => String(b || '').split(/\n{2,}/).map(x => x.trim()).filter(Boolean);
-const bodyHtml = a => paras(a.body).map(p => `<p>${inline(esc(p))}</p>`).join('');
+const paras = b => String(b || '').split(/\n{2,}/).map(x => x.replace(/^\n+/, '').trimEnd()).filter(x => x.trim());
+const lineHtml = l => { const i = lineInfo(l); return `<span class="${lineCls(i)}" style="--lv:${i.lv}">${lineBu(i)}${inline(esc(i.rest))}</span>`; };
+const bodyHtml = a => paras(a.body).map(p => `<p>${p.split('\n').map(lineHtml).join('')}</p>`).join('');
 
 function ensureFolder(name, lang) {
   name = (name || '').trim();
@@ -411,6 +412,7 @@ function drawEditor() {
         <button class="btn" data-f="b" title="Chữ đậm (bôi đen chữ rồi bấm)"><b>B</b></button><button class="btn" data-f="i" title="Chữ nghiêng"><i>I</i></button>
         <span class="rtgrp" title="Tô màu chữ"><small>Chữ</small>${TEXT_COLORS.map(c => `<button class="rtsw rc-${c}" data-f="c:${c}" title="Tô màu chữ"></button>`).join('')}</span>
         <span class="rtgrp" title="Tô nền như bút dạ quang"><small>Nền</small>${HL_COLORS.map(c => `<button class="rtsw rh-${c}" data-f="h:${c}" title="Tô nền (bút dạ quang)"></button>`).join('')}</span>
+        <button class="btn ind" data-f="out" title="Lùi ra (Shift+Tab)">⇤</button><button class="btn ind" data-f="in" title="Thụt vào đầu dòng (Tab): mỗi 2 dấu cách là một cấp">⇥</button><button class="btn ind" data-f="bu" title="Bật / tắt gạch đầu dòng cho các dòng đang chọn">•≡</button>
         <button class="btn" data-f="x" title="Bỏ định dạng của đoạn đang bôi đen">✕ Bỏ định dạng</button><span class="grow"></span><button class="btn" id="edPv" title="Xem bài sẽ hiện thế nào khi đọc">👁 Xem trước</button>
       </div>
       <textarea id="edBody" class="edwide" rows="18" spellcheck="false" placeholder="Dán hoặc gõ bài đọc ở đây…">${esc(a?.body || '')}</textarea>
@@ -444,8 +446,10 @@ function drawEditor() {
     if (!b) return;
     const f = b.dataset.f;
     if (f === 'b') wrap('**', '**'); else if (f === 'i') wrap('*', '*'); else if (f === 'x') clearFmt();
+    else if (f === 'in') indentLines(body, 1); else if (f === 'out') indentLines(body, -1); else if (f === 'bu') bulletLines(body);
     else { const [k, c] = f.split(':'); wrap(`{{${k}:${c}|`, '}}'); }
   });
+  tabKey(body);
   $('#edPv').onclick = () => { const p = $('#edPreview'); p.hidden = !p.hidden; if (!p.hidden) showPv(); };
   body.addEventListener('input', () => { if (!$('#edPreview').hidden) showPv(); });
   fsel.onchange = () => {

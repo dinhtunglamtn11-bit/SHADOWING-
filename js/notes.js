@@ -7,7 +7,7 @@ import { openSide } from './side.js';
 import { addByLink } from './player.js';
 import { zhText } from './prefs.js';
 import { loadSimplifier } from './util.js';
-import { inline as richInline, plain, TEXT_COLORS, HL_COLORS } from './richtext.js';
+import { inline as richInline, plain, lineInfo, lineCls, lineBu, indentLines, bulletLines, tabKey } from './richtext.js';
 
 // [[video:ID|chữ]]  hoặc  [[video:ID@12.5|chữ]] (mở video từ giây 12.5)  |  [[audio:ID|chữ]]
 const TOK = /\[\[(audio|video):([A-Za-z0-9]+)(?:@(\d+(?:\.\d+)?))?(?:\|([^\]]*))?\]\]/g;
@@ -142,10 +142,14 @@ function inline(line) {
   }
   return out + fmtText(line.slice(last));
 }
+function notePara(l) {
+  const i = lineInfo(l);
+  return `<p class="${lineCls(i)}" style="--lv:${i.lv}">${lineBu(i)}${inline(i.rest)}</p>`;
+}
 function renderPreview() {
   const text = $('#nBody').value;
   $('#nPreview').innerHTML = text.trim()
-    ? text.split('\n').map(l => (/^#{1,3}\s/.test(l) ? `<h3>${inline(l.replace(/^#{1,3}\s/, ''))}</h3>` : l.trim() ? `<p>${inline(l)}</p>` : '<br>')).join('')
+    ? text.split('\n').map(l => (/^#{1,3}\s/.test(l) ? `<h3>${inline(l.replace(/^#{1,3}\s/, ''))}</h3>` : l.trim() ? notePara(l) : '<br>')).join('')
     : '<div class="empty">Ghi chú trống. Bấm “✏️ Sửa” để viết.</div>';
 }
 
@@ -275,6 +279,7 @@ export function init() {
     ta.focus(); ta.setSelectionRange(s + open.length, e + open.length);
     ta.dispatchEvent(new Event('input'));
   };
+  tabKey(ta);
   fmt.addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });
   fmt.addEventListener('click', e => {
     const b = e.target.closest('[data-f]'); if (!b) return;
@@ -286,7 +291,10 @@ export function init() {
       ta.value = ta.value.slice(0, s) + t + ta.value.slice(e2);
       ta.focus(); ta.setSelectionRange(s, s + t.length);
       ta.dispatchEvent(new Event('input'));
-    } else if (f === 'b') wrapSel('**', '**');
+    } else if (f === 'in') indentLines(ta, 1);
+    else if (f === 'out') indentLines(ta, -1);
+    else if (f === 'bu') bulletLines(ta);
+    else if (f === 'b') wrapSel('**', '**');
     else if (f === 'i') wrapSel('*', '*');
     else { const [k, c] = f.split(':'); wrapSel(`{{${k}:${c}|`, '}}'); }
   });

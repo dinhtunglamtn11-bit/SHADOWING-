@@ -804,5 +804,8 @@ export default {
   "Tô chữ đang bôi đen": "Highlight the selected text",
   "Xóa highlight ở đoạn đang bôi đen (không bôi đen thì xóa hết)": "Remove highlights from the selection (or all, if nothing is selected)",
   "⌫ Xóa": "⌫ Erase",
+  "Lùi ra (Shift+Tab)": "Outdent (Shift+Tab)",
+  "Thụt vào đầu dòng (Tab): mỗi 2 dấu cách là một cấp": "Indent (Tab): every 2 spaces is one level",
+  "Bật / tắt gạch đầu dòng cho các dòng đang chọn": "Toggle bullets on the selected lines",
   "Hãy bôi đen chữ trong bài đọc trước": "Select some text in the article first",
 }
