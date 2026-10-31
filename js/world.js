@@ -224,6 +224,7 @@ function folderTiles(all, folders) {
   return `<div class="wfs">${tile('', 'Tất cả', all.length, 'a_world', '#7ec3ff')}${folders.map(f => tile(f.id, f.name, all.filter(a => a.folder === f.id).length, 'a_folder', colorOfName(f.name), true)).join('')}${none && folders.length ? tile('_none', 'Chưa phân loại', none, 'a_folder', '#c9c3e6') : ''}<button class="wf add" id="wfNew"><span class="wfa">${pix('a_plus')}</span><b>Thư mục mới</b></button></div>`;
 }
 
+let nwMore = false; // nhóm nút phụ (viết bài, nhập, từ vựng, kiểm tra) mặc định thu gọn
 function drawFeed() {
   tools(false);
   const lang = getLang(), all = artsOf(lang), folders = foldersOf(lang);
@@ -241,7 +242,8 @@ function drawFeed() {
   const hero = !filter.folder && !filter.unread && list.length >= 3 ? list[Math.floor(Date.now() / DAY) % list.length] : null;
   const fsel = filter.folder && filter.folder !== '_none' ? folders.find(f => f.id === filter.folder) : null;
   root.innerHTML = `${head}
-    <div class="row"><button class="btn primary big" id="nwRandom" title="Chọn ngẫu nhiên một chủ đề (thư mục) rồi mở một bài trong đó; chủ đề được phép lặp lại">🎲 Chủ đề ngẫu nhiên</button><button class="btn" id="nwAdd">＋ Viết bài</button><button class="btn" id="nwImport">📥 Nhập nhiều bài</button><button class="btn" id="nwVocab" title="Từ đã lưu khi đọc bài, kèm câu chứa từ; ôn và làm bài kiểm tra từ vựng">📖 Từ vựng (${wvocab.wordsOf(lang).length})</button><button class="btn" id="nwTest" title="Gom câu hỏi của các bài đọc thành một bài kiểm tra, theo nhóm hoặc ngẫu nhiên">📋 Tạo bài kiểm tra</button><button class="chip ${filter.unread ? 'on' : ''}" id="nwUnread">● Chưa đọc xong <small>${all.length - done}</small></button></div>
+    <div class="row"><button class="btn primary big" id="nwRandom" title="Chọn ngẫu nhiên một chủ đề (thư mục) rồi mở một bài trong đó; chủ đề được phép lặp lại">🎲 Chủ đề ngẫu nhiên</button><button class="chip ${filter.unread ? 'on' : ''}" id="nwUnread">● Chưa đọc xong <small>${all.length - done}</small></button><button class="btn ${nwMore ? 'on' : ''}" id="nwMore">⋯ Thêm <span class="ar">${nwMore ? '▲' : '▼'}</span></button></div>
+    <div class="row nw-more" ${nwMore ? '' : 'hidden'}><button class="btn" id="nwAdd">＋ Viết bài</button><button class="btn" id="nwImport">📥 Nhập nhiều bài</button><button class="btn" id="nwVocab" title="Từ đã lưu khi đọc bài, kèm câu chứa từ; ôn và làm bài kiểm tra từ vựng">📖 Từ vựng (${wvocab.wordsOf(lang).length})</button><button class="btn" id="nwTest" title="Gom câu hỏi của các bài đọc thành một bài kiểm tra, theo nhóm hoặc ngẫu nhiên">📋 Tạo bài kiểm tra</button></div>
     ${folderTiles(all, folders)}
     ${fsel ? `<div class="row"><b class="gt">${esc(fsel.name)}</b><button class="btn" id="wfRen">✎ Đổi tên</button><button class="btn" id="wfDel">🗑 Xóa thư mục</button></div>` : ''}
     ${hero ? `<div class="nw-sec">⭐ Bài nổi bật hôm nay</div>${card(hero, true)}` : ''}
@@ -251,6 +253,10 @@ function drawFeed() {
 
 function bindFeed() {
   bindSec();
+  $('#nwMore')?.addEventListener('click', e => {
+    nwMore = !nwMore; $('.nw-more', root).hidden = !nwMore;
+    e.currentTarget.classList.toggle('on', nwMore); $('.ar', e.currentTarget).textContent = nwMore ? '▲' : '▼';
+  });
   $('#nwAdd')?.addEventListener('click', () => { editId = null; mode = 'edit'; drawEditor(); });
   $('#nwImport')?.addEventListener('click', () => { mode = 'import'; drawImport(); });
   $('#nwSample')?.addEventListener('click', () => { const n = importArts(parseNews(SAMPLES[getLang()] || SAMPLES.zh).arts); toast(`Đã thêm ${n} bài mẫu`); drawFeed(); });

@@ -42,6 +42,7 @@
   <div id="langs" class="chips"></div>
   <span class="grow"></span>
   <span id="sync"></span>
+  <button id="btnMusic" class="btn" title="Nhạc nền: tải mp3 lên, phát ngẫu nhiên khi đọc">🎵</button>
   <button id="btnSfx" class="btn" title="Bật / tắt âm thanh nút bấm">🔊</button>
   <button id="btnTheme" class="btn" title="Đổi giao diện ngày / đêm"><span data-ic="moon"></span></button>
   <button id="btnSettings" class="btn" title="Cài đặt giao diện và ngôn ngữ">⚙</button>
@@ -413,6 +414,20 @@
     <label class="chk"><input type="checkbox" id="sbSkip" checked> Bỏ qua dòng trống trong nội dung dán</label>
     <textarea id="sbText" rows="10" placeholder="Dán nhiều dòng ở đây…"></textarea>
     <div class="row"><button class="btn primary" id="sbApply">Áp dụng</button></div>
+  </div>
+</dialog>
+
+<dialog id="musicDlg">
+  <div class="hd"><span class="grow">🎵 Nhạc nền</span><button class="btn" id="muClose">✕</button></div>
+  <div class="bd">
+    <div class="uirow"><span>Khi nào phát</span><div class="seg" id="muMode"><button data-v="off">Tắt</button><button data-v="read">Khi đọc (Thế giới)</button><button data-v="always">Luôn phát</button></div></div>
+    <small class="dim">“Khi đọc” tự phát khi bạn ở mục Thế giới (Article, Social) và tự dừng khi rời đi. Nhạc cũng tự dừng khi video bài học đang phát.</small>
+    <div class="row"><button class="btn" id="muPrev">↺ Từ đầu</button><button class="btn primary" id="muPlay">▶ Phát</button><button class="btn" id="muNext">Bài khác ›</button></div>
+    <div id="muNow" class="dim"></div>
+    <div class="uirow"><span>Âm lượng</span><input id="muVol" type="range" min="0" max="100" step="5"></div>
+    <div class="row"><button class="btn primary" id="muAdd">＋ Thêm nhạc</button><button class="btn" id="muClear">🗑 Xóa hết</button></div>
+    <div id="muList" class="mu-list"></div>
+    <small class="dim">Chọn được nhiều file mp3 một lúc. Các bài được trộn ngẫu nhiên, phát hết lượt rồi mới xáo lại. File chỉ lưu trong máy này (không đồng bộ, không tốn dung lượng đám mây); máy khác cần tải lên lại.</small>
   </div>
 </dialog>
 

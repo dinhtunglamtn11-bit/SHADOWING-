@@ -195,7 +195,8 @@ function draw(n) {
   return out;
 }
 
-const chipsHtml = (all, fields, saved) => {
+const open = { topics: false, more: false }; // các nhóm nút đang mở (mặc định thu gọn cho gọn mắt)
+const chipsHtml =(all, fields, saved) => {
   const chip = (id, name, n, user) => `<button class="chip ${fld === id ? 'on' : ''}" data-f="${esc(id)}"><span class="${user ? 'gt' : ''}">${esc(name)}</span> <small>${n}</small></button>`;
   return chip('', 'Tất cả', all.length) + fields.map(f => chip(f, f, all.filter(p => p.field === f).length, true)).join('') + chip('_saved', '⭐ Đã lưu', saved);
 };
@@ -221,8 +222,9 @@ function drawFeed() {
   bag = []; base = 0; lastId = '';
   const first = draw(PAGE);
   root.innerHTML = `${bar}
-    <div class="row"><button class="btn primary" id="spImport">📥 Nhập nhiều bài</button><button class="btn" id="spNew">＋ Đăng bài</button><button class="btn" id="spFull" title="Chỉ hiện bài đọc và các nút tương tác, không có thư mục hay thanh phía trên (bấm Esc hoặc nút ← Thoát để quay lại)">📺 Đọc toàn màn hình</button></div>
-    <div class="chips sp-fl">${chipsHtml(all, fields, all.filter(p => p.saved).length)}</div>
+    <div class="row"><button class="btn primary" id="spFull" title="Chỉ hiện bài đọc và các nút tương tác, không có thư mục hay thanh phía trên (bấm Esc hoặc nút ← Thoát để quay lại)">📺 Đọc toàn màn hình</button><button class="btn ${open.topics ? 'on' : ''}" id="spTopics" title="Lọc theo chủ đề"><span>Chủ đề:</span> <b class="gt">${esc(fld === '_saved' ? '⭐ Đã lưu' : fld || 'Tất cả')}</b> <span class="ar">${open.topics ? '▲' : '▼'}</span></button><button class="btn ${open.more ? 'on' : ''}" id="spMore">＋ Thêm bài <span class="ar">${open.more ? '▲' : '▼'}</span></button></div>
+    <div class="row sp-more" ${open.more ? '' : 'hidden'}><button class="btn" id="spImport">📥 Nhập nhiều bài</button><button class="btn" id="spNew">＋ Đăng bài</button></div>
+    <div class="chips sp-fl" ${open.topics ? '' : 'hidden'}>${chipsHtml(all, fields, all.filter(p => p.saved).length)}</div>
     ${first.length ? `<div class="dim sp-hint">Lướt ngẫu nhiên, không giới hạn: bài nào cũng được xem một lượt rồi mới xáo lại.</div>
       <div class="sp-wrap" id="spWrap"><div class="spf-bar"><button class="btn" id="spfClose">← Thoát</button><span class="grow"></span><button class="btn" id="spfLookup" data-lookup title="Bật rồi chạm vào từ trong bài để tra nghĩa">📖 Tra từ</button></div>
         <div id="spFeed" class="sp-feed" tabindex="0">${first.map(postHtml).join('')}</div>
@@ -327,7 +329,14 @@ function bind() {
   $('#spImport')?.addEventListener('click', () => { view = 'import'; drawImport(); scrollTo(0, 0); });
   $('#spNew')?.addEventListener('click', () => { view = 'compose'; drawCompose(); scrollTo(0, 0); });
   $('#spSample')?.addEventListener('click', () => { const n = importPosts(parseSocial(SAMPLES[getLang()] || SAMPLES.zh).posts); toast(`Đã thêm ${n} bài mẫu`); drawFeed(); });
-  $$('.sp-fl [data-f]', root).forEach(c => { c.onclick = () => { fld = c.dataset.f; drawFeed(); }; });
+  $$('.sp-fl [data-f]', root).forEach(c => { c.onclick = () => { fld = c.dataset.f; open.topics = false; drawFeed(); }; });
+  for (const [k, btn, box] of [['topics', '#spTopics', '.sp-fl'], ['more', '#spMore', '.sp-more']]) { // mở / đóng nhóm nút tại chỗ, không xáo lại bài
+    $(btn, root)?.addEventListener('click', e => {
+      const b = e.currentTarget, el = $(box, root);
+      open[k] = !open[k]; el.hidden = !open[k]; b.classList.toggle('on', open[k]);
+      $('.ar', b).textContent = open[k] ? '▲' : '▼';
+    });
+  }
   $('#spFull', root)?.addEventListener('click', () => setFull(true));
   $('#spfClose', root)?.addEventListener('click', () => setFull(false));
   $('#spfLookup', root)?.addEventListener('click', () => document.querySelector('#nwTools [data-lookup]')?.click()); // dùng chung nút Tra từ của Thế giới

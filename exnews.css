@@ -397,3 +397,13 @@ mark.hltmp { color: inherit; }
 .nw-text[lang^=zh] p .ln:not(.li):not(.in), .nw-text[lang^=ja] p .ln:not(.li):not(.in), .nw-text[lang^=ko] p .ln:not(.li):not(.in) { text-indent: 2em; }
 .preview p.ln { margin-top: 0; margin-bottom: 0; }
 .rtbar .btn.ind { min-width: 34px; }
+
+/* nhóm nút thu gọn (Thế giới) */
+.sp-fl[hidden], .sp-more[hidden], .nw-more[hidden] { display: none !important; }
+
+/* nhạc nền */
+#btnMusic.on { background: var(--accent); }
+.mu-list { display: grid; gap: 4px; max-height: 40vh; overflow: auto; }
+.mu-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border: 2px dashed var(--line); }
+.mu-row.on { border-style: solid; background: var(--panel2, var(--panel)); }
+.mu-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
