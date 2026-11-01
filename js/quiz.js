@@ -4,7 +4,7 @@
 //  - Điền từ (chọn): câu bị khuyết một từ/chữ, chọn đáp án.
 //  - Điền từ (gõ): câu bị khuyết, tự gõ đáp án.
 // Câu làm sai tự vào sổ thẻ ôn.
-import { $, esc, toast, vnDate, getLang, langInfo } from './util.js';
+import { $, esc, toast, vnDate, getLang, langInfo, isStudying } from './util.js';
 import * as store from './store.js';
 import * as tracker from './tracker.js';
 import * as cards from './cards.js';
@@ -51,7 +51,7 @@ function cuesOf(it) {
 }
 // Nạp sẵn phụ đề các video lúc rảnh (từng lát ngắn, không chặn giao diện) để lần ra đề đầu tiên không phải phân tích lúc bạn đang chờ
 export function warm() {
-  const vids = store.list('items').filter(it => it.type === 'video' && (it.lang || 'zh') === getLang() && it.cues).slice(0, 40);
+  const vids = store.list('items').filter(it => it.type === 'video' && isStudying(it) && (it.lang || 'zh') === getLang() && it.cues).slice(0, 40);
   let i = 0;
   const slice = () => {
     const t = performance.now();
@@ -64,7 +64,7 @@ const MAX_VIDEOS = 30; // một đề chỉ có 10 câu: lấy ngẫu nhiên t�
 
 async function gather(lang, rnd) {
   const mats = [];
-  const vids = store.list('items').filter(it => it.type === 'video' && (it.lang || 'zh') === lang && it.cues);
+  const vids = store.list('items').filter(it => it.type === 'video' && isStudying(it) && (it.lang || 'zh') === lang && it.cues);
   const pick = vids.length > MAX_VIDEOS ? shuffle(vids, rnd).slice(0, MAX_VIDEOS) : vids;
   const have = await store.assetKeys(); // một lần đọc cho mọi video, thay vì hỏi từng file
   for (const it of pick) {
@@ -105,7 +105,7 @@ function tokenPool(mats, lang) {
 export async function generate(lang, seed) {
   const rnd = rngOf(seed);
   const mats = await gather(lang, rnd);
-  if (mats.length < 4) return { error: 'Cần ít nhất 4 câu có phụ đề (từ video hoặc thẻ) để ra bài tập. Hãy thêm video có phụ đề cho ' + langInfo(lang).name + '.' };
+  if (mats.length < 4) return { error: 'Cần ít nhất 4 câu có phụ đề (từ video hoặc thẻ) để ra bài tập. Hãy thêm video có phụ đề cho ' + langInfo(lang).name + ', hoặc vào Thư viện và tick “Đang học” cho các video muốn ra đề.' };
   const weak = new Set(cards.allCards(lang).filter(c => c.weak && c.itemId).map(c => c.itemId + ':' + c.idx));
   const ordered = shuffle(mats, rnd).sort((a, b) => (weak.has(b.itemId + ':' + b.idx) ? 1 : 0) - (weak.has(a.itemId + ':' + a.idx) ? 1 : 0));
 

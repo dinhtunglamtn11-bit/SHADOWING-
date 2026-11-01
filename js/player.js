@@ -1,5 +1,5 @@
 // Trình học: phát video (file trong máy, link mp4 hoặc YouTube), phụ đề chạy theo, khung ngang / dọc.
-import { $, esc, fmt, fmtS, toast, bus, uid, pickFile, getLang, langInfo, parseSubs, classifySrc, tokenWeight, tokensOf } from './util.js';
+import { $, esc, fmt, fmtS, toast, bus, uid, pickFile, getLang, langInfo, parseSubs, classifySrc, tokenWeight, tokensOf, studyNew } from './util.js';
 import { modeBar, editCard } from './cuehtml.js';
 import * as store from './store.js';
 import * as tracker from './tracker.js';
@@ -89,7 +89,7 @@ export async function addMedia(files, folder = '') {
     if (sub) { const c = await simplifyCues(parseSubs(await sub.text(), langInfo().words), getLang()); if (c.length) { cj = JSON.stringify(c); n = c.length; } }
     store.put('items', id, {
       type: 'video', title: f.name.replace(/\.[^.]+$/, ''), lang: getLang(), folder,
-      assetId: keep ? assetId : '', fileName: f.name, size: f.size, src: '', cues: cj, cueCount: n, created: Date.now(), position: 0,
+      assetId: keep ? assetId : '', fileName: f.name, size: f.size, src: '', cues: cj, cueCount: n, created: Date.now(), position: 0, study: studyNew(),
     });
     if (!keep) temp.set(id, f);
     first = first || id;
@@ -112,7 +112,7 @@ export async function addByLink(url, title, folder = '') {
   store.put('items', id, {
     type: 'video', title: title || (c.kind === 'youtube' ? 'YouTube ' + c.id : c.kind === 'tiktok' ? 'TikTok ' + c.id : 'Video từ link'),
     lang: getLang(), folder, assetId: '', fileName: '', src: url.trim(), cues: '', cueCount: 0,
-    frame: c.portrait ? 'portrait' : 'landscape', created: Date.now(), position: 0,
+    frame: c.portrait ? 'portrait' : 'landscape', created: Date.now(), position: 0, study: studyNew(),
   });
   return id;
 }

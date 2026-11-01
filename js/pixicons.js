@@ -233,7 +233,7 @@ Object.assign(ICONS, {
 
 // Huy hiệu thành tựu: dải ruy-băng + huy chương tròn theo hạng (đồng/bạc/vàng/kim cương) + hình nhỏ ở giữa. Chưa mở khóa thì xám.
 const TIER = {
-  bronze: ['#e3a066', '#b5713a', '#f6c79a'], silver: ['#d8deec', '#9aa3bd', '#ffffff'], gold: ['#ffd84d', '#d9a41c', '#fff3a3'], diamond: ['#8fe8ff', '#3aa6d8', '#eefcff'], locked: ['#dcd8ee', '#a9a3c6', '#f2f0fb'],
+  bronze: ['#e3a066', '#b5713a', '#f6c79a'], silver: ['#d8deec', '#9aa3bd', '#ffffff'], gold: ['#ffd84d', '#d9a41c', '#fff3a3'], diamond: ['#8fe8ff', '#3aa6d8', '#eefcff'], master: ['#e0a8ff', '#9b3fe0', '#fbeaff'], locked: ['#dcd8ee', '#a9a3c6', '#f2f0fb'],
 };
 const GLYPH = {
   star: ['...g...', '...g...', 'ggggggg', '.ggggg.', '..ggg..', '.gg.gg.', '.g...g.'],

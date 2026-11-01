@@ -164,3 +164,8 @@ export function parseSubs(text, words = false) {
   }
   return out.sort((x, y) => x.start - y.start);
 }
+
+// Video “đang học” hay “chưa học”: bài tập hằng ngày chỉ ra đề từ video đang học (mặc định mọi video đều đang học; video mới thêm có thể đặt là chưa học)
+export const isStudying = it => it.study !== false;
+export const studyNew = () => { try { return localStorage.getItem('studyNew') !== 'off'; } catch { return true; } };
+export const setStudyNew = on => { try { localStorage.setItem('studyNew', on ? 'on' : 'off'); } catch {} };

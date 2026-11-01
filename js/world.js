@@ -226,6 +226,7 @@ function folderTiles(all, folders) {
 
 let nwMore = false; // nhóm nút phụ (viết bài, nhập, từ vựng, kiểm tra) mặc định thu gọn
 function drawFeed() {
+  leaveFull();
   tools(false);
   const lang = getLang(), all = artsOf(lang), folders = foldersOf(lang);
   if (filter.folder && filter.folder !== '_none' && !folders.some(f => f.id === filter.folder)) filter.folder = '';
@@ -302,7 +303,22 @@ function randomTopic(excl) {
 }
 
 // ---------- đọc bài + câu hỏi trên cùng một trang ----------
+// ---------- đọc toàn màn hình: chỉ còn bài đọc + câu hỏi ----------
+function setNwFull(on) {
+  const st = $('#nwStage'); if (!st) return;
+  st.classList.toggle('full', on);
+  document.body.classList.toggle('sp-reading', on);
+  if (on) {
+    $$('.nwf-bar [data-px=lookup]', st).forEach(b => b.classList.toggle('on', document.body.classList.contains('lookup')));
+    try { document.documentElement.requestFullscreen?.({ navigationUI: 'hide' })?.catch(() => {}); } catch { /* không hỗ trợ: vẫn là toàn khung của app */ }
+  } else if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+}
+const leaveFull = () => { if ($('#nwStage.full')) setNwFull(false); };
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) leaveFull(); });
+bus.on('nav', leaveFull);
+
 function openArticle(id) {
+  const keepFull = !!$('#nwStage.full'); // “Làm lại” / đổi bài khi đang đọc toàn màn hình thì vẫn ở toàn màn hình
   const a = store.get('articles', id);
   if (!a || a.deleted) { mode = 'feed'; drawFeed(); return; }
   mode = 'read'; curId = id; tools(true);
@@ -312,7 +328,8 @@ function openArticle(id) {
   const lay = getLay(), limit = getTime();
   root.innerHTML = `<div class="row nw-bar"><button class="btn" id="nwBack">← Thế giới của tôi</button>
       <div class="seg" id="nwLay"><button data-l="stack" class="${lay === 'stack' ? 'on' : ''}" title="Bài đọc và câu hỏi nằm cùng một trang: đọc xong kéo xuống làm bài">☰ Cùng trang</button><button data-l="split" class="${lay === 'split' ? 'on' : ''}" title="Bài đọc ở bên trái, câu hỏi ở bên phải (màn hình rộng)">◫ Chia đôi</button></div>
-      ${timeHtml('nwTime', limit)}<span class="grow"></span><button class="btn" id="nwRand" title="Chọn ngẫu nhiên một chủ đề rồi mở một bài trong đó">🎲 Chủ đề ngẫu nhiên</button></div>
+      ${timeHtml('nwTime', limit)}<button class="btn" id="nwFull" title="Chỉ hiện bài đọc và câu hỏi, không có thanh và thư mục xung quanh (bấm Esc hoặc nút ← Thoát để quay lại)">📺 Đọc toàn màn hình</button><span class="grow"></span><button class="btn" id="nwRand" title="Chọn ngẫu nhiên một chủ đề rồi mở một bài trong đó">🎲 Chủ đề ngẫu nhiên</button></div>
+    <div class="nw-stage" id="nwStage"><div class="nwf-bar"><button class="btn" id="nwfClose">← Thoát</button><span class="grow"></span><button class="btn" data-px="readall" title="Đọc to bài đọc bằng giọng máy">🔊 Đọc</button><button class="btn" data-px="tapread" title="Bật rồi chạm vào một câu để nghe câu đó">👆 Chạm câu</button><button class="btn" data-px="lookup" title="Bật rồi chạm vào từ trong bài để tra nghĩa">📖 Tra từ</button></div>
     <div class="nw-lay ${lay}" id="nwLayBox"><div class="nw-left"><div class="rtbar hlbar" id="hlBar"><small class="dim">🖍 Bôi đen chữ rồi chọn màu (chỉ tạm thời):</small>${HL_COLORS.map(c => `<button class="rtsw rh-${c}" data-hl="${c}" title="Tô chữ đang bôi đen"></button>`).join('')}<button class="btn" data-hl="x" title="Xóa highlight ở đoạn đang bôi đen (không bôi đen thì xóa hết)">⌫ Xóa</button></div><article class="nw-read">
       <div class="nw-hero" style="--cc:${colorOf(a)}"><span class="nw-emoji big">${esc(a.emoji || '📰')}</span>${f ? `<span class="nw-tag">${esc(f.name)}</span>` : ''}</div>
       <h1 class="nw-ttl" lang="${bcp}">${esc(a.title)}</h1>
@@ -320,7 +337,7 @@ function openArticle(id) {
       <div class="nw-text" id="newsBody" data-aid="${id}" lang="${bcp}">${bodyHtml(a)}</div>
     </article></div>
     <div class="nw-right"><div class="nw-qsec"><div class="nw-sec">✍️ Câu hỏi về bài đọc</div>${qs.length ? '<div id="nwSheet"></div>'
-      : `<div class="qcard nw-cta"><div class="dim">Bài này chưa có câu hỏi. Bấm “Sửa bài” để thêm (hoặc dùng prompt nhờ AI tạo câu hỏi).</div><div class="row"><button class="btn primary" id="nwMark">✔ Đánh dấu đã đọc xong</button></div></div>`}</div></div></div>
+      : `<div class="qcard nw-cta"><div class="dim">Bài này chưa có câu hỏi. Bấm “Sửa bài” để thêm (hoặc dùng prompt nhờ AI tạo câu hỏi).</div><div class="row"><button class="btn primary" id="nwMark">✔ Đánh dấu đã đọc xong</button></div></div>`}</div></div></div></div>
     <div class="row"><button class="btn" id="nwEdit">✎ Sửa bài</button><button class="btn" id="nwDel">🗑 Xóa bài</button></div>`;
   $('#nwBack').onclick = () => { mode = 'feed'; drawFeed(); scrollTo(0, 0); };
   $('#nwRand').onclick = () => randomTopic(id);
@@ -331,6 +348,10 @@ function openArticle(id) {
   });
   wireTime(root, 'nwTime');
   wireHighlighter();
+  if (keepFull) $('#nwStage').classList.add('full'); else document.body.classList.remove('sp-reading');
+  $('#nwFull').onclick = () => setNwFull(true);
+  $('#nwfClose').onclick = () => setNwFull(false);
+  $$('.nwf-bar [data-px]', root).forEach(b => b.onclick = () => { document.querySelector(`#nwTools [data-${b.dataset.px}]`)?.click(); setTimeout(() => $$('.nwf-bar [data-px=lookup]', root).forEach(x => x.classList.toggle('on', document.body.classList.contains('lookup'))), 0); }); // dùng chung các nút Đọc / Chạm câu / Tra từ của Thế giới
   const setTime = () => { const m = readTime(root, 'nwTime'); save0('worldTime', m); toast(m ? `Giới hạn ${m} phút: bài được làm lại từ đầu` : 'Đã bỏ giới hạn thời gian'); openArticle(id); };
   $('#nwTime').addEventListener('change', () => { if ($('#nwTime').value !== 'custom') setTime(); });
   $('#nwTimeMin').addEventListener('change', setTime);

@@ -100,49 +100,61 @@ export function bonusXp(m) {
 }
 
 // ---------- thành tựu ----------
-export const TIERS = ['bronze', 'silver', 'gold', 'diamond'];
-export const TIER_NAME = { bronze: 'Đồng', silver: 'Bạc', gold: 'Vàng', diamond: 'Kim cương' };
-const A = (id, glyph, name, desc, unit, tiers, stat) => ({ id, glyph, name, desc, unit, tiers, stat });
+export const TIERS = ['bronze', 'silver', 'gold', 'diamond', 'master'];
+export const TIER_NAME = { bronze: 'Đồng', silver: 'Bạc', gold: 'Vàng', diamond: 'Kim cương', master: 'Huyền thoại' };
+const A = (id, glyph, name, desc, unit, tiers, stat, big = false) => ({ id, glyph, name, desc, unit, tiers, stat, big });
+const ACTIVITY = ['s', 'r', 'w', 'd', 'k', 'c', 'q', 'x', 'n', 't']; // các loại hoạt động học
 export const ACHIEVEMENTS = [
-  A('time', 'time', 'Người bền bỉ', 'Tổng thời gian học', 'phút', [60, 600, 3000, 12000], t => t.sec / 60),
-  A('days', 'cal', 'Chuyên cần', 'Số ngày có học', 'ngày', [7, 30, 100, 365], t => t.days),
-  A('streak', 'flame', 'Lửa không tắt', 'Chuỗi ngày liên tiếp đạt mục tiêu thời gian', 'ngày', [3, 7, 30, 100], t => t.streak),
-  A('shadow', 'mic', 'Người bóng', 'Số câu shadowing', 'câu', [100, 500, 2000, 10000], t => t.s),
-  A('cards', 'card', 'Thẻ nhớ', 'Số lượt ôn thẻ', 'lượt', [100, 500, 2000, 10000], t => t.c),
-  A('quiz', 'pencil', 'Người làm bài', 'Số câu bài tập đã làm', 'câu', [100, 500, 2000, 10000], t => t.q),
-  A('right', 'target', 'Chính xác', 'Số câu bài tập làm đúng', 'câu', [50, 300, 1500, 8000], t => t.qc),
-  A('test', 'check', 'Thí sinh', 'Số bài kiểm tra đã nộp', 'bài', [1, 10, 30, 100], t => t.t),
-  A('good', 'star', 'Điểm cao', 'Số bài kiểm tra đạt từ 80 điểm', 'bài', [1, 5, 20, 60], t => t.tp),
-  A('world', 'globe', 'Nhà thám hiểm', 'Số bài đã đọc xong ở Thế giới của tôi', 'bài', [1, 10, 40, 150], t => t.n),
-  A('write', 'pencil', 'Cây bút', 'Số ghi chú đã viết', 'bài', [1, 10, 40, 150], t => t.w),
-  A('read', 'book', 'Mọt sách', 'Số tài liệu, ghi chú, bài đã đọc', 'bài', [5, 30, 100, 400], t => t.r),
-  A('dict', 'phones', 'Thính tai', 'Số câu chép chính tả', 'câu', [25, 150, 600, 3000], t => t.d),
-  A('speak', 'mic', 'Giọng nói', 'Số câu luyện nói', 'câu', [25, 150, 600, 3000], t => t.k),
-  A('hw', 'pencil', 'Nét chữ', 'Số chữ đã viết', 'chữ', [25, 150, 800, 4000], t => t.x),
-  A('cups', 'trophy', 'Ngôi sao nhiệm vụ', 'Số ngày làm xong hết nhiệm vụ trong ngày', 'ngày', [1, 7, 30, 100], t => t.cups),
-  A('level', 'up', 'Thăng cấp', 'Cấp độ đạt được', 'cấp', [3, 5, 10, 20], t => t.level),
+  // thành tựu lớn: cột mốc tổng hợp, khó hơn nhiều so với các huy hiệu thường bên dưới
+  A('xp', 'star', 'Ngọn lửa tri thức', 'Tổng điểm kinh nghiệm (XP) tích lũy', 'XP', [500, 3000, 10000, 30000, 80000], t => t.xp, true),
+  A('kinds', 'trophy', 'Toàn năng', 'Số loại hoạt động khác nhau đã từng làm (shadowing, đọc, viết, chính tả, luyện nói, thẻ, bài tập, viết chữ, Thế giới, kiểm tra)', 'loại', [3, 5, 7, 9, 10], t => t.kinds, true),
+  A('wq', 'cal', 'Chinh phục tuần', 'Số nhiệm vụ tuần đã hoàn thành', 'nhiệm vụ', [1, 10, 40, 100, 250], t => t.wq, true),
+  A('mq', 'globe', 'Chinh phục tháng', 'Số nhiệm vụ tháng đã hoàn thành', 'nhiệm vụ', [1, 5, 15, 40, 100], t => t.mq, true),
+  A('long', 'time', 'Ngày marathon', 'Số ngày học từ 60 phút trở lên', 'ngày', [1, 5, 20, 60, 150], t => t.longDays, true),
+  A('time', 'time', 'Người bền bỉ', 'Tổng thời gian học', 'phút', [60, 600, 3000, 12000, 36000], t => t.sec / 60),
+  A('days', 'cal', 'Chuyên cần', 'Số ngày có học', 'ngày', [7, 30, 100, 365, 1000], t => t.days),
+  A('streak', 'flame', 'Lửa không tắt', 'Chuỗi ngày liên tiếp đạt mục tiêu thời gian', 'ngày', [3, 7, 30, 100, 365], t => t.streak),
+  A('shadow', 'mic', 'Người bóng', 'Số câu shadowing', 'câu', [100, 500, 2000, 10000, 50000], t => t.s),
+  A('cards', 'card', 'Thẻ nhớ', 'Số lượt ôn thẻ', 'lượt', [100, 500, 2000, 10000, 50000], t => t.c),
+  A('quiz', 'pencil', 'Người làm bài', 'Số câu bài tập đã làm', 'câu', [100, 500, 2000, 10000, 50000], t => t.q),
+  A('right', 'target', 'Chính xác', 'Số câu bài tập làm đúng', 'câu', [50, 300, 1500, 8000, 40000], t => t.qc),
+  A('test', 'check', 'Thí sinh', 'Số bài kiểm tra đã nộp', 'bài', [1, 10, 30, 100, 300], t => t.t),
+  A('good', 'star', 'Điểm cao', 'Số bài kiểm tra đạt từ 80 điểm', 'bài', [1, 5, 20, 60, 200], t => t.tp),
+  A('world', 'globe', 'Nhà thám hiểm', 'Số bài đã đọc xong ở Thế giới của tôi', 'bài', [1, 10, 40, 150, 500], t => t.n),
+  A('write', 'pencil', 'Cây bút', 'Số ghi chú đã viết', 'bài', [1, 10, 40, 150, 500], t => t.w),
+  A('read', 'book', 'Mọt sách', 'Số tài liệu, ghi chú, bài đã đọc', 'bài', [5, 30, 100, 400, 1500], t => t.r),
+  A('dict', 'phones', 'Thính tai', 'Số câu chép chính tả', 'câu', [25, 150, 600, 3000, 15000], t => t.d),
+  A('speak', 'mic', 'Giọng nói', 'Số câu luyện nói', 'câu', [25, 150, 600, 3000, 15000], t => t.k),
+  A('hw', 'pencil', 'Nét chữ', 'Số chữ đã viết', 'chữ', [25, 150, 800, 4000, 20000], t => t.x),
+  A('cups', 'trophy', 'Ngôi sao nhiệm vụ', 'Số ngày làm xong hết nhiệm vụ trong ngày', 'ngày', [1, 7, 30, 100, 365], t => t.cups),
+  A('level', 'up', 'Thăng cấp', 'Cấp độ đạt được', 'cấp', [3, 5, 10, 20, 35], t => t.level),
 ];
 
 // Quét nhật ký theo thời gian: ngày nào lần đầu đạt từng mốc thì ghi lại. Trả về { list, totals, got, total }
 export function computeAchievements(m) {
   const dates = [...m.keys()].sort(), goal = (prefs.goalMin || 15) * 60;
-  const t = { ...blankDay(''), days: 0, streak: 0, cups: 0, level: 1 };
-  const when = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, [null, null, null, null]]));
+  const t = { ...blankDay(''), days: 0, streak: 0, cups: 0, level: 1, xp: 0, kinds: 0, longDays: 0, wq: 0, mq: 0 };
+  const when = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, TIERS.map(() => null)]));
   let run = 0, prevGoal = '', xp = 0;
-  for (const d of dates) {
-    const x = m.get(d);
+  const used = new Set();
+  for (const [i, d] of dates.entries()) {
+    const x = m.get(d), nd = dates[i + 1];
+    ACTIVITY.forEach(k => { if (x[k] > 0) used.add(k); }); t.kinds = used.size;
+    if (x.sec >= 3600) t.longDays++;
+    if (!nd || weekStart(nd) !== weekStart(d)) { const s = weekStart(d), a = aggregate(m, s, addDays(s, 6)); t.wq += weeklyFor(s).filter(q => isDone(q, a)).length; } // tuần này đã xong: tính các nhiệm vụ tuần đã hoàn thành
+    if (!nd || monthStart(nd) !== monthStart(d)) { const s = monthStart(d), a = aggregate(m, s, monthEnd(s)); t.mq += monthlyFor(s).filter(q => isDone(q, a)).length; }
     KEYS.forEach(k => { t[k] += x[k] || 0; });
     if (x.sec > 0) t.days++;
     if (x.sec >= goal) { run = prevGoal === addDays(d, -1) ? run + 1 : 1; prevGoal = d; t.streak = Math.max(t.streak, run); }
     if (dailyFor(d).every(def => isDone(def, x))) t.cups++;
-    xp += xpOf(x); t.level = levelOf(xp).L;
+    xp += xpOf(x); t.xp = xp; t.level = levelOf(xp).L;
     for (const a of ACHIEVEMENTS) { const v = a.stat(t); a.tiers.forEach((th, i) => { if (when[a.id][i] == null && v >= th) when[a.id][i] = d; }); }
   }
   const list = ACHIEVEMENTS.map(a => {
     const value = a.stat(t), got = when[a.id].filter(Boolean).length;
     return { def: a, value, got, next: a.tiers[got] ?? null, prev: got ? a.tiers[got - 1] : 0, when: when[a.id] };
   });
-  return { list, totals: t, got: list.reduce((n, x) => n + x.got, 0), total: ACHIEVEMENTS.length * 4 };
+  return { list, totals: t, got: list.reduce((n, x) => n + x.got, 0), total: ACHIEVEMENTS.length * TIERS.length };
 }
 
 // Báo thành tựu mới (mỗi máy nhớ riêng những gì đã báo)

@@ -420,14 +420,23 @@
 <dialog id="musicDlg">
   <div class="hd"><span class="grow">🎵 Nhạc nền</span><button class="btn" id="muClose">✕</button></div>
   <div class="bd">
-    <div class="uirow"><span>Khi nào phát</span><div class="seg" id="muMode"><button data-v="off">Tắt</button><button data-v="read">Khi đọc (Thế giới)</button><button data-v="always">Luôn phát</button></div></div>
-    <small class="dim">“Khi đọc” tự phát khi bạn ở mục Thế giới (Article, Social) và tự dừng khi rời đi. Nhạc cũng tự dừng khi video bài học đang phát.</small>
-    <div class="row"><button class="btn" id="muPrev">↺ Từ đầu</button><button class="btn primary" id="muPlay">▶ Phát</button><button class="btn" id="muNext">Bài khác ›</button></div>
     <div id="muNow" class="dim"></div>
+    <div class="row"><button class="btn" id="muPrev">↺ Từ đầu</button><button class="btn primary" id="muPlay">▶ Phát</button><button class="btn" id="muNext">Bài khác ›</button></div>
     <div class="uirow"><span>Âm lượng</span><input id="muVol" type="range" min="0" max="100" step="5"></div>
-    <div class="row"><button class="btn primary" id="muAdd">＋ Thêm nhạc</button><button class="btn" id="muClear">🗑 Xóa hết</button></div>
-    <div id="muList" class="mu-list"></div>
-    <small class="dim">Chọn được nhiều file mp3 một lúc. Các bài được trộn ngẫu nhiên, phát hết lượt rồi mới xáo lại. File chỉ lưu trong máy này (không đồng bộ, không tốn dung lượng đám mây); máy khác cần tải lên lại.</small>
+    <small class="dim">Nhạc tự tạm nghỉ khi video bài học đang phát.</small>
+    <div class="mu-sec" data-l="bg">
+      <div class="row"><b class="grow">🎧 Nhạc nền (ở ngoài)</b><button class="btn" data-on></button></div>
+      <small class="dim">Phát liên tục ở Học, Thư viện, Ôn tập, Soạn, Nhiệm vụ.</small>
+      <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
+      <div class="mu-list"></div>
+    </div>
+    <div class="mu-sec" data-l="world">
+      <div class="row"><b class="grow">🌍 Nhạc khi đọc Thế giới</b><button class="btn" data-on></button></div>
+      <small class="dim">Vào Thế giới (Article, Social) thì chuyển sang danh sách này; rời đi thì quay lại nhạc nền.</small>
+      <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
+      <div class="mu-list"></div>
+    </div>
+    <small class="dim">Chọn được nhiều file mp3 một lúc. Mỗi danh sách tự trộn ngẫu nhiên, phát hết lượt rồi mới xáo lại. File chỉ lưu trong máy này (không đồng bộ, không tốn dung lượng đám mây); máy khác cần tải lên lại.</small>
   </div>
 </dialog>
 

@@ -1,5 +1,5 @@
 // Thư viện: chia theo ngôn ngữ, theo loại (video / tài liệu / ghi chú) và theo mục tự tạo.
-import { $, $$, esc, fmtMB, fmtS, toast, bus, uid, pickFile, getLang, langInfo, LANGS, classifySrc, hostOf } from './util.js';
+import { $, $$, esc, fmtMB, fmtS, toast, bus, uid, pickFile, getLang, langInfo, LANGS, classifySrc, hostOf, isStudying, studyNew, setStudyNew } from './util.js';
 import * as store from './store.js';
 import * as tracker from './tracker.js';
 import { pickAndAdd, openItem, addByLink } from './player.js';
@@ -42,7 +42,9 @@ function render() {
   $('#libLink').hidden = tab !== 'video';
   const bar = ([id, name]) => {
     const list = hit.get(id), open = !!q || OPEN.has(tab + id), rest = list.slice(SHOW);
-    const tools = `<button class="btn" data-add="${id}" title="Thêm vào mục này">＋</button>${tab === 'video' ? `<button class="btn" data-lnk="${id}" title="Thêm bằng link vào mục này">🔗</button>` : ''}` +
+    const vs = tab === 'video' ? (byAll.get(id) || []) : [], von = vs.filter(isStudying).length;
+    const tools = (tab === 'video' ? `<button class="btn stall ${von === vs.length ? 'on' : von ? 'part' : ''}" data-stall="${esc(id)}" title="Tick / bỏ tick “Đang học” cho cả mục này">${von === vs.length ? '☑' : von ? '◩' : '☐'} 📖 ${von}/${vs.length}</button>` : '') +
+      `<button class="btn" data-add="${id}" title="Thêm vào mục này">＋</button>${tab === 'video' ? `<button class="btn" data-lnk="${id}" title="Thêm bằng link vào mục này">🔗</button>` : ''}` +
       (id ? `<button class="btn" data-ren="${id}" title="Đổi tên mục">✎</button><button class="btn" data-del="${id}" title="Xóa mục (nội dung bên trong không bị xóa)">🗑</button>` : '');
     return `<section class="lb ${open ? 'open' : ''}" data-lb="${esc(id)}" style="--cc:${colorOf(name)}">
       <div class="lbh" data-tg="${esc(id)}" role="button" tabindex="0"><span class="lba">${id ? '📁' : '📂'}</span><b class="lbn ${id ? 'gt' : ''}">${esc(name)}</b><small class="lbc">${list.length}</small><span class="grow"></span>${tools}<span class="lbx">${rest.length ? (open ? '▲' : '▼') : ''}</span></div>
@@ -51,7 +53,9 @@ function render() {
       ${rest.length && !q ? `<button class="btn lbm" data-tg="${esc(id)}">${open ? '▲ Thu gọn' : `▼ Xem thêm ${rest.length} mục cũ hơn`}</button>` : ''}</section>`;
   };
   const rows = empty.map(([id, name]) => `<div class="lbr"><span class="gt grow">${esc(name)}</span><button class="btn" data-add="${id}">＋ Thêm</button>${tab === 'video' ? `<button class="btn" data-lnk="${id}">🔗</button>` : ''}<button class="btn" data-ren="${id}">✎</button><button class="btn" data-del="${id}">🗑</button></div>`).join('');
-  $('#libItems').innerHTML = (bars.length ? bars.map(bar).join('') :
+  const studyBar = tab === 'video' && all.length
+    ? `<div class="row stbar"><span class="grow"><b>📖 Đang học ${all.filter(isStudying).length}/${all.length} video</b> <small class="dim">Bài tập hằng ngày chỉ ra đề từ các video được tick “Đang học”. Video chưa tới lượt thì bỏ tick để không bị hỏi sớm.</small></span><button class="btn" data-stsel="1">☑ Chọn tất cả</button><button class="btn" data-stsel="0">☐ Bỏ chọn tất cả</button><button class="btn ${studyNew() ? 'on' : ''}" data-stnew="1" title="Quyết định video mới thêm vào sẽ được tick “Đang học” sẵn hay để “Chưa học”">Video mới thêm: ${studyNew() ? 'Đang học' : 'Chưa học'}</button></div>` : '';
+  $('#libItems').innerHTML = studyBar + (bars.length ? bars.map(bar).join('') :
     `<div class="empty">${q ? 'Không tìm thấy mục nào.' : `Chưa có mục nào cho ${esc(langInfo().name)}.<br>Bấm nút “${addLabel}” ở trên.`}</div>`) +
     (empty.length ? `<details class="lbe" ${showEmpty ? 'open' : ''}><summary>Mục trống (${empty.length})</summary>${rows}</details>` : '');
   // trạng thái: có file trong máy / phát từ link / cần chọn lại file
@@ -76,6 +80,7 @@ function card(i) {
   return `<div class="card" data-id="${i.id}" data-type="${i.type}" ${hasAsset ? `data-asset="${i.assetId || ''}" data-src="${i.src ? 1 : 0}"` : ''}>
     <div class="thumb ${i.frame === 'portrait' ? 'p' : ''}">${icon}</div>
     <div class="ci"><b>${esc(i.title)}</b><span class="dim">${esc(meta)}</span>${hasAsset ? '<span class="badge" data-loc></span>' : ''}</div>
+    ${i.type === 'video' ? `<button class="btn stb ${isStudying(i) ? 'on' : ''}" data-study="${i.id}" title="Tick = đang học: bài tập hằng ngày sẽ ra đề từ video này. Bỏ tick = chưa tới lượt học.">${isStudying(i) ? '☑ Đang học' : '☐ Chưa học'}</button>` : ''}
     <button class="btn more" data-edit="${i.id}" title="Sửa">⋯</button></div>`;
 }
 
@@ -188,6 +193,17 @@ export function init() {
     else notes.newNote(id);
   };
   $('#libItems').addEventListener('click', e => {
+    const st = e.target.closest('[data-study],[data-stall],[data-stsel],[data-stnew]');
+    if (st) { // tick “Đang học” cho một video, cả mục, hoặc tất cả
+      e.stopImmediatePropagation(); e.stopPropagation();
+      const d = st.dataset, vids = itemsOf('video');
+      const set = (list, on) => list.forEach(i => { if (isStudying(i) !== on) store.put('items', i.id, { study: on }); });
+      if (d.study) { const i = store.get('items', d.study); store.put('items', d.study, { study: !isStudying(i) }); }
+      else if (d.stall !== undefined) { const list = vids.filter(i => (store.list('folders').some(f => f.id === i.folder) ? i.folder : '') === d.stall); set(list, !list.every(isStudying)); }
+      else if (d.stsel) set(vids, d.stsel === '1');
+      else setStudyNew(!studyNew());
+      render(); return;
+    }
     const b = e.target.closest('[data-add],[data-lnk],[data-ren],[data-del]');
     if (b) {
       e.stopPropagation();

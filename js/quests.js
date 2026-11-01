@@ -5,6 +5,9 @@ import { prefs, savePrefs } from './prefs.js';
 import { pix, badge } from './pixicons.js';
 import * as A from './achieve.js';
 import { tr } from './i18n.js';
+import * as store from './store.js';
+import * as notes from './notes.js';
+import { getLang, uid } from './util.js';
 
 let range = 14, tab = 'today';
 let active = false;
@@ -47,8 +50,8 @@ function bars(vals, labels, { goal = 0, hiIndex = -1, todayIndex = -1, labelEver
 }
 
 // ---------- lịch hoạt động: mỗi ô là một ngày, đậm hơn nếu học nhiều phút hơn ----------
-function heatmap(m, today, goalMin) {
-  const WEEKS = 20, dow = d => (new Date(d + 'T00:00:00Z').getUTCDay() + 6) % 7; // thứ Hai = 0
+function heatmap(m, today, goalMin, WEEKS = 20) {
+  const dow =d => (new Date(d + 'T00:00:00Z').getUTCDay() + 6) % 7; // thứ Hai = 0
   const monday = addDays(today, -dow(today)), start = addDays(monday, -7 * (WEEKS - 1));
   let cells = '', months = '', lastMonth = '';
   for (let w = 0; w < WEEKS; w++) {
@@ -108,16 +111,19 @@ function periodTab(m, today, kind) {
 function achTab(m) {
   const res = A.computeAchievements(m), recent = res.list.flatMap(x => x.when.map((w, i) => w && { w, def: x.def, tier: A.TIERS[i] }).filter(Boolean)).sort((a, b) => b.w.localeCompare(a.w)).slice(0, 4);
   const card = x => {
-    const tier = x.got ? A.TIERS[x.got - 1] : 'locked', d = x.def, nextTxt = `${Math.floor(x.value)}/${x.next ?? d.tiers[3]} ${d.unit}`;
+    const tier = x.got ? A.TIERS[x.got - 1] : 'locked', d = x.def, nextTxt = `${Math.floor(x.value)}/${x.next ?? d.tiers[d.tiers.length - 1]} ${d.unit}`;
     const pct = x.next != null ? Math.min(100, Math.round(100 * (x.value - x.prev) / (x.next - x.prev))) : 100;
     const pips = A.TIERS.map((t, i) => `<i class="pip ${t} ${x.when[i] ? 'on' : ''}" title="${tr(A.TIER_NAME[t])}: ${x.when[i] ? x.when[i].slice(8) + '/' + x.when[i].slice(5, 7) + '/' + x.when[i].slice(0, 4) : d.tiers[i] + ' ' + tr(d.unit)}"></i>`).join('');
     return `<div class="ach ${x.got ? 'got' : 'lock'} ${tier}" title="${esc(d.desc)}"><div class="abadge">${badge(tier, d.glyph)}</div><b>${esc(d.name)}</b>
       <small class="dim">${x.got ? A.TIER_NAME[tier] : 'Chưa mở khóa'}</small><div class="prog"><i style="width:${pct}%"></i></div><small class="ainfo">${nextTxt}</small><div class="pips">${pips}</div></div>`;
   };
   return `<div class="qhead"><div><div class="dim">Thành tựu dài hạn</div><h2>Huy hiệu ${res.got}/${res.total}</h2></div>
-      <div class="streak">${pix('trophy')}<span class="sl">${res.list.filter(x => x.got === 4).length}<br><span class="dim">huy hiệu kim cương</span></span></div></div>
-    ${recent.length ? `<div class="row recent"><span class="dim">Mới mở khóa:</span>${recent.map(r => `<span class="chip">${badge(r.tier, r.def.glyph)} ${esc(r.def.name)} · ${A.TIER_NAME[r.tier]}</span>`).join('')}</div>` : '<div class="dim" style="margin:4px 2px">Học đều mỗi ngày để mở khóa huy hiệu Đồng → Bạc → Vàng → Kim cương.</div>'}
-    <div class="achs">${res.list.map(card).join('')}</div>`;
+      <div class="streak">${pix('trophy')}<span class="sl">${res.list.filter(x => x.got === A.TIERS.length).length}<br><span class="dim">huy hiệu huyền thoại</span></span></div></div>
+    ${recent.length ? `<div class="row recent"><span class="dim">Mới mở khóa:</span>${recent.map(r => `<span class="chip">${badge(r.tier, r.def.glyph)} ${esc(r.def.name)} · ${A.TIER_NAME[r.tier]}</span>`).join('')}</div>` : '<div class="dim" style="margin:4px 2px">Học đều mỗi ngày để mở khóa huy hiệu Đồng → Bạc → Vàng → Kim cương → Huyền thoại.</div>'}
+    <h3>🏆 Thành tựu lớn</h3><div class="dim" style="margin:2px">Cột mốc tổng hợp, mỗi cái có 5 mức. Chỉ có một cách để mở: học đều đặn trong thời gian dài.</div>
+    <div class="achs big">${res.list.filter(x => x.def.big).map(card).join('')}</div>
+    <h3>Huy hiệu</h3>
+    <div class="achs">${res.list.filter(x => !x.def.big).map(card).join('')}</div>`;
 }
 
 function statsTab(m, today) {
@@ -146,7 +152,87 @@ function statsTab(m, today) {
     <div class="dim" style="margin-top:2px">${best >= 0 ? `Thường học nhiều nhất lúc ${best}h–${(best + 1) % 24}h (trong ${range} ngày qua).` : 'Chưa có dữ liệu. Học vài buổi là biểu đồ sẽ hiện.'}</div>`;
 }
 
-const TABS = [['today', '🌅 Hôm nay'], ['week', '📅 Tuần'], ['month', '🗓 Tháng'], ['ach', '🏅 Thành tựu'], ['stats', '📈 Thống kê']];
+// ---------- nhìn lại tuần ----------
+let wkOff = 0; // 0 = tuần này, -1 = tuần trước…
+const DOW = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+function reviewTab(m, today) {
+  const goalMin = prefs.goalMin || 15, cur = A.weekStart(today), start = addDays(cur, 7 * wkOff), end = addDays(start, 6), upto = end < today ? end : today;
+  const a = A.aggregate(m, start, upto), prev = A.aggregate(m, addDays(start, -7), addDays(start, -1));
+  const inRange = ms => { const d = vnDate(ms || 0); return d >= start && d <= end; };
+  const words = store.list('wwords').filter(w => inRange(w.created)).length + store.list('cards').filter(c => c.type !== 'sentence' && inRange(c.created)).length;
+  const wrong = store.list('mistakes').filter(d => inRange(d.last)).sort((x, y) => (y.count || 0) - (x.count || 0)).slice(0, 3);
+  const mins = Array.from({ length: 7 }, (_, i) => Math.round((m.get(addDays(start, i))?.sec || 0) / 60));
+  const minsTot = Math.round(a.sec / 60), prevMin = Math.round(prev.sec / 60);
+  const delta = prevMin ? Math.round(100 * (minsTot - prevMin) / prevMin) : null;
+  const bestI = mins.some(x => x > 0) ? mins.indexOf(Math.max(...mins)) : -1;
+  // một việc nên làm tuần sau: chọn theo điểm yếu rõ nhất của tuần này
+  let tip;
+  if (a.days < 3) tip = `Tuần sau thử học ít nhất 4 ngày, mỗi ngày chỉ cần ${goalMin} phút. Đều đặn quan trọng hơn học dồn.`;
+  else if (wrong.length && (wrong[0].count || 0) >= 2) tip = 'Ôn lại những câu hay sai ở trên: làm lại đúng 1–2 lần là chúng thôi “quay lại” ngay.';
+  else if (a.s < 40) tip = 'Tuần sau shadow nhiều hơn: đặt mục tiêu 10 câu mỗi ngày với một video bạn thích.';
+  else if (a.c === 0) tip = 'Tuần này bạn chưa ôn thẻ nào. Tuần sau ôn 10 thẻ mỗi ngày để từ vựng không bị quên.';
+  else if (a.n === 0) tip = 'Tuần sau đọc xong ít nhất 2 bài ở Thế giới của tôi để luyện đọc hiểu.';
+  else if (delta !== null && delta < -30) tip = 'Thời gian học giảm so với tuần trước. Giữ nhịp bằng cách đặt một khung giờ cố định mỗi ngày.';
+  else tip = `Bạn đang học rất đều. Thử nâng mục tiêu mỗi ngày thêm 5 phút (hiện ${goalMin} phút).`;
+  const fmt = d => d.slice(8) + '/' + d.slice(5, 7);
+  const sunday = wkOff === 0 && today === end;
+  const tile = (n, label, extra = '') => `<div><b>${n}</b><span>${label}${extra}</span></div>`;
+  return `<div class="qhead"><div><div class="dim">Nhìn lại tuần · ${fmt(start)} – ${fmt(end)}</div><h2>${wkOff === 0 ? 'Tuần này' : wkOff === -1 ? 'Tuần trước' : `${-wkOff} tuần trước`}</h2></div>
+      <div class="row"><button class="btn" data-wk="-1">‹ Tuần trước</button><button class="btn" data-wk="1" ${wkOff === 0 ? 'disabled' : ''}>Tuần sau ›</button></div></div>
+    ${sunday ? '<div class="allDone">📓 Hôm nay là Chủ nhật: xem lại cả tuần của bạn nhé!</div>' : ''}
+    <div class="tiles">
+      ${tile(minsTot + '′', 'phút học', delta === null ? '' : ` <small class="dim">(${delta >= 0 ? '+' : ''}${delta}% so với tuần trước)</small>`)}
+      ${tile(`${a.days}/7`, 'ngày có học')}
+      ${tile(a.s, 'câu shadowing')}
+      ${tile(words, 'từ mới')}
+      ${tile(a.c, 'lượt ôn thẻ')}
+      ${tile(a.q ? `${a.qc}/${a.q}` : '–', 'câu bài tập đúng')}
+    </div>
+    <h3>Mỗi ngày trong tuần (phút)</h3>
+    ${bars(mins, DOW, { goal: goalMin, todayIndex: wkOff === 0 ? (new Date(today + 'T00:00:00Z').getUTCDay() + 6) % 7 : -1, hiIndex: bestI })}
+    <div class="dim" style="margin-top:2px"><span>${bestI >= 0 ? `Ngày học nhiều nhất: ${DOW[bestI]} (${mins[bestI]} phút).` : 'Tuần này chưa có dữ liệu học.'}</span> <span>Đường nét đứt là mục tiêu ${goalMin} phút.</span></div>
+    <h3>Câu hay sai nhất</h3>
+    ${wrong.length ? `<div class="rv-wrong">${wrong.map(d => `<div class="rv-row"><span class="gt grow">${esc(d.label || '')}</span><small class="dim">sai ${d.count || 1} lần</small></div>`).join('')}</div>` : '<div class="dim">Tuần này không ghi nhận câu sai nào.</div>'}
+    <h3>Một việc nên làm tuần sau</h3>
+    <div class="rv-tip"><span>💡</span> <span>${esc(tip)}</span></div>
+    <h3 style="margin-top:18px">Bản đồ nhiệt 12 tuần</h3>
+    ${heatmap(m, today, goalMin, 12)}`;
+}
+
+// ---------- nhật ký cuối ngày: mỗi ngày một ghi chú theo mẫu câu hỏi, gom thành dòng thời gian ----------
+let jqOpen = false; // khung sửa câu hỏi đang mở
+const DEFAULT_JQ =['Hôm nay mình học được gì?', 'Điều gì còn khó?', 'Ngày mai mình sẽ làm gì?'];
+const jqs = () => (Array.isArray(prefs.journalQs) && prefs.journalQs.length ? prefs.journalQs : DEFAULT_JQ);
+const journals = () => store.list('items').filter(i => i.type === 'note' && i.journal).sort((x, y) => y.journal.localeCompare(x.journal));
+const fmtDay = d => { const w = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'][new Date(d + 'T00:00:00Z').getUTCDay()]; return `${w} ${d.slice(8)}/${d.slice(5, 7)}/${d.slice(0, 4)}`; };
+function answersOf(body) { // “## câu hỏi” + câu trả lời bên dưới
+  return String(body || '').split(/^## /m).slice(1).map(s => { const [q, ...r] = s.split('\n'); return { q: q.trim(), a: r.join(' ').replace(/\s+/g, ' ').trim() }; });
+}
+function journalTab(today) {
+  const list = journals(), mine = list.find(j => j.journal === today), qs = jqs();
+  const entry = j => `<div class="jr" data-jopen="${j.id}" role="button" tabindex="0"><b class="jrd">${fmtDay(j.journal)}</b>
+    ${answersOf(j.body).map(x => `<div class="jrq"><small class="dim">${esc(x.q)}</small><div class="gt">${x.a ? esc(x.a.length > 140 ? x.a.slice(0, 140) + '…' : x.a) : '<span class="dim">–</span>'}</div></div>`).join('') || '<div class="dim">Nhật ký trống.</div>'}</div>`;
+  return `<div class="qhead"><div><div class="dim">Cuối ngày, viết vài dòng</div><h2>📓 Nhật ký</h2></div>
+      <button class="btn primary" data-jnew="1">${mine ? '📖 Mở nhật ký hôm nay' : '✍️ Viết nhật ký hôm nay'}</button></div>
+    <details class="jqs" ${jqOpen ? 'open' : ''}><summary>⚙ Câu hỏi của nhật ký (${qs.length})</summary>
+      <div class="dim" style="margin:4px 0">Mỗi ngày mới sẽ có các câu hỏi này làm mẫu. Sửa, thêm hoặc xóa tùy ý (nhật ký đã viết giữ nguyên).</div>
+      ${qs.map((q, i) => `<div class="row"><input class="jq grow" data-jq="${i}" value="${esc(q)}"><button class="btn" data-jqdel="${i}" title="Xóa câu hỏi này">✕</button></div>`).join('')}
+      <div class="row"><button class="btn" data-jqadd="1">＋ Thêm câu hỏi</button><button class="btn" data-jqreset="1">↺ Về mặc định</button></div></details>
+    <h3>Dòng thời gian</h3>
+    ${list.length ? `<div class="jtl">${list.map(entry).join('')}</div>` : '<div class="empty">Chưa có nhật ký nào. Bấm “Viết nhật ký hôm nay” để bắt đầu.</div>'}`;
+}
+function openJournal(today) {
+  let j = journals().find(x => x.journal === today);
+  if (!j) {
+    const id = uid();
+    store.put('items', id, { type: 'note', title: `Nhật ký ${today.slice(8)}/${today.slice(5, 7)}/${today.slice(0, 4)}`, lang: getLang(), folder: '', journal: today, body: jqs().filter(Boolean).map(q => `## ${q}\n\n`).join('\n'), created: Date.now() });
+    notes.openNote(id, true);
+    return;
+  }
+  notes.openNote(j.id);
+}
+
+const TABS = [['today', '🌅 Hôm nay'], ['week', '📅 Tuần'], ['month', '🗓 Tháng'], ['review', '🔍 Nhìn lại'], ['journal', '📓 Nhật ký'], ['ach', '🏅 Thành tựu'], ['stats', '📈 Thống kê']];
 
 function render() {
   const m = tracker.byDate(), today = vnDate();
@@ -155,7 +241,7 @@ function render() {
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6)).filter(d => (m.get(d)?.sec || 0) > 0).length;
   const cups = all.filter(d => A.dailyFor(d.date).every(q => A.isDone(q, d))).length;
   const hearts = Array.from({ length: 7 }, (_, i) => `<span class="hrt ${i < weekDays ? '' : 'off'}">❤</span>`).join('');
-  const body = tab === 'week' ? periodTab(m, today, 'week') : tab === 'month' ? periodTab(m, today, 'month') : tab === 'ach' ? achTab(m) : tab === 'stats' ? statsTab(m, today) : todayTab(m, today);
+  const body = tab === 'review' ? reviewTab(m, today) : tab === 'journal' ? journalTab(today) : tab === 'week' ? periodTab(m, today, 'week') : tab === 'month' ? periodTab(m, today, 'month') : tab === 'ach' ? achTab(m) : tab === 'stats' ? statsTab(m, today) : todayTab(m, today);
   $('#questBody').innerHTML = `
     <div class="hero">
       <div class="avatar">👤</div>
@@ -175,9 +261,25 @@ export function init() {
     const b = e.target.closest('[data-r]');
     if (b) { range = +b.dataset.r; render(); return; }
     const t = e.target.closest('[data-qt]');
-    if (t) { tab = t.dataset.qt; render(); }
+    if (t) { tab = t.dataset.qt; render(); return; }
+    const wk = e.target.closest('[data-wk]');
+    if (wk) { wkOff = Math.min(0, wkOff + (+wk.dataset.wk)); render(); return; }
+    const jo = e.target.closest('[data-jopen]');
+    if (jo) { notes.openNote(jo.dataset.jopen); return; }
+    if (e.target.closest('[data-jnew]')) { openJournal(vnDate()); return; }
+    const jq = e.target.closest('[data-jqdel],[data-jqadd],[data-jqreset]');
+    if (jq) {
+      const d = jq.dataset, qs = [...jqs()];
+      if (d.jqdel !== undefined) qs.splice(+d.jqdel, 1);
+      else if (d.jqadd) qs.push('');
+      else qs.splice(0, qs.length, ...DEFAULT_JQ);
+      prefs.journalQs = qs.length ? qs : [...DEFAULT_JQ]; savePrefs(); jqOpen = true; render();
+      if (d.jqadd) setTimeout(() => $('#questBody .jq:last-of-type')?.focus(), 0);
+    }
   });
+  $('#questBody').addEventListener('toggle', e => { if (e.target.matches?.('.jqs')) jqOpen = e.target.open; }, true);
   $('#questBody').addEventListener('change', e => {
+    if (e.target.matches('.jq')) { const qs = [...jqs()]; qs[+e.target.dataset.jq] = e.target.value.trim(); prefs.journalQs = qs.filter(Boolean).length ? qs.filter(Boolean) : [...DEFAULT_JQ]; savePrefs(); render(); return; }
     if (e.target.id === 'goalMin') { prefs.goalMin = Math.max(1, Math.min(600, +e.target.value || 15)); savePrefs(); render(); }
   });
   bus.on('show', v => { active = v === 'quest'; if (active) render(); });
