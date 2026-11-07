@@ -32,7 +32,7 @@ class YTBackend extends EventTarget {
         events: {
           onReady: () => { this.ready = true; this.playbackRate = this.rate; res(); },
           onStateChange: e => this.onState(e.data),
-          onError: e => toast([100, 101, 150].includes(e.data) ? 'Video này không cho nhúng hoặc đã bị xóa. Dùng “Mở link”.' : 'YouTube báo lỗi ' + e.data, 5000),
+          onError: e => toast([100, 101, 150].includes(e.data) ? 'Video này riêng tư, không cho nhúng hoặc đã bị xóa. Thử đăng nhập YouTube (nút 🔑 ở khung video bên cạnh hoặc trong ⚙ Cài đặt) hoặc dùng “Mở link”.' : 'YouTube báo lỗi ' + e.data, 5000),
         },
       });
     });

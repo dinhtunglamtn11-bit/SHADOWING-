@@ -287,7 +287,7 @@
 
 <!-- Khung video bên cạnh -->
 <aside id="side" hidden>
-  <div class="sh"><b id="sTitle" class="ellipsis grow"></b><button class="btn" id="sOpen" title="Mở trong trình học">↗</button><button class="btn" id="sClose" title="Đóng">✕</button></div>
+  <div class="sh"><b id="sTitle" class="ellipsis grow"></b><button class="btn" id="sLogin" title="Đăng nhập YouTube / TikTok để xem video riêng tư">🔑</button><button class="btn" id="sOpen" title="Mở trong trình học">↗</button><button class="btn" id="sClose" title="Đóng">✕</button></div>
   <div class="sb"><video id="sVideo" controls playsinline></video><iframe id="sFrame" hidden title="Video" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe><div id="sPick" class="row"></div></div>
 </aside>
 
@@ -417,6 +417,18 @@
   </div>
 </dialog>
 
+<dialog id="loginDlg">
+  <div class="hd"><span class="grow">🔑 Đăng nhập YouTube / TikTok</span><button class="btn" id="lgClose">✕</button></div>
+  <div class="bd">
+    <small class="dim">Video riêng tư, giới hạn độ tuổi hay chỉ dành cho người đã đăng nhập chỉ phát được khi trình duyệt của bạn đã đăng nhập trang gốc. Khung video trong app không cho đăng nhập ngay bên trong (YouTube và TikTok không cho phép), nên bạn đăng nhập ở tab mới một lần, rồi quay lại bấm “Tải lại video”.</small>
+    <div class="row"><a class="btn primary" id="lgYt" href="https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F" target="_blank" rel="noopener">▶ Đăng nhập YouTube (tab mới)</a><a class="btn primary" id="lgTt" href="https://www.tiktok.com/login" target="_blank" rel="noopener">🎵 Đăng nhập TikTok (tab mới)</a></div>
+    <div class="row"><button class="btn" id="lgUse"></button></div>
+    <small class="dim" id="lgUseNote"></small>
+    <div class="row"><button class="btn" id="lgReload">↻ Tải lại video</button><a class="btn" id="lgSrc" target="_blank" rel="noopener" hidden>↗ Mở video trên trang gốc</a></div>
+    <small class="dim">App không lưu mật khẩu hay thông tin đăng nhập của bạn: việc đăng nhập diễn ra hoàn toàn trên YouTube / TikTok trong trình duyệt. Nếu vẫn báo “video riêng tư”, trình duyệt có thể đang chặn cookie của bên thứ ba (Safari, Firefox chế độ nghiêm ngặt, Chrome ẩn danh), hoặc video không cho nhúng: hãy dùng “Mở video trên trang gốc”.</small>
+  </div>
+</dialog>
+
 <dialog id="musicDlg">
   <div class="hd"><span class="grow">🎵 Nhạc nền</span><button class="btn" id="muClose">✕</button></div>
   <div class="bd">
@@ -446,6 +458,8 @@
     <h3>Ngôn ngữ giao diện</h3>
     <div class="uirow"><div class="seg uiseg" data-k="lang"><button data-v="vi">Tiếng Việt</button><button data-v="en">English</button><button data-v="zh">中文</button></div></div>
     <small class="dim">Chỉ đổi chữ của giao diện. Nội dung học (phụ đề, thẻ, ghi chú) giữ nguyên.</small>
+    <h3>Tài khoản video</h3>
+    <div class="uirow"><span>YouTube / TikTok</span><button class="btn" id="loginOpen">🔑 Đăng nhập…</button></div>
 
     <h3>Màu sắc</h3>
     <div class="uirow"><span>Chủ đề</span><div class="seg uiseg" data-k="theme"><button data-v="day">Ngày</button><button data-v="night">Đêm</button><button data-v="auto">Theo máy</button></div></div>
