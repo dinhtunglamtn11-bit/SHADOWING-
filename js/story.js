@@ -231,7 +231,7 @@ function drawDetail() {
       <div class="stc-b"><h2 class="gt">${esc(s.title)}</h2>${s.author ? `<div class="dim gt">${esc(s.author)}</div>` : ''}
         <div class="prog"><i style="width:${progOf(s)}%"></i></div><small class="dim">${chs.length} chương · đã đọc ${Math.min(read, chs.length)}</small></div></div>
     <div class="row">${chs.length ? `<button class="btn primary big" id="stRead">▶ ${s.maxN || s.pos ? 'Đọc tiếp' : 'Bắt đầu đọc'}${chs[cur] ? ` · chương ${chs[cur].n}` : ''}</button>` : ''}
-      <button class="btn" id="stMore">＋ Thêm chương</button><button class="btn" id="stEdit">✎ Sửa tên</button><button class="btn" id="stDel">🗑 Xóa truyện</button></div>
+      <button class="btn" id="stMore">＋ Thêm chương</button><button class="btn" id="stEdit">✎ Sửa thông tin</button><button class="btn" id="stDel">🗑 Xóa truyện</button></div>
     ${chs.length > PER ? `<div class="row"><button class="btn" data-pg="-1" ${page === 0 ? 'disabled' : ''}>‹</button><span class="dim">Trang ${page + 1}/${pages}</span><button class="btn" data-pg="1" ${page >= pages - 1 ? 'disabled' : ''}>›</button>
       <label class="dim">Đến chương số <input id="stJump" type="number" min="1" max="${chs.length}" style="width:84px"></label></div>` : ''}
     <div class="stlist">${slice.map(row).join('') || '<div class="empty">Truyện chưa có chương nào.</div>'}</div>`;
@@ -241,7 +241,9 @@ function drawDetail() {
   $('#stMore', root).onclick = () => { draft = { title: '', author: '', emoji: '', text: '', mode: 'auto' }; nav('add', { addFor: sid }); };
   $('#stEdit', root).onclick = () => {
     const t = (prompt('Tên truyện:', s.title) || '').trim(); if (!t) return;
-    const a = prompt('Tác giả:', s.author || ''); store.put('stories', sid, { title: t, author: (a ?? s.author ?? '').trim() }); drawDetail();
+    const a = prompt('Tác giả:', s.author || '');
+    const e = prompt('Biểu tượng (một emoji, ví dụ 🐑):', s.emoji || '');
+    store.put('stories', sid, { title: t, author: (a ?? s.author ?? '').trim(), emoji: (e ?? s.emoji ?? '').trim() }); drawDetail();
   };
   $('#stDel', root).onclick = () => {
     if (!confirm(`Xóa truyện “${s.title}” cùng ${chs.length} chương? Không thể hoàn tác.`)) return;
