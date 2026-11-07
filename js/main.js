@@ -98,21 +98,34 @@ for (const ev of ['click', 'keyup', 'close']) document.addEventListener(ev, soon
 btnBack.onclick = () => goBack();
 
 // ---------- nút bật / tắt âm thanh nhanh ----------
-const btnSfx = $('#btnSfx');
-const syncSfx = () => { btnSfx.classList.toggle('off', !prefs.sfx); btnSfx.title = prefs.sfx ? 'Tắt âm thanh nút bấm' : 'Bật âm thanh nút bấm'; };
-btnSfx.onclick = () => {
-  prefs.sfx = prefs.sfx ? 0 : 1; savePrefs(); bus.emit('prefs'); syncSfx();
-  if (prefs.sfx) sfx.play('ok');
-  toast(prefs.sfx ? 'Đã bật âm thanh nút bấm' : 'Đã tắt âm thanh nút bấm', 1400);
+// Một nút chung: tắt / bật cả nhạc nền lẫn tiếng nút bấm. Chi tiết (âm lượng, kiểu âm, danh sách nhạc) nằm trong ⚙ Cài đặt.
+const btnSound = $('#btnSound');
+const syncSfx = () => { btnSound.classList.toggle('off', sfx.muted()); btnSound.title = sfx.muted() ? 'Bật lại toàn bộ âm thanh' : 'Tắt toàn bộ âm thanh (nhạc nền và tiếng nút bấm)'; };
+btnSound.onclick = () => {
+  sfx.setMuted(!sfx.muted()); syncSfx();
+  if (!sfx.muted()) sfx.play('ok');
+  toast(sfx.muted() ? 'Đã tắt toàn bộ âm thanh' : 'Đã bật lại âm thanh', 1400);
 };
-bus.on('prefs', syncSfx);
+bus.on('mute', syncSfx);
 
 // ---------- chọn ngôn ngữ ----------
+// Thu gọn: chỉ một nút hiện ngôn ngữ đang học; bấm vào mới xổ ra menu 4 ngôn ngữ để chọn
 function renderLangs() {
-  $('#langs').innerHTML = LANGS.map(l =>
-    `<button class="chip ${l.id === getLang() ? 'on' : ''}" data-l="${l.id}" title="${l.name}">${l.short}<small class="lname"> ${l.name.replace('Tiếng ', '')}</small></button>`).join('');
+  const cur = LANGS.find(l => l.id === getLang()) || LANGS[0], nm = l => l.name.replace('Tiếng ', '');
+  $('#langs').innerHTML = `<button class="chip on" id="langCur" aria-haspopup="true" title="Đổi ngôn ngữ đang học">${cur.short}<small class="lname"> ${nm(cur)}</small> ▾</button>` +
+    `<div id="langMenu" hidden>${LANGS.map(l => `<button class="chip ${l.id === cur.id ? 'on' : ''}" data-l="${l.id}">${l.short}<small class="lname"> ${nm(l)}</small></button>`).join('')}</div>`;
 }
-$('#langs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setLang(b.dataset.l); });
+const closeLangMenu = () => { const m = $('#langMenu'); if (m) m.hidden = true; };
+$('#langs').addEventListener('click', e => {
+  const pick = e.target.closest('#langMenu [data-l]'), cur = e.target.closest('#langCur'), menu = $('#langMenu');
+  if (pick) { closeLangMenu(); setLang(pick.dataset.l); return; }
+  if (!cur || !menu) return;
+  menu.hidden = !menu.hidden;
+  if (!menu.hidden) { const r = cur.getBoundingClientRect(); menu.style.top = (r.bottom + 6) + 'px'; menu.style.left = Math.max(6, Math.min(r.left, innerWidth - 190)) + 'px'; }
+});
+document.addEventListener('click', e => { if (!e.target.closest('#langs')) closeLangMenu(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLangMenu(); });
+addEventListener('scroll', closeLangMenu, { passive: true });
 bus.on('lang', renderLangs);
 
 // ---------- đăng nhập + đồng bộ ----------

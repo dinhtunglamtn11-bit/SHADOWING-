@@ -225,11 +225,13 @@ function drawDetail() {
   if (page < 0) page = Math.floor(cur / PER); // lần đầu vào: mở đúng trang có chương đang đọc
   page = Math.min(page, pages - 1);
   const slice = chs.slice(page * PER, page * PER + PER), read = s.maxN || 0;
-  const row = c => `<div class="stch ${c.id === s.ch ? 'cur' : ''} ${c.n <= read ? 'done' : ''}" data-ch="${c.id}" role="button" tabindex="0"><span class="stn">${c.n}</span><span class="gt grow">${esc(c.title)}</span><span class="stm">${c.id === s.ch ? '▶' : c.n <= read ? '✓' : ''}</span></div>`;
+  const row = c => `<div class="stch ${c.id === s.ch ? 'cur' : ''} ${c.n <= read ? 'done' : ''}" data-ch="${c.id}" role="button" tabindex="0"><span class="stn">${c.n}</span><span class="gt grow">${esc(c.title)}</span><span class="stm">${c.id === s.mark?.ch ? '🔖' : ''}${c.id === s.ch ? '▶' : c.n <= read ? '✓' : ''}</span></div>`;
+  const mk = s.mark && store.get('chapters', s.mark.ch) ? s.mark : null, d8 = t => { const d = new Date(t); return `${d.getDate()}/${d.getMonth() + 1}`; };
   root.innerHTML = `${head()}<div class="row"><button class="btn" id="stBack">← Truyện của tôi</button></div>
     <div class="st-hero" style="--cc:${COLORS[hash(s.title) % COLORS.length]}"><div class="stc-cover big">${esc(s.emoji || '📖')}</div>
       <div class="stc-b"><h2 class="gt">${esc(s.title)}</h2>${s.author ? `<div class="dim gt">${esc(s.author)}</div>` : ''}
         <div class="prog"><i style="width:${progOf(s)}%"></i></div><small class="dim">${chs.length} chương · đã đọc ${Math.min(read, chs.length)}</small></div></div>
+    ${mk ? `<div class="row st-mark"><span class="grow"><b>🔖 Điểm đã lưu</b> <span class="dim">chương ${mk.n} · ${Math.round((mk.pos || 0) * 100)}% · ${d8(mk.t)}</span></span><button class="btn" id="stMark">↩ Về điểm đã lưu</button></div>` : ''}
     <div class="row">${chs.length ? `<button class="btn primary big" id="stRead">▶ ${s.maxN || s.pos ? 'Đọc tiếp' : 'Bắt đầu đọc'}${chs[cur] ? ` · chương ${chs[cur].n}` : ''}</button>` : ''}
       <button class="btn" id="stMore">＋ Thêm chương</button><button class="btn" id="stEdit">✎ Sửa thông tin</button><button class="btn" id="stDel">🗑 Xóa truyện</button></div>
     ${chs.length > PER ? `<div class="row"><button class="btn" data-pg="-1" ${page === 0 ? 'disabled' : ''}>‹</button><span class="dim">Trang ${page + 1}/${pages}</span><button class="btn" data-pg="1" ${page >= pages - 1 ? 'disabled' : ''}>›</button>
@@ -238,6 +240,7 @@ function drawDetail() {
   bindBase();
   $('#stBack', root).onclick = () => nav('shelf');
   $('#stRead', root)?.addEventListener('click', () => openChapter(chs[cur].id, true));
+  $('#stMark', root)?.addEventListener('click', () => openChapter(mk.ch, false, true));
   $('#stMore', root).onclick = () => { draft = { title: '', author: '', emoji: '', text: '', mode: 'auto' }; nav('add', { addFor: sid }); };
   $('#stEdit', root).onclick = () => {
     const t = (prompt('Tên truyện:', s.title) || '').trim(); if (!t) return;
@@ -263,42 +266,82 @@ function drawDetail() {
 
 // ---------- đọc chương ----------
 const fs = () => Math.max(15, Math.min(40, +ls('stFs', 21) || 21));
-function openChapter(cid, resume) {
+let full = false; // đang đọc toàn màn hình (chỉ còn chữ truyện)
+const proxy = kind => document.querySelector(`#nwTools [data-${kind}]`)?.click(); // dùng chung nút Đọc / Chạm câu / Tra từ của Thế giới
+const metrics = () => {
+  const st = $('#stScroll', root);
+  if (full && st) return { top: st.scrollTop, max: st.scrollHeight - st.clientHeight };
+  const d = document.documentElement; return { top: scrollY, max: d.scrollHeight - innerHeight };
+};
+const fraction = () => { const m = metrics(); return m.max > 0 ? Math.min(1, m.top / m.max) : 1; };
+const jump = f => {
+  const st = $('#stScroll', root);
+  if (full && st) st.scrollTop = (st.scrollHeight - st.clientHeight) * f; else scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * f);
+};
+
+function openChapter(cid, resume, atMark = false) {
   const c = store.get('chapters', cid); if (!c) return;
   const s = store.get('stories', c.story);
-  const keepPos = resume && s?.ch === cid ? s.pos || 0 : 0;
+  const keepPos = atMark ? s?.mark?.pos || 0 : resume && s?.ch === cid ? s.pos || 0 : 0;
   store.put('stories', c.story, { ch: cid, pos: keepPos, last: Date.now() });
-  sid = c.story; cleanup(); view = 'read'; drawRead(keepPos); scrollTo(0, 0);
+  sid = c.story; cleanup(true); view = 'read'; drawRead(keepPos); if (!full) scrollTo(0, 0);
 }
+
+function setFull(on) {
+  const st = $('#stStage', root); if (!st || on === full) return;
+  const f = fraction();
+  full = on; st.classList.toggle('full', on); document.body.classList.toggle('sp-reading', on);
+  if (on) { try { document.documentElement.requestFullscreen?.({ navigationUI: 'hide' })?.catch(() => {}); } catch { /* không hỗ trợ: vẫn là toàn khung của app */ } }
+  else if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  requestAnimationFrame(() => jump(f));
+}
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && full) setFull(false); });
+
+// Lưu tiến trình: ghi nhớ chương + vị trí hiện tại thành “điểm đã lưu” (khác vị trí tự nhớ, không bị đè khi bạn mở chương khác xem thử)
+function saveMark() {
+  const s = store.get('stories', sid), chs = chaptersOf(sid), c = chs[curIdx(chs, s)]; if (!c) return;
+  const f = +fraction().toFixed(3);
+  store.put('stories', sid, { mark: { ch: c.id, n: c.n, pos: f, t: Date.now() }, pos: f, last: Date.now() });
+  toast(`Đã lưu tiến trình: chương ${c.n} (${Math.round(f * 100)}%)`, 2200);
+  $$('[data-act=save]', root).forEach(b => { b.classList.add('on'); b.textContent = '🔖 Đã lưu'; });
+}
+
 function drawRead(startPos = 0) {
   const s = store.get('stories', sid), chs = chaptersOf(sid), i = curIdx(chs, s), c = chs[i];
   if (!c) { nav('detail', { sid, page: -1 }); return; }
-  const prev = chs[i - 1], next = chs[i + 1], bcp = langInfo(s.lang || 'zh').bcp;
+  const prev = chs[i - 1], next = chs[i + 1], bcp = langInfo(s.lang || 'zh').bcp, mk = s.mark?.ch === c.id;
   const paras = String(c.body || '').split('\n').filter(l => l.trim()).map(l => `<p>${esc(l.trim())}</p>`).join('');
   const navRow = pos => `<div class="row st-nav"><button class="btn" data-go="${prev?.id || ''}" ${prev ? '' : 'disabled'}>‹ Chương trước</button><span class="grow"></span>
     <button class="btn ${pos === 'bottom' ? 'primary' : ''}" data-go="${next?.id || ''}" ${next ? '' : 'disabled'}>${next ? 'Chương sau ›' : 'Hết (hiện có)'}</button></div>`;
-  root.innerHTML = `<div class="row st-bar"><button class="btn" id="stBack">← ${esc(s.title)}</button><span class="grow"></span>
-      <button class="btn" id="stFsDn" title="Chữ nhỏ lại">A−</button><button class="btn" id="stFsUp" title="Chữ to lên">A+</button></div>
-    ${navRow('top')}
-    <article class="nw-read st-read"><div class="nw-by dim">Chương ${c.n}/${chs.length}</div><h1 class="nw-ttl" lang="${bcp}">${esc(c.title)}</h1>
-      <div class="nw-text st-text" id="stBody" lang="${bcp}" style="font-size:${fs()}px">${paras}</div></article>
-    ${navRow('bottom')}`;
+  const ctrl = `<span class="seg st-fs"><button data-act="dn" title="Chữ nhỏ lại">A−</button><button data-act="up" title="Chữ to lên">A+</button></span>
+    <button class="btn st-save ${mk ? 'on' : ''}" data-act="save" title="Lưu tiến trình đọc ngay tại đây (chương và vị trí). Mở lại truyện có thể quay về đúng điểm đã lưu">${mk ? '🔖 Đã lưu' : '💾 Lưu'}</button>`;
+  root.innerHTML = `<div class="st-bar"><button class="btn st-title" id="stBack">← ${esc(s.title)}</button>${ctrl}<button class="btn" data-act="full" title="Chỉ hiện chữ truyện, không có thanh và thư mục xung quanh (bấm Esc hoặc nút ← Thoát để quay lại)">📺</button></div>
+    <div class="nw-stage st-stage ${full ? 'full' : ''}" id="stStage"><div class="nwf-bar"><button class="btn" data-act="exit">← Thoát</button><span class="grow"></span>${ctrl}
+        <button class="btn" data-act="readall" title="Đọc to chương bằng giọng máy">🔊</button><button class="btn" data-act="tapread" title="Bật rồi chạm vào một câu để nghe câu đó">👆</button><button class="btn" data-act="lookup" title="Bật rồi chạm vào từ trong truyện để tra nghĩa">📖</button></div>
+      <div class="st-scroll" id="stScroll">${navRow('top')}
+        <article class="nw-read st-read"><div class="nw-by dim">Chương ${c.n}/${chs.length}</div><h1 class="nw-ttl" lang="${bcp}">${esc(c.title)}</h1>
+          <div class="nw-text st-text" id="stBody" lang="${bcp}" style="font-size:${fs()}px">${paras}</div></article>
+        ${navRow('bottom')}</div></div>`;
   $('#stBack', root).onclick = () => nav('detail', { sid, page: -1 });
   $$('[data-go]', root).forEach(b => b.onclick = () => { if (b.dataset.go) openChapter(b.dataset.go, false); });
   const size = d => { lset('stFs', Math.max(15, Math.min(40, fs() + d))); $('#stBody', root).style.fontSize = fs() + 'px'; };
-  $('#stFsDn', root).onclick = () => size(-2); $('#stFsUp', root).onclick = () => size(2);
+  $$('[data-act]', root).forEach(b => b.onclick = () => {
+    const a = b.dataset.act;
+    if (a === 'dn') size(-2); else if (a === 'up') size(2); else if (a === 'save') saveMark();
+    else if (a === 'full') setFull(true); else if (a === 'exit') setFull(false);
+    else { proxy(a); setTimeout(() => $$('[data-act=lookup]', root).forEach(x => x.classList.toggle('on', document.body.classList.contains('lookup'))), 0); }
+  });
   // nhớ vị trí đọc; kéo gần hết chương thì tính là đã đọc xong chương này
-  const doc = document.documentElement;
   onScroll = () => {
-    const max = doc.scrollHeight - innerHeight, f = max > 0 ? Math.min(1, scrollY / max) : 1;
+    const f = fraction();
     clearTimeout(saveT);
     saveT = setTimeout(() => { const cur = store.get('stories', sid); if (cur && Math.abs((cur.pos || 0) - f) > 0.01) store.put('stories', sid, { pos: +f.toFixed(3), last: Date.now() }); }, 1500);
     if (f > 0.96 && (store.get('stories', sid)?.maxN || 0) < c.n) store.put('stories', sid, { maxN: c.n });
     if (f > 0.96 && !readOnce.has(c.id + vnDate())) { readOnce.add(c.id + vnDate()); tracker.read(); }
   };
   addEventListener('scroll', onScroll, { passive: true });
-  if (startPos > 0.01) requestAnimationFrame(() => { const max = doc.scrollHeight - innerHeight; scrollTo(0, max * startPos); });
-  else onScroll();
+  $('#stScroll', root).addEventListener('scroll', onScroll, { passive: true });
+  if (startPos > 0.01) requestAnimationFrame(() => jump(startPos)); else onScroll();
 }
 
 // ---------- vào / ra ----------
@@ -310,9 +353,10 @@ export function render(rt, c) {
   view = 'shelf'; drawShelf();
 }
 export function reset() { leave(); view = 'shelf'; sid = null; }
-function cleanup() {
+function cleanup(keepFull = false) {
   if (onScroll) { removeEventListener('scroll', onScroll); onScroll = null; }
   clearTimeout(saveT);
+  if (full && !keepFull) { full = false; document.body.classList.remove('sp-reading'); if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); }
 }
 export function init() {
   bus.on('show', v => { if (v !== 'world') leave(); });

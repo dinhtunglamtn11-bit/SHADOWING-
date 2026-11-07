@@ -2,6 +2,11 @@
 // Sóng vuông / tam giác như máy game cổ, nhưng vào âm mềm, lọc bớt chói và trượt nhẹ cao độ để nghe êm tai.
 // Bật / tắt, âm lượng, kiểu âm nằm trong prefs (đồng bộ giữa các máy khi đã đăng nhập).
 import { prefs } from './prefs.js';
+import { bus } from './util.js';
+
+// Nút âm thanh chung ở đầu trang: tắt / bật cả tiếng nút bấm lẫn nhạc nền (lưu riêng từng máy)
+export const muted = () => { try { return localStorage.getItem('muteAll') === '1'; } catch { return false; } };
+export function setMuted(on) { try { localStorage.setItem('muteAll', on ? '1' : '0'); } catch { /* bỏ qua */ } bus.emit('mute', on); }
 
 // [kiểu sóng, bội tần, độ to] cho từng kiểu âm; lp = tần số cắt của bộ lọc, gain = độ to chung
 const KINDS = {
@@ -55,7 +60,7 @@ function tone(n, k) {
 
 // force: phát dù đang tắt (nút “Thử âm” trong Cài đặt)
 export function play(kind = 'tap', force = false) {
-  if (!force && !prefs.sfx) return;
+  if (!force && (!prefs.sfx || muted())) return;
   const now = performance.now();
   if (now - last < 40 && !force) return; // một lần bấm không kêu hai lần
   last = now;
@@ -82,7 +87,7 @@ function kindOf(el) {
   return 'tap';
 }
 function onClick(e) {
-  if (!e.isTrusted || !prefs.sfx) return; // chỉ tiếng bấm thật của người dùng, không phải click do mã tự gọi
+  if (!e.isTrusted || !prefs.sfx || muted()) return; // chỉ tiếng bấm thật của người dùng, không phải click do mã tự gọi
   const el = e.target.closest?.(HIT);
   if (!el || el.disabled || el.closest('[disabled],[aria-disabled=true]') || el.closest(QUIET)) return;
   play(kindOf(el));

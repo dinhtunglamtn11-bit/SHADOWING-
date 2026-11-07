@@ -29,7 +29,7 @@ export function applyUi(u = getUi()) {
 
 function markSegs(u) {
   const bk = getBk();
-  const cur = { ...u, sfx: prefs.sfx ? '1' : '0', sfxKind: prefs.sfxKind || 'soft', ttsRate: String(prefs.ttsRate || 0.9), lang: uiLang, bk: String(bk.days), srs: prefs.srs || 'fsrs', retention: String(prefs.retention || 0.9), rate: String(prefs.rate || 1) };
+  const cur = { ...u, mute: sfx.muted() ? '1' : '0', sfx: prefs.sfx ? '1' : '0', sfxKind: prefs.sfxKind || 'soft', ttsRate: String(prefs.ttsRate || 0.9), lang: uiLang, bk: String(bk.days), srs: prefs.srs || 'fsrs', retention: String(prefs.retention || 0.9), rate: String(prefs.rate || 1) };
   $('#bkLast').textContent = bk.last ? 'Lần sao lưu gần nhất: ' + new Date(bk.last).toLocaleDateString('vi-VN') : 'Chưa sao lưu lần nào trên máy này.';
   $$('#uiDlg .uiseg').forEach(sg => $$('button', sg).forEach(b => b.classList.toggle('on', String(cur[sg.dataset.k]) === b.dataset.v)));
   $('#uiGoal').value = prefs.goalMin || 15;
@@ -47,7 +47,8 @@ export function init() {
     saveUi(u); applyUi(u);
   };
   const dlg = $('#uiDlg');
-  $('#btnSettings').onclick = () => { markSegs(getUi()); dlg.showModal(); };
+  $('#btnSettings').onclick = () => { markSegs(getUi()); bus.emit('settingsOpen'); dlg.showModal(); };
+  bus.on('mute', () => { if (dlg.open) markSegs(getUi()); });
   $('#uiClose').onclick = () => dlg.close();
   dlg.addEventListener('click', e => {
     if (e.target === dlg) { dlg.close(); return; }
@@ -56,6 +57,7 @@ export function init() {
     const k = b.parentElement.dataset.k, v = b.dataset.v;
     if (k === 'ttsRate') { prefs.ttsRate = parseFloat(v); savePrefs(); bus.emit('prefs'); markSegs(getUi()); return; }
     if (k === 'rate') { prefs.rate = parseFloat(v); savePrefs(); bus.emit('prefs'); markSegs(getUi()); return; }
+    if (k === 'mute') { sfx.setMuted(v === '1'); markSegs(getUi()); if (v === '0') sfx.play('ok'); return; } // cùng công tắc với nút 🔊 ở đầu trang
     if (k === 'sfx' || k === 'sfxKind') { // âm thanh nút bấm (đồng bộ qua prefs)
       prefs[k] = k === 'sfx' ? +v : v; savePrefs(); bus.emit('prefs'); markSegs(getUi());
       if (prefs.sfx) sfx.play('ok');

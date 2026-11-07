@@ -5,6 +5,7 @@
 import { $, esc, toast, bus, uid, pickFile, fmtMB } from './util.js';
 import * as store from './store.js';
 import { M } from './media.js';
+import { muted, setMuted } from './sfx.js';
 
 const LKEY = 'musicLists', CKEY = 'musicCfg', PRE = 'mus_';
 const LISTS = ['bg', 'world'];
@@ -24,7 +25,7 @@ let aud = null, cur = null, curL = null, bags = { bg: [], world: [] }, forced = 
 const ctx = () => (document.body.dataset.view === 'world' ? 'world' : 'bg');
 const want = () => {
   const l = ctx();
-  return !videoOn && lists[l].length && (forced || (!userPause && cfg[l + 'On']));
+  return !muted() && !videoOn && lists[l].length && (forced || (!userPause && cfg[l + 'On']));
 };
 
 function pick(l) { // túi trộn: mỗi bài phát một lượt rồi mới xáo lại
@@ -80,7 +81,7 @@ async function add(l) {
 }
 
 function draw() {
-  const dlg = $('#musicDlg'); if (!dlg) return;
+  const dlg = $('#musicBox'); if (!dlg) return;
   $('#muVol').value = Math.round(cfg.vol * 100);
   const playing = !!aud && !aud.paused;
   $('#muPlay').textContent = playing ? '⏸ Dừng' : '▶ Phát';
@@ -93,19 +94,15 @@ function draw() {
       ? lists[l].map(x => `<div class="mu-row ${playing && x.id === cur ? 'on' : ''}"><span class="mu-name grow">${esc(x.name)}</span><small class="dim">${fmtMB(x.size || 0)}</small><button class="btn" data-del="${x.id}" title="Xóa bài này">✕</button></div>`).join('')
       : '<div class="dim">Chưa có bài nào.</div>';
   }
-  $('#btnMusic').classList.toggle('on', playing);
 }
 
 export function init() {
-  const dlg = $('#musicDlg'); if (!dlg) return;
+  const dlg = $('#musicBox'); if (!dlg) return;
   aud = Object.assign(new Audio(), { preload: 'auto' });
   aud.addEventListener('ended', next);
   aud.addEventListener('error', () => { if (cur && curL) { const id = cur, l = curL; toast('Không phát được một bài nhạc, đã bỏ qua', 2500); drop(l, id); next(); } });
   aud.addEventListener('pause', draw); aud.addEventListener('play', draw);
-  $('#btnMusic').onclick = () => { draw(); dlg.showModal(); };
-  $('#muClose').onclick = () => dlg.close();
   dlg.addEventListener('click', e => {
-    if (e.target === dlg) { dlg.close(); return; }
     const sec = e.target.closest('.mu-sec'); if (!sec) return;
     const l = sec.dataset.l, b = e.target.closest('button'); if (!b) return;
     if (b.matches('[data-on]')) { cfg[l + 'On'] = !cfg[l + 'On']; saveC(); userPause = false; forced = false; sync(); draw(); }
@@ -115,12 +112,14 @@ export function init() {
   });
   $('#muPlay').onclick = () => {
     if (!lists[ctx()].length) { toast('Danh sách này chưa có bài nào: bấm “＋ Thêm nhạc” bên dưới', 3000); return; }
-    if (!aud.paused) { forced = false; userPause = true; stop(); } else { forced = true; userPause = false; videoOn = false; play(); }
+    if (!aud.paused) { forced = false; userPause = true; stop(); } else { if (muted()) setMuted(false); forced = true; userPause = false; videoOn = false; play(); }
   };
   $('#muNext').onclick = () => { if (!lists[ctx()].length) return; forced = forced || !userPause; userPause = false; play(pick(ctx())); };
   $('#muPrev').onclick = () => { aud.currentTime = 0; };
   $('#muVol').oninput = e => { cfg.vol = (+e.target.value || 0) / 100; aud.volume = cfg.vol; };
   $('#muVol').onchange = saveC;
+  bus.on('mute', () => { sync(); draw(); }); // nút âm thanh chung ở đầu trang
+  bus.on('settingsOpen', draw);
   // đổi mục: vào Thế giới thì chuyển sang nhạc Thế giới, ra ngoài thì về nhạc nền
   bus.on('show', () => { userPause = false; forced = false; sync(); });
   // video / âm thanh bài học đang phát thì nhạc tạm nghỉ để không lẫn tiếng

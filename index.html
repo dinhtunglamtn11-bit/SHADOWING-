@@ -42,8 +42,7 @@
   <div id="langs" class="chips"></div>
   <span class="grow"></span>
   <span id="sync"></span>
-  <button id="btnMusic" class="btn" title="Nhạc nền: tải mp3 lên, phát ngẫu nhiên khi đọc">🎵</button>
-  <button id="btnSfx" class="btn" title="Bật / tắt âm thanh nút bấm">🔊</button>
+  <button id="btnSound" class="btn" title="Tắt / bật toàn bộ âm thanh (nhạc nền và tiếng nút bấm)">🔊</button>
   <button id="btnTheme" class="btn" title="Đổi giao diện ngày / đêm"><span data-ic="moon"></span></button>
   <button id="btnSettings" class="btn" title="Cài đặt giao diện và ngôn ngữ">⚙</button>
   <button id="btnUser" class="btn">Đăng nhập</button>
@@ -429,29 +428,6 @@
   </div>
 </dialog>
 
-<dialog id="musicDlg">
-  <div class="hd"><span class="grow">🎵 Nhạc nền</span><button class="btn" id="muClose">✕</button></div>
-  <div class="bd">
-    <div id="muNow" class="dim"></div>
-    <div class="row"><button class="btn" id="muPrev">↺ Từ đầu</button><button class="btn primary" id="muPlay">▶ Phát</button><button class="btn" id="muNext">Bài khác ›</button></div>
-    <div class="uirow"><span>Âm lượng</span><input id="muVol" type="range" min="0" max="100" step="5"></div>
-    <small class="dim">Nhạc tự tạm nghỉ khi video bài học đang phát.</small>
-    <div class="mu-sec" data-l="bg">
-      <div class="row"><b class="grow">🎧 Nhạc nền (ở ngoài)</b><button class="btn" data-on></button></div>
-      <small class="dim">Phát liên tục ở Học, Thư viện, Ôn tập, Soạn, Nhiệm vụ.</small>
-      <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
-      <div class="mu-list"></div>
-    </div>
-    <div class="mu-sec" data-l="world">
-      <div class="row"><b class="grow">🌍 Nhạc khi đọc Thế giới</b><button class="btn" data-on></button></div>
-      <small class="dim">Vào Thế giới (Article, Social) thì chuyển sang danh sách này; rời đi thì quay lại nhạc nền.</small>
-      <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
-      <div class="mu-list"></div>
-    </div>
-    <small class="dim">Chọn được nhiều file mp3 một lúc. Mỗi danh sách tự trộn ngẫu nhiên, phát hết lượt rồi mới xáo lại. File chỉ lưu trong máy này (không đồng bộ, không tốn dung lượng đám mây); máy khác cần tải lên lại.</small>
-  </div>
-</dialog>
-
 <dialog id="uiDlg">
   <div class="hd"><span class="grow">⚙ Cài đặt</span><button class="btn" id="uiClose">✕</button></div>
   <div class="bd">
@@ -492,12 +468,36 @@
     <div class="uirow"><span>Tốc độ phát mặc định</span><div class="seg uiseg" data-k="rate"><button data-v="0.75">0.75×</button><button data-v="0.9">0.9×</button><button data-v="1">1×</button><button data-v="1.25">1.25×</button></div></div>
     <small class="dim">Mỗi video nhớ tốc độ riêng khi bạn đổi ở ⚙ trong màn Học; video chưa chọn thì dùng tốc độ này.</small>
 
-    <h3>Âm thanh nút bấm</h3>
+    <h3>🔊 Âm thanh</h3>
+    <div class="uirow"><span>Tất cả âm thanh</span><div class="seg uiseg" data-k="mute" data-nosfx><button data-v="0">Bật</button><button data-v="1">Tắt</button></div></div>
+    <small class="dim">Cũng là nút 🔊 ở đầu trang: tắt / bật cùng lúc cả nhạc nền và tiếng nút bấm.</small>
+    <h3>Tiếng nút bấm</h3>
     <div class="uirow"><span>Âm thanh</span><div class="seg uiseg" data-k="sfx" data-nosfx><button data-v="1">Bật</button><button data-v="0">Tắt</button></div></div>
     <div class="uirow"><span>Âm lượng</span><input id="sfxVol" type="range" min="0" max="100" step="5"></div>
     <div class="uirow"><span>Kiểu âm</span><div class="seg uiseg" data-k="sfxKind" data-nosfx><button data-v="soft">Pixel mịn</button><button data-v="chip">Pixel cổ điển</button><button data-v="bubble">Nhẹ nhàng</button></div></div>
     <div class="row"><button id="sfxTest" class="btn" data-nosfx>🔊 Thử âm</button></div>
     <small class="dim">Âm thanh do máy tự tạo (không có file âm thanh) nên tự cập nhật cùng app. Bật / tắt, âm lượng và kiểu âm được đồng bộ giữa các máy khi đã đăng nhập. Thanh phát video và khung luyện nói luôn im lặng để không lẫn vào tiếng bạn đang nghe hoặc ghi âm.</small>
+
+    <h3>🎵 Nhạc nền</h3>
+    <div id="musicBox">
+      <div id="muNow" class="dim"></div>
+      <div class="row"><button class="btn" id="muPrev" data-nosfx>↺ Từ đầu</button><button class="btn primary" id="muPlay" data-nosfx>▶ Phát</button><button class="btn" id="muNext" data-nosfx>Bài khác ›</button></div>
+      <div class="uirow"><span>Âm lượng nhạc</span><input id="muVol" type="range" min="0" max="100" step="5"></div>
+      <small class="dim">Nhạc tự tạm nghỉ khi video bài học đang phát.</small>
+      <div class="mu-sec" data-l="bg">
+        <div class="row"><b class="grow">🎧 Nhạc nền (ở ngoài)</b><button class="btn" data-on></button></div>
+        <small class="dim">Phát liên tục ở Học, Thư viện, Ôn tập, Soạn, Nhiệm vụ.</small>
+        <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
+        <div class="mu-list"></div>
+      </div>
+      <div class="mu-sec" data-l="world">
+        <div class="row"><b class="grow">🌍 Nhạc khi đọc Thế giới</b><button class="btn" data-on></button></div>
+        <small class="dim">Vào Thế giới (Article, Social, Story) thì chuyển sang danh sách này; rời đi thì quay lại nhạc nền.</small>
+        <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
+        <div class="mu-list"></div>
+      </div>
+      <small class="dim">Chọn được nhiều file mp3 một lúc. Mỗi danh sách tự trộn ngẫu nhiên, phát hết lượt rồi mới xáo lại. File chỉ lưu trong máy này (không đồng bộ, không tốn dung lượng đám mây); máy khác cần tải lên lại.</small>
+    </div>
 
     <h3>Phím tắt (màn Học)</h3>
     <small class="dim">Bấm vào một phím rồi nhấn phím mới. Esc: hủy · Backspace: gỡ phím.</small>
