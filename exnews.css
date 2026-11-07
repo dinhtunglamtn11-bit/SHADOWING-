@@ -442,3 +442,14 @@ mark.hltmp { color: inherit; }
 .jr { padding: 10px 12px; background: var(--panel); border: var(--px) solid var(--ink); cursor: pointer; display: grid; gap: 6px; }
 .jr:hover { background: var(--panel2, var(--panel)); }
 .jrd { font-family: var(--pf); font-weight: 400; font-size: 22px; }
+
+/* tick “Đang học” gọn trên điện thoại / máy tính bảng */
+.stbar { flex-wrap: wrap; gap: 6px; }
+.stbar > span.grow { flex: 1 1 100%; min-width: 0; }
+.stbar .btn { flex: 1 1 auto; }
+.card .ci { min-width: 0; }
+@media (max-width: 899px) {
+  .stb { padding: 2px 8px; font-size: 17px; }
+  .lbh { flex-wrap: wrap; }
+  .lbh .stall { padding: 2px 8px; font-size: 17px; }
+}
