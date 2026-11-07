@@ -453,3 +453,30 @@ mark.hltmp { color: inherit; }
   .lbh { flex-wrap: wrap; }
   .lbh .stall { padding: 2px 8px; font-size: 17px; }
 }
+
+/* Story: truyện chữ, tiểu thuyết nhiều chương */
+.stgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 10px; }
+.stc { display: flex; gap: 12px; align-items: center; padding: 10px; background: var(--panel); border: var(--px) solid var(--ink); clip-path: var(--np); cursor: pointer; border-left: 8px solid var(--cc, var(--accent)); }
+.stc:hover { background: var(--panel2, var(--panel)); }
+.stc-cover { flex: none; width: 56px; height: 72px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: color-mix(in srgb, var(--cc, var(--accent)) 35%, var(--panel)); border: 3px solid var(--ink); }
+.stc-cover.big { width: 84px; height: 108px; font-size: 44px; }
+.stc-b { min-width: 0; display: grid; gap: 4px; flex: 1; }
+.stc-b b, .stc-b h2 { overflow-wrap: anywhere; margin: 0; }
+.stc .prog, .st-hero .prog { height: 12px; }
+.st-hero { display: flex; gap: 16px; align-items: center; margin: 10px 0; padding: 12px; background: var(--panel); border: var(--px) solid var(--ink); border-left: 10px solid var(--cc, var(--accent)); }
+.stlist { display: grid; gap: 4px; margin-top: 8px; }
+.stch { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--panel); border: 2px dashed var(--line); cursor: pointer; }
+.stch:hover { border-style: solid; }
+.stch.cur { border-style: solid; background: var(--panel2, var(--panel)); }
+.stch.done { opacity: .75; }
+.stn { flex: none; min-width: 34px; font-family: var(--pf); color: var(--dim); }
+.stm { flex: none; width: 18px; text-align: center; }
+.st-bar, .st-nav { align-items: center; }
+.st-nav { margin: 10px 0; }
+.st-read { max-width: 760px; margin: 10px auto; }
+.st-text { line-height: 1.95; }
+.st-text p { margin: 0 0 .9em; }
+.st-text[lang^=zh] p, .st-text[lang^=ja] p, .st-text[lang^=ko] p { text-indent: 2em; }
+.st-text.nw-text:lang(en) p:first-of-type::first-letter { float: none; font: inherit; line-height: inherit; padding: 0; color: inherit; }
+.st-form { display: grid; gap: 10px; }
+.st-form input[type=text] { width: 100%; }

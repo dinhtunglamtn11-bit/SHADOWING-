@@ -14,6 +14,7 @@ import { setPrompt, newsPrompt, promptPanel, NEWS_SYNTAX } from './exprompts.js'
 import { pix } from './pixicons.js';
 import * as wvocab from './wvocab.js';
 import * as social from './social.js';
+import * as story from './story.js';
 import { inline, plain, TEXT_COLORS, HL_COLORS, lineInfo, lineCls, lineBu, indentLines, bulletLines, tabKey } from './richtext.js';
 
 const DAY = 864e5;
@@ -183,11 +184,11 @@ const dateLine = () => { const d = new Date(); return `${WD[d.getDay()]}, ${d.ge
 // Thế giới có 2 mục: Article (bài đọc + câu hỏi) và Social (lướt bài đăng ngắn, không câu hỏi)
 const store0 = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const save0 = (k, v) => { try { localStorage.setItem(k, v); } catch { /* bỏ qua */ } };
-let sec = store0('worldSec') === 'social' ? 'social' : 'article';
-const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="social" class="${sec === 'social' ? 'on' : ''}">📱 Social</button></div>`;
+let sec = ['social', 'story'].includes(store0('worldSec')) ? store0('worldSec') : 'article';
+const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="social" class="${sec === 'social' ? 'on' : ''}">📱 Social</button><button data-s="story" class="${sec === 'story' ? 'on' : ''}">📖 Story</button></div>`;
 function bindSec() {
   $$('#wSec button', root).forEach(b => {
-    b.onclick = () => { if (b.dataset.s === sec) return; social.leave(); sec = b.dataset.s; save0('worldSec', sec); mode = 'feed'; render(); scrollTo(0, 0); };
+    b.onclick = () => { if (b.dataset.s === sec) return; social.leave(); story.leave(); sec = b.dataset.s; save0('worldSec', sec); mode = 'feed'; render(); scrollTo(0, 0); };
   });
 }
 
@@ -206,6 +207,7 @@ export function render() {
   if (mode === 'import') return drawImport();
   mode = 'feed';
   if (sec === 'social') { tools(true, true); social.render(root, { bar: secBar, bindBar: bindSec }); return; }
+  if (sec === 'story') { tools(true); story.render(root, { bar: secBar, bindBar: bindSec }); return; }
   drawFeed();
 }
 
@@ -620,6 +622,7 @@ export function init() {
   root = $('#worldRoot');
   bus.on('show', v => { if (v === 'world') render(); });
   social.init();
-  bus.on('lang', () => { wvocab.reset(); social.reset(); mode = 'feed'; curId = null; filter.folder = ''; filter.unread = false; if (document.body.dataset.view === 'world') render(); });
+  story.init();
+  bus.on('lang', () => { wvocab.reset(); social.reset(); story.reset(); mode = 'feed'; curId = null; filter.folder = ''; filter.unread = false; if (document.body.dataset.view === 'world') render(); });
   bus.on('store', c => { if ((c === 'articles' || c === 'wfolders' || c === '*') && document.body.dataset.view === 'world' && mode === 'feed' && sec === 'article') drawFeed(); });
 }
