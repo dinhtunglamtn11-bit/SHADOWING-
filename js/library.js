@@ -10,6 +10,7 @@ import * as lessons from './lessons.js';
 
 let tab = 'video', editId = null, linkFolder = null, showEmpty = false;
 const SHOW = 3;                // mỗi thanh chỉ hiện 3 mục mới nhất, bấm vào thanh mới hiện thêm mục cũ hơn
+let stOpen = false;            // khung “Đang học” đang mở rộng (mặc định thu gọn)
 const OPEN = new Set();        // các thanh đang mở rộng (tab + id thư mục)
 const COLORS = ['#ff8f3a', '#5fd068', '#ff8fc0', '#7ec3ff', '#a98bff', '#ffd84d', '#ff7b88', '#4fd1c5'];
 const colorOf = n => COLORS[[...String(n || '')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % COLORS.length];
@@ -54,7 +55,7 @@ function render() {
   };
   const rows = empty.map(([id, name]) => `<div class="lbr"><span class="gt grow">${esc(name)}</span><button class="btn" data-add="${id}">＋ Thêm</button>${tab === 'video' ? `<button class="btn" data-lnk="${id}">🔗</button>` : ''}<button class="btn" data-ren="${id}">✎</button><button class="btn" data-del="${id}">🗑</button></div>`).join('');
   const studyBar = tab === 'video' && all.length
-    ? `<div class="row stbar"><span class="grow"><b>📖 Đang học ${all.filter(isStudying).length}/${all.length} video</b> <small class="dim">Bài tập hằng ngày chỉ ra đề từ các video được tick “Đang học”. Video chưa tới lượt thì bỏ tick để không bị hỏi sớm.</small></span><button class="btn" data-stsel="1">☑ Chọn tất cả</button><button class="btn" data-stsel="0">☐ Bỏ chọn tất cả</button><button class="btn ${studyNew() ? 'on' : ''}" data-stnew="1" title="Quyết định video mới thêm vào sẽ được tick “Đang học” sẵn hay để “Chưa học”">Video mới thêm: ${studyNew() ? 'Đang học' : 'Chưa học'}</button></div>` : '';
+    ? `<div class="stbar ${stOpen ? 'open' : ''}"><div class="sth" data-sttoggle="1" role="button" tabindex="0" title="Bấm để mở / thu gọn"><b>📖 Đang học ${all.filter(isStudying).length}/${all.length} video</b><span class="grow"></span><span class="ar">${stOpen ? '▲' : '▼'}</span></div>${stOpen ? `<div class="stbody"><small class="dim">Bài tập hằng ngày chỉ ra đề từ các video được tick “Đang học”. Video chưa tới lượt thì bỏ tick để không bị hỏi sớm.</small><div class="row"><button class="btn" data-stsel="1">☑ Chọn tất cả</button><button class="btn" data-stsel="0">☐ Bỏ chọn tất cả</button><button class="btn ${studyNew() ? 'on' : ''}" data-stnew="1" title="Quyết định video mới thêm vào sẽ được tick “Đang học” sẵn hay để “Chưa học”">Video mới thêm: ${studyNew() ? 'Đang học' : 'Chưa học'}</button></div></div>` : ''}</div>` : '';
   $('#libItems').innerHTML = studyBar + (bars.length ? bars.map(bar).join('') :
     `<div class="empty">${q ? 'Không tìm thấy mục nào.' : `Chưa có mục nào cho ${esc(langInfo().name)}.<br>Bấm nút “${addLabel}” ở trên.`}</div>`) +
     (empty.length ? `<details class="lbe" ${showEmpty ? 'open' : ''}><summary>Mục trống (${empty.length})</summary>${rows}</details>` : '');
@@ -80,7 +81,7 @@ function card(i) {
   return `<div class="card" data-id="${i.id}" data-type="${i.type}" ${hasAsset ? `data-asset="${i.assetId || ''}" data-src="${i.src ? 1 : 0}"` : ''}>
     <div class="thumb ${i.frame === 'portrait' ? 'p' : ''}">${icon}</div>
     <div class="ci"><b>${esc(i.title)}</b><span class="dim">${esc(meta)}</span>${hasAsset ? '<span class="badge" data-loc></span>' : ''}</div>
-    ${i.type === 'video' ? `<button class="btn stb ${isStudying(i) ? 'on' : ''}" data-study="${i.id}" title="Tick = đang học: bài tập hằng ngày sẽ ra đề từ video này. Bỏ tick = chưa tới lượt học.">${isStudying(i) ? '☑ Đang học' : '☐ Chưa học'}</button>` : ''}
+    ${i.type === 'video' ? `<button class="btn stb ${isStudying(i) ? 'on' : ''}" data-study="${i.id}" title="Tick = đang học: bài tập hằng ngày sẽ ra đề từ video này. Bỏ tick = chưa tới lượt học.">${isStudying(i) ? '☑' : '☐'}</button>` : ''}
     <button class="btn more" data-edit="${i.id}" title="Sửa">⋯</button></div>`;
 }
 
@@ -193,13 +194,14 @@ export function init() {
     else notes.newNote(id);
   };
   $('#libItems').addEventListener('click', e => {
-    const st = e.target.closest('[data-study],[data-stall],[data-stsel],[data-stnew]');
+    const st = e.target.closest('[data-study],[data-stall],[data-stsel],[data-stnew],[data-sttoggle]');
     if (st) { // tick “Đang học” cho một video, cả mục, hoặc tất cả
       e.stopImmediatePropagation(); e.stopPropagation();
       const d = st.dataset, vids = itemsOf('video');
       const set = (list, on) => list.forEach(i => { if (isStudying(i) !== on) store.put('items', i.id, { study: on }); });
       if (d.study) { const i = store.get('items', d.study); store.put('items', d.study, { study: !isStudying(i) }); }
       else if (d.stall !== undefined) { const list = vids.filter(i => (store.list('folders').some(f => f.id === i.folder) ? i.folder : '') === d.stall); set(list, !list.every(isStudying)); }
+      else if (d.sttoggle) stOpen = !stOpen;
       else if (d.stsel) set(vids, d.stsel === '1');
       else setStudyNew(!studyNew());
       render(); return;

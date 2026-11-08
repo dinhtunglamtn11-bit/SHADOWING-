@@ -514,3 +514,12 @@ mark.hltmp { color: inherit; }
 #vPlayer .tools2[hidden] { display: none; }
 #sfile { display: none; }
 @media (max-width: 899px) { #vPlayer .tools .btn { padding-left: 10px; padding-right: 10px; } }
+
+/* khung “Đang học”: thu gọn một dòng, bấm mới mở; nút tick từng video chỉ là ô ☑ / ☐ nhỏ */
+.stbar { display: block; padding: 4px 10px; }
+.stbar .sth { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0; }
+.stbar .stbody { display: grid; gap: 8px; padding: 6px 0 4px; }
+.stbar .stbody .row { gap: 6px; }
+.btn.stb { min-width: 36px; padding: 2px 8px; font-size: 20px; }
+.btn.stb.on { background: var(--c); }
+.btn.stb:not(.on) { opacity: .55; }
