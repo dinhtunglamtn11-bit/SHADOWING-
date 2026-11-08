@@ -41,17 +41,16 @@ function render() {
   const addLabel = { video: '＋ Thêm video', pdf: '＋ Thêm tài liệu (PDF, TXT)', note: '＋ Ghi chú mới' }[tab];
   $('#libAdd').textContent = addLabel;
   $('#libLink').hidden = tab !== 'video';
+  // Thanh thư mục thu gọn: mặc định chỉ một dòng (mũi tên + tên + số mục); bấm vào dòng mới xổ ra các nút và danh sách bên trong
   const bar = ([id, name]) => {
-    const list = hit.get(id), open = !!q || OPEN.has(tab + id), rest = list.slice(SHOW);
+    const list = hit.get(id), open = !!q || OPEN.has(tab + id);
     const vs = tab === 'video' ? (byAll.get(id) || []) : [], von = vs.filter(isStudying).length;
     const tools = (tab === 'video' ? `<button class="btn stall ${von === vs.length ? 'on' : von ? 'part' : ''}" data-stall="${esc(id)}" title="Tick / bỏ tick “Đang học” cho cả mục này">${von === vs.length ? '☑' : von ? '◩' : '☐'} 📖 ${von}/${vs.length}</button>` : '') +
-      `<button class="btn" data-add="${id}" title="Thêm vào mục này">＋</button>${tab === 'video' ? `<button class="btn" data-lnk="${id}" title="Thêm bằng link vào mục này">🔗</button>` : ''}` +
-      (id ? `<button class="btn" data-ren="${id}" title="Đổi tên mục">✎</button><button class="btn" data-del="${id}" title="Xóa mục (nội dung bên trong không bị xóa)">🗑</button>` : '');
+      `<button class="btn" data-add="${id}" title="Thêm vào mục này">＋ Thêm</button>${tab === 'video' ? `<button class="btn" data-lnk="${id}" title="Thêm bằng link vào mục này">🔗 Link</button>` : ''}` +
+      (id ? `<button class="btn" data-ren="${id}" title="Đổi tên mục">✎ Đổi tên</button><button class="btn" data-del="${id}" title="Xóa mục (nội dung bên trong không bị xóa)">🗑 Xóa mục</button>` : '');
     return `<section class="lb ${open ? 'open' : ''}" data-lb="${esc(id)}" style="--cc:${colorOf(name)}">
-      <div class="lbh" data-tg="${esc(id)}" role="button" tabindex="0"><span class="lba">${id ? '📁' : '📂'}</span><b class="lbn ${id ? 'gt' : ''}">${esc(name)}</b><small class="lbc">${list.length}</small><span class="grow"></span>${tools}<span class="lbx">${rest.length ? (open ? '▲' : '▼') : ''}</span></div>
-      <div class="cards">${list.slice(0, SHOW).map(card).join('')}</div>
-      ${open && rest.length ? `<div class="cards lbmore">${rest.map(card).join('')}</div>` : ''}
-      ${rest.length && !q ? `<button class="btn lbm" data-tg="${esc(id)}">${open ? '▲ Thu gọn' : `▼ Xem thêm ${rest.length} mục cũ hơn`}</button>` : ''}</section>`;
+      <div class="lbh" data-tg="${esc(id)}" role="button" tabindex="0" aria-expanded="${open}"><span class="lbx">${open ? '▼' : '▶'}</span><span class="lba">${id ? '📁' : '📂'}</span><b class="lbn ${id ? 'gt' : ''}">${esc(name)}</b><small class="lbc">${list.length}</small></div>
+      ${open ? `<div class="lbt">${tools}</div><div class="cards">${list.map(card).join('')}</div>` : ''}</section>`;
   };
   const rows = empty.map(([id, name]) => `<div class="lbr"><span class="gt grow">${esc(name)}</span><button class="btn" data-add="${id}">＋ Thêm</button>${tab === 'video' ? `<button class="btn" data-lnk="${id}">🔗</button>` : ''}<button class="btn" data-ren="${id}">✎</button><button class="btn" data-del="${id}">🗑</button></div>`).join('');
   const studyBar = tab === 'video' && all.length

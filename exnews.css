@@ -523,3 +523,14 @@ mark.hltmp { color: inherit; }
 .btn.stb { min-width: 36px; padding: 2px 8px; font-size: 20px; }
 .btn.stb.on { background: var(--c); }
 .btn.stb:not(.on) { opacity: .55; }
+
+/* Thư viện: thanh thư mục thu gọn một dòng; các nút và danh sách chỉ hiện khi mở */
+.lbh { flex-wrap: nowrap; }
+.lbh .lbn { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.lbx { width: 22px; flex: none; font-size: 18px; }
+.lb:not(.open) .lbh { border-bottom: 0; }
+.lbt { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 0; }
+.lbt .btn { padding: 1px 9px 3px; min-height: 0; font-size: 18px; }
+.lb .card { max-width: 100%; min-width: 0; }
+.lb .card .btn { flex: none; }
+.lb .card .ci { flex: 1 1 auto; }
