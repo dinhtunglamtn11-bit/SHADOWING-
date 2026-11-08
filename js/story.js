@@ -1,7 +1,7 @@
 // Story (trong Thế giới): đọc truyện chữ, tiểu thuyết dài, chia thành nhiều chương.
 // Dữ liệu: bộ “stories” (mỗi truyện: tên, tác giả, vị trí đang đọc) và bộ “chapters” (mỗi chương một tài liệu, nên truyện dài
 // vẫn nhẹ khi lưu / đồng bộ). Dán chữ hoặc chọn file .txt: app tự nhận chương (第一章, Chương 1, Chapter 1, # Tiêu đề…) hoặc chia theo độ dài.
-import { $, $$, esc, toast, uid, pickFile, getLang, langInfo, bus, vnDate } from './util.js';
+import { $, $$, esc, toast, uid, pickFile, getLang, langInfo, bus, vnDate, LANGS, looksViet } from './util.js';
 import * as store from './store.js';
 import * as tracker from './tracker.js';
 import { zhText } from './prefs.js';
@@ -105,6 +105,17 @@ Mara waved a lantern from the rocks until the boat touched the sand.
 
 Chapter 3: Morning
 By morning the storm was gone. The boy gave Mara a shell and said thank you. She put it on the window, where it caught the first light.` },
+  vi: { title: 'Chú mèo đi tìm bạn', author: 'Mẫu', emoji: '🐱', text: `Chương 1: Chú mèo ra khỏi nhà
+Sáng nay mèo con thức dậy, thấy ngoài cửa sổ đang mưa phùn. Nó nghĩ: hôm nay mình sẽ đi tìm một người bạn mới.
+Mẹ dặn: ngoài trời hơi lạnh, con mặc thêm áo nhé. Mèo con gật đầu và đội chiếc mũ nhỏ màu đỏ.
+
+Chương 2: Gặp cún con
+Đến cổng công viên, mèo con thấy một chú cún đang chơi bóng. Cún hỏi: chào bạn, bạn có muốn chơi cùng mình không?
+Mèo con rất vui, hai bạn chơi cả buổi chiều và còn chia nhau một ổ bánh mì.
+
+Chương 3: Về nhà
+Trời tối, mèo con nói với cún: mai mình lại đến đây chơi nhé. Cún cười đáp: được thôi, hẹn nhé!
+Về đến nhà, mẹ hỏi hôm nay thế nào. Mèo con trả lời: con có một người bạn mới rồi.` },
 };
 
 // ---------- khung chung ----------
@@ -138,13 +149,67 @@ function drawShelf() {
         <div class="prog"><i style="width:${progOf(s)}%"></i></div>
         <small class="dim">${c ? `Đang ở chương ${c.n}/${s.count || 0}` : `${s.count || 0} chương`}</small></div></div>`;
   };
-  root.innerHTML = `${head()}<div class="row"><button class="btn primary" id="stAdd">＋ Thêm truyện</button></div>
+  root.innerHTML = `${head()}<div class="row"><button class="btn primary" id="stAdd">＋ Thêm truyện</button><button class="btn" id="stMoveAll" title="Chọn nhiều truyện rồi chuyển sang mục ngôn ngữ khác (ví dụ VN)">🔀 Chuyển truyện sang mục khác</button></div>
     <div class="stgrid">${list.map(card).join('')}</div>`;
   bindShelf();
+}
+
+// ---------- chuyển truyện sang mục ngôn ngữ khác ----------
+// Chuyển cả truyện lẫn mọi chương của nó (mỗi chương cũng ghi ngôn ngữ riêng). Tiến độ đọc và điểm đánh dấu giữ nguyên.
+async function moveStories(ids, to) {
+  let n = 0, k = 0;
+  for (const id of ids) {
+    if (!store.get('stories', id)) continue;
+    store.put('stories', id, { lang: to });
+    for (const c of chaptersOf(id)) {
+      store.put('chapters', c.id, { lang: to });
+      if (++k % 50 === 0) await new Promise(r => setTimeout(r, 0)); // truyện dài có hàng trăm chương: nhường giao diện
+    }
+    n++;
+  }
+  return n;
+}
+
+function drawMove() {
+  const lang = getLang(), all = storiesOf(lang), targets = LANGS.filter(l => l.id !== lang);
+  const row = s => `<label class="mvrow"><input type="checkbox" data-id="${s.id}"><span class="gt">${esc(s.emoji || '📖')} <b>${esc(s.title)}</b> · ${s.count || 0} chương</span></label>`;
+  root.innerHTML = `${head()}<div class="row"><button class="btn" id="mvBack">← Truyện của tôi</button><b>🔀 Chuyển truyện sang mục khác</b></div>
+    <div class="qcard">
+      <div class="dim">Đang ở mục ${esc(langInfo().name)} (${all.length} truyện). Tick các truyện muốn chuyển, chọn mục đích rồi bấm Chuyển. Mọi chương, tiến độ đọc và điểm đã lưu được giữ nguyên. Chuyển nhầm thì chuyển lại được.</div>
+      <div class="row"><button class="btn" id="mvViet" title="Tick các truyện có dấu tiếng Việt và không có chữ Hán / Hàn / Nhật">✨ Chọn truyện tiếng Việt</button><button class="btn" id="mvAll">Chọn hết</button><button class="btn" id="mvNone">Bỏ chọn</button></div>
+      <div class="mvlist">${all.length ? all.map(row).join('') : '<div class="empty">Mục này chưa có truyện nào.</div>'}</div>
+      <div class="row"><label class="dim">Chuyển sang <select id="mvTo">${targets.map(l => `<option value="${l.id}" ${l.id === 'vi' ? 'selected' : ''}>${l.short} · ${esc(l.name)}</option>`).join('')}</select></label>
+        <button class="btn primary" id="mvGo">🔀 Chuyển</button><span class="dim" id="mvCount"></span></div>
+    </div>`;
+  bindBase();
+  const boxes = () => $$('.mvrow input', root), picked = () => boxes().filter(b => b.checked);
+  const count = () => { const n = picked().length; $('#mvCount', root).textContent = n ? `Đã chọn ${n} truyện` : 'Chưa chọn truyện nào'; };
+  $('.mvlist', root).addEventListener('change', count);
+  $('#mvBack', root).onclick = () => nav('shelf');
+  $('#mvAll', root).onclick = () => { boxes().forEach(b => { b.checked = true; }); count(); };
+  $('#mvNone', root).onclick = () => { boxes().forEach(b => { b.checked = false; }); count(); };
+  $('#mvViet', root).onclick = () => {
+    let n = 0;
+    boxes().forEach(b => {
+      const s = store.get('stories', b.dataset.id), c1 = s && chaptersOf(s.id)[0];
+      b.checked = !!s && looksViet(s.title + '\n' + (s.author || '') + '\n' + String(c1?.body || '').slice(0, 3000)); if (b.checked) n++;
+    });
+    count(); toast(n ? `Đã tick ${n} truyện tiếng Việt` : 'Không thấy truyện tiếng Việt nào trong mục này');
+  };
+  $('#mvGo', root).onclick = async () => {
+    const ids = picked().map(b => b.dataset.id), to = $('#mvTo', root).value;
+    if (!ids.length) { toast('Hãy tick ít nhất một truyện'); return; }
+    $('#mvGo', root).disabled = true;
+    const n = await moveStories(ids, to);
+    toast(`Đã chuyển ${n} truyện sang mục ${langInfo(to).short} ✓`, 3000);
+    nav('shelf');
+  };
+  count();
 }
 function bindShelf() {
   bindBase();
   $('#stAdd', root)?.addEventListener('click', () => { draft = { title: '', author: '', emoji: '', text: '', mode: 'auto' }; nav('add', { addFor: null }); });
+  $('#stMoveAll', root)?.addEventListener('click', () => nav('move'));
   $('#stSample', root)?.addEventListener('click', async () => {
     const lang = getLang(), s = SAMPLES[lang] || SAMPLES.zh, id = uid();
     store.put('stories', id, { lang, title: s.title, author: s.author, emoji: s.emoji, count: 0, ch: '', maxN: 0, created: Date.now(), deleted: false });
@@ -233,7 +298,7 @@ function drawDetail() {
         <div class="prog"><i style="width:${progOf(s)}%"></i></div><small class="dim">${chs.length} chương · đã đọc ${Math.min(read, chs.length)}</small></div></div>
     ${mk ? `<div class="row st-mark"><span class="grow"><b>🔖 Điểm đã lưu</b> <span class="dim">chương ${mk.n} · ${Math.round((mk.pos || 0) * 100)}% · ${d8(mk.t)}</span></span><button class="btn" id="stMark">↩ Về điểm đã lưu</button></div>` : ''}
     <div class="row">${chs.length ? `<button class="btn primary big" id="stRead">▶ ${s.maxN || s.pos ? 'Đọc tiếp' : 'Bắt đầu đọc'}${chs[cur] ? ` · chương ${chs[cur].n}` : ''}</button>` : ''}
-      <button class="btn" id="stMore">＋ Thêm chương</button><button class="btn" id="stEdit">✎ Sửa thông tin</button><button class="btn" id="stDel">🗑 Xóa truyện</button></div>
+      <button class="btn" id="stMore">＋ Thêm chương</button><button class="btn" id="stEdit">✎ Sửa thông tin</button><button class="btn" id="stMove" title="Chuyển truyện này sang mục ngôn ngữ khác (ví dụ VN)">🔀 Chuyển mục</button><button class="btn" id="stDel">🗑 Xóa truyện</button></div>
     ${chs.length > PER ? `<div class="row"><button class="btn" data-pg="-1" ${page === 0 ? 'disabled' : ''}>‹</button><span class="dim">Trang ${page + 1}/${pages}</span><button class="btn" data-pg="1" ${page >= pages - 1 ? 'disabled' : ''}>›</button>
       <label class="dim">Đến chương số <input id="stJump" type="number" min="1" max="${chs.length}" style="width:84px"></label></div>` : ''}
     <div class="stlist">${slice.map(row).join('') || '<div class="empty">Truyện chưa có chương nào.</div>'}</div>`;
@@ -247,6 +312,18 @@ function drawDetail() {
     const a = prompt('Tác giả:', s.author || '');
     const e = prompt('Biểu tượng (một emoji, ví dụ 🐑):', s.emoji || '');
     store.put('stories', sid, { title: t, author: (a ?? s.author ?? '').trim(), emoji: (e ?? s.emoji ?? '').trim() }); drawDetail();
+  };
+  $('#stMove', root).onclick = e => { // mở / đóng hàng chọn mục ngôn ngữ đích ngay dưới các nút
+    const old = $('.sp-mv', root);
+    if (old) { old.remove(); return; }
+    const to = LANGS.filter(l => l.id !== (s.lang || 'zh')).map(l => `<button class="chip" data-to="${l.id}">${l.short}<small class="lname"> ${l.name.replace('Tiếng ', '')}</small></button>`).join('');
+    e.currentTarget.parentElement.insertAdjacentHTML('afterend', `<div class="sp-mv"><span class="dim">Chuyển truyện này (cả ${chs.length} chương) sang:</span> ${to}</div>`);
+    $$('.sp-mv [data-to]', root).forEach(b => b.onclick = async () => {
+      $$('.sp-mv [data-to]', root).forEach(x => { x.disabled = true; });
+      await moveStories([sid], b.dataset.to);
+      toast(`Đã chuyển truyện sang mục ${langInfo(b.dataset.to).short} ✓`, 2500);
+      nav('shelf');
+    });
   };
   $('#stDel', root).onclick = () => {
     if (!confirm(`Xóa truyện “${s.title}” cùng ${chs.length} chương? Không thể hoàn tác.`)) return;
@@ -348,6 +425,7 @@ function drawRead(startPos = 0) {
 export function render(rt, c) {
   root = rt; ctx = c; active = true;
   if (view === 'add') return drawAdd();
+  if (view === 'move') return drawMove();
   if (view === 'detail' && sid) return drawDetail();
   if (view === 'read' && sid && store.get('stories', sid)) return drawRead(0);
   view = 'shelf'; drawShelf();

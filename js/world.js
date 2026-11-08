@@ -3,7 +3,7 @@
 // Bài lưu trong “articles”, thư mục chủ đề trong “wfolders” (tự đồng bộ như các dữ liệu khác). Nhập nhiều bài một lúc bằng cú pháp:
 //   === Tiêu đề        @chủ đề: …   @biểu tượng: 🏮   @nguồn: …      rồi nội dung bài, các đoạn cách nhau một dòng trống
 //   --- hỏi           rồi các dòng câu hỏi (cùng cú pháp với “Bài tập của tôi”: TN, DS, S, G, Đ, K, N, NG)
-import { $, $$, esc, toast, uid, pickFile, getLang, langInfo, bus } from './util.js';
+import { $, $$, esc, toast, uid, pickFile, getLang, langInfo, bus, LANGS, looksViet } from './util.js';
 import * as store from './store.js';
 import * as tracker from './tracker.js';
 import { rngOf } from './quiz.js';
@@ -147,6 +147,19 @@ Some researchers believe dreams help us remember important things and forget the
 TN: When do most dreams happen? | *During REM sleep | Before bed | In the afternoon | During breakfast
 DS: The body moves a lot during REM sleep. | sai ~ The body stays still.
 TN: What do some researchers think dreams help us do? | *Remember important things | Sleep longer | Feel hungry | Wake up early`,
+  vi: `=== Cà phê sữa đá của người Việt
+@chủ đề: Văn hóa
+@biểu tượng: ☕
+@nguồn: Bài mẫu
+Nhiều người Việt bắt đầu ngày mới bằng một ly cà phê. Ở miền Nam, cà phê sữa đá là thức uống quen thuộc nhất.
+
+Cà phê được pha bằng phin, nhỏ từng giọt xuống lớp sữa đặc. Sau đó người ta cho thêm đá và khuấy đều.
+
+Bạn bè hẹn nhau ở quán cà phê để trò chuyện, nên quán cà phê cũng là nơi gặp gỡ của nhiều người.
+--- hỏi
+TN: Cà phê Việt thường được pha bằng gì? | *Phin | Máy áp suất | Nồi hấp | Bình lọc | Ấm đun
+DS: Cà phê sữa đá là thức uống quen thuộc nhất ở miền Bắc. | sai ~ Bài viết nói là ở miền Nam.
+G: Người ta cho gì vào cà phê sau khi nhỏ giọt? | đá`,
   ko: `=== 김치 이야기
 @chủ đề: Văn hóa
 @biểu tượng: 🥬
@@ -205,6 +218,7 @@ export function render() {
   if (mode === 'test') return drawTestBuilder();
   if (mode === 'edit') return drawEditor();
   if (mode === 'import') return drawImport();
+  if (mode === 'move') return drawMove();
   mode = 'feed';
   if (sec === 'social') { tools(true, true); social.render(root, { bar: secBar, bindBar: bindSec }); return; }
   if (sec === 'story') { tools(true); story.render(root, { bar: secBar, bindBar: bindSec }); return; }
@@ -246,7 +260,7 @@ function drawFeed() {
   const fsel = filter.folder && filter.folder !== '_none' ? folders.find(f => f.id === filter.folder) : null;
   root.innerHTML = `${head}
     <div class="row"><button class="btn primary big" id="nwRandom" title="Chọn ngẫu nhiên một chủ đề (thư mục) rồi mở một bài trong đó; chủ đề được phép lặp lại">🎲 Chủ đề ngẫu nhiên</button><button class="chip ${filter.unread ? 'on' : ''}" id="nwUnread">● Chưa đọc xong <small>${all.length - done}</small></button><button class="btn ${nwMore ? 'on' : ''}" id="nwMore">⋯ Thêm <span class="ar">${nwMore ? '▲' : '▼'}</span></button></div>
-    <div class="row nw-more" ${nwMore ? '' : 'hidden'}><button class="btn" id="nwAdd">＋ Viết bài</button><button class="btn" id="nwImport">📥 Nhập nhiều bài</button><button class="btn" id="nwVocab" title="Từ đã lưu khi đọc bài, kèm câu chứa từ; ôn và làm bài kiểm tra từ vựng">📖 Từ vựng (${wvocab.wordsOf(lang).length})</button><button class="btn" id="nwTest" title="Gom câu hỏi của các bài đọc thành một bài kiểm tra, theo nhóm hoặc ngẫu nhiên">📋 Tạo bài kiểm tra</button></div>
+    <div class="row nw-more" ${nwMore ? '' : 'hidden'}><button class="btn" id="nwAdd">＋ Viết bài</button><button class="btn" id="nwImport">📥 Nhập nhiều bài</button><button class="btn" id="nwVocab" title="Từ đã lưu khi đọc bài, kèm câu chứa từ; ôn và làm bài kiểm tra từ vựng">📖 Từ vựng (${wvocab.wordsOf(lang).length})</button><button class="btn" id="nwTest" title="Gom câu hỏi của các bài đọc thành một bài kiểm tra, theo nhóm hoặc ngẫu nhiên">📋 Tạo bài kiểm tra</button><button class="btn" id="nwMoveAll" title="Chọn nhiều bài rồi chuyển sang mục ngôn ngữ khác (ví dụ VN)">🔀 Chuyển bài sang mục khác</button></div>
     ${folderTiles(all, folders)}
     ${fsel ? `<div class="row"><b class="gt">${esc(fsel.name)}</b><button class="btn" id="wfRen">✎ Đổi tên</button><button class="btn" id="wfDel">🗑 Xóa thư mục</button></div>` : ''}
     ${hero ? `<div class="nw-sec">⭐ Bài nổi bật hôm nay</div>${card(hero, true)}` : ''}
@@ -266,6 +280,7 @@ function bindFeed() {
   $('#nwRandom')?.addEventListener('click', () => randomTopic(null));
   $('#nwVocab')?.addEventListener('click', () => { mode = 'vocab'; render(); });
   $('#nwTest')?.addEventListener('click', () => { mode = 'test'; drawTestBuilder(); });
+  $('#nwMoveAll')?.addEventListener('click', () => { mode = 'move'; drawMove(); scrollTo(0, 0); });
   $('#nwUnread')?.addEventListener('click', () => { filter.unread = !filter.unread; drawFeed(); });
   $$('[data-wf]', root).forEach(b => b.onclick = () => { filter.folder = b.dataset.wf; drawFeed(); });
   $('#wfNew')?.addEventListener('click', () => {
@@ -340,7 +355,7 @@ function openArticle(id) {
     </article></div>
     <div class="nw-right"><div class="nw-qsec"><div class="nw-sec">✍️ Câu hỏi về bài đọc</div>${qs.length ? '<div id="nwSheet"></div>'
       : `<div class="qcard nw-cta"><div class="dim">Bài này chưa có câu hỏi. Bấm “Sửa bài” để thêm (hoặc dùng prompt nhờ AI tạo câu hỏi).</div><div class="row"><button class="btn primary" id="nwMark">✔ Đánh dấu đã đọc xong</button></div></div>`}</div></div></div></div>
-    <div class="row"><button class="btn" id="nwEdit">✎ Sửa bài</button><button class="btn" id="nwDel">🗑 Xóa bài</button></div>`;
+    <div class="row"><button class="btn" id="nwEdit">✎ Sửa bài</button><button class="btn" id="nwMove" title="Chuyển bài này sang mục ngôn ngữ khác (ví dụ VN)">🔀 Chuyển mục</button><button class="btn" id="nwDel">🗑 Xóa bài</button></div>`;
   $('#nwBack').onclick = () => { mode = 'feed'; drawFeed(); scrollTo(0, 0); };
   $('#nwRand').onclick = () => randomTopic(id);
   $$('#nwLay button', root).forEach(b => b.onclick = () => { // đổi bố cục tại chỗ, không làm mất câu đã trả lời
@@ -359,6 +374,17 @@ function openArticle(id) {
   $('#nwTimeMin').addEventListener('change', setTime);
   $('#nwEdit').onclick = () => { editId = id; mode = 'edit'; drawEditor(); };
   $('#nwDel').onclick = () => { if (confirm('Xóa bài này? (vào Thùng rác, giữ 30 ngày)')) { store.del('articles', id); mode = 'feed'; drawFeed(); } };
+  $('#nwMove').onclick = e => { // mở / đóng hàng chọn mục ngôn ngữ đích ngay dưới các nút
+    const old = $('.sp-mv', root);
+    if (old) { old.remove(); return; }
+    const to = LANGS.filter(l => l.id !== L).map(l => `<button class="chip" data-to="${l.id}">${l.short}<small class="lname"> ${l.name.replace('Tiếng ', '')}</small></button>`).join('');
+    e.currentTarget.parentElement.insertAdjacentHTML('afterend', `<div class="sp-mv"><span class="dim">Chuyển bài này sang:</span> ${to}</div>`);
+    $$('.sp-mv [data-to]', root).forEach(b => b.onclick = () => {
+      moveArts([id], b.dataset.to);
+      toast(`Đã chuyển sang mục ${langInfo(b.dataset.to).short} ✓`, 2200);
+      mode = 'feed'; drawFeed(); scrollTo(0, 0);
+    });
+  };
   $('#nwMark')?.addEventListener('click', () => { finishRead(id, null); toast('Đã đánh dấu đã đọc xong ✓'); $('#nwMark').disabled = true; });
   if (qs.length) {
     const run = () => runSheet($('#nwSheet'), {
@@ -516,6 +542,52 @@ function drawEditor() {
   $('#edSave').onclick = save;
   $('#edRead').onclick = () => { const id = save(); if (id) openArticle(id); };
   $('#edCancel').onclick = $('#edBack').onclick = () => { if (a) openArticle(editId); else { mode = 'feed'; drawFeed(); } };
+}
+
+// ---------- chuyển bài sang mục ngôn ngữ khác ----------
+// Thư mục chủ đề thuộc về từng ngôn ngữ nên bài đi đâu thì thư mục cùng tên được tạo (hoặc dùng lại) ở đó.
+function moveArts(ids, to) {
+  let n = 0;
+  ids.forEach(id => {
+    const a = store.get('articles', id); if (!a) return;
+    const f = folderOf(a);
+    store.put('articles', id, { lang: to, folder: f ? ensureFolder(f.name, to) : '' });
+    n++;
+  });
+  return n;
+}
+
+function drawMove() {
+  tools(false);
+  const lang = getLang(), all = artsOf(lang).sort((a, b) => (b.created || 0) - (a.created || 0)), targets = LANGS.filter(l => l.id !== lang);
+  const row = a => `<label class="mvrow"><input type="checkbox" data-id="${a.id}"><span class="gt">${folderOf(a) ? `<b>${esc(folderOf(a).name)}</b> · ` : ''}${esc(a.title)}</span></label>`;
+  root.innerHTML = `<div class="row"><button class="btn" id="mvBack">← Quay lại</button><b>🔀 Chuyển bài sang mục khác</b></div>
+    <div class="qcard">
+      <div class="dim">Đang ở mục ${esc(langInfo().name)} (${all.length} bài). Tick các bài muốn chuyển, chọn mục đích rồi bấm Chuyển. Bài giữ nguyên nội dung, câu hỏi và điểm; thư mục chủ đề được tạo theo ở mục mới. Chuyển nhầm thì chuyển lại được.</div>
+      <div class="row"><button class="btn" id="mvViet" title="Tick các bài có dấu tiếng Việt và không có chữ Hán / Hàn / Nhật">✨ Chọn bài tiếng Việt</button><button class="btn" id="mvAll">Chọn hết</button><button class="btn" id="mvNone">Bỏ chọn</button></div>
+      <div class="mvlist">${all.length ? all.map(row).join('') : '<div class="empty">Mục này chưa có bài nào.</div>'}</div>
+      <div class="row"><label class="dim">Chuyển sang <select id="mvTo">${targets.map(l => `<option value="${l.id}" ${l.id === 'vi' ? 'selected' : ''}>${l.short} · ${esc(l.name)}</option>`).join('')}</select></label>
+        <button class="btn primary" id="mvGo">🔀 Chuyển</button><span class="dim" id="mvCount"></span></div>
+    </div>`;
+  const boxes = () => $$('.mvrow input', root), picked = () => boxes().filter(b => b.checked);
+  const count = () => { const n = picked().length; $('#mvCount', root).textContent = n ? `Đã chọn ${n} bài` : 'Chưa chọn bài nào'; };
+  $('.mvlist', root).addEventListener('change', count);
+  $('#mvBack').onclick = () => { mode = 'feed'; drawFeed(); };
+  $('#mvAll').onclick = () => { boxes().forEach(b => { b.checked = true; }); count(); };
+  $('#mvNone').onclick = () => { boxes().forEach(b => { b.checked = false; }); count(); };
+  $('#mvViet').onclick = () => {
+    let n = 0;
+    boxes().forEach(b => { const a = store.get('articles', b.dataset.id); b.checked = !!a && looksViet(a.title + '\n' + plain(a.body)); if (b.checked) n++; });
+    count(); toast(n ? `Đã tick ${n} bài tiếng Việt` : 'Không thấy bài tiếng Việt nào trong mục này');
+  };
+  $('#mvGo').onclick = () => {
+    const ids = picked().map(b => b.dataset.id), to = $('#mvTo').value;
+    if (!ids.length) { toast('Hãy tick ít nhất một bài'); return; }
+    const n = moveArts(ids, to);
+    toast(`Đã chuyển ${n} bài sang mục ${langInfo(to).short} ✓`, 3000);
+    filter.folder = ''; mode = 'feed'; drawFeed();
+  };
+  count();
 }
 
 // ---------- nhập nhiều bài ----------

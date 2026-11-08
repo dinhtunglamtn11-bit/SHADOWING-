@@ -28,6 +28,8 @@ export const LANGS = [
   { id: 'zh', short: '中', name: 'Tiếng Trung', bcp: 'zh-CN' },
   { id: 'ko', short: '한', name: 'Tiếng Hàn', bcp: 'ko' },
   { id: 'ja', short: '日', name: 'Tiếng Nhật', bcp: 'ja' },
+  // Mục “VN”: chỉ để chứa bài tiếng Việt (không phải ngôn ngữ cần học), dùng chung giao diện như 4 mục kia
+  { id: 'vi', short: 'VN', name: 'Tiếng Việt', bcp: 'vi-VN', words: true },
 ];
 let lang = 'zh';
 try { const s = localStorage.getItem('lang'); if (LANGS.some(l => l.id === s)) lang = s; } catch {}
@@ -38,6 +40,11 @@ export function setLang(id) {
   try { localStorage.setItem('lang', id); } catch {}
   bus.emit('lang', id);
 }
+
+// Chữ này có vẻ là tiếng Việt không? (có dấu tiếng Việt và không có chữ Hán / Hàn / Nhật). Dùng khi tick sẵn bài cần chuyển sang mục VN.
+const CJK_ANY = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+const VIET_MARK = /[ăâđêôơưàảãạáằẳẵặắầẩẫậấèẻẽẹéềểễệếìỉĩịíòỏõọóồổỗộốờởỡợớùủũụúừửữựứỳỷỹỵý]/i;
+export const looksViet = text => { const t = String(text || ''); return !CJK_ANY.test(t) && VIET_MARK.test(t); };
 
 // ---------- giờ Việt Nam (UTC+7, không có giờ mùa hè) ----------
 const VN = 7 * 3600e3;

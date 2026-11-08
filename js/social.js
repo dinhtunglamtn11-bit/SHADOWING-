@@ -5,7 +5,7 @@
 //   @tên: …  @biểu tượng: 🐼  @tag: #a #b     (không bắt buộc, nằm đầu bài)
 //   nội dung bài đăng …
 //   ---                  ngăn cách các bài trong cùng lĩnh vực
-import { $, $$, esc, toast, uid, pickFile, getLang, langInfo, bus } from './util.js';
+import { $, $$, esc, toast, uid, pickFile, getLang, langInfo, bus, LANGS, looksViet } from './util.js';
 import * as store from './store.js';
 import { say } from './tts.js';
 import { zhText } from './prefs.js';
@@ -106,6 +106,25 @@ Finally in London! It rained all afternoon, but the museums were free and so muc
 @tên: Sam
 @biểu tượng: 🚆
 Took the night train to the coast. Slept for six hours and woke up to the sea. I could get used to this!`,
+  vi: `# Ẩm thực
+@tên: Mai
+@biểu tượng: 🍜
+@tag: #ămgì #trưanay
+Trưa nay mình ăn bún chả ở quán gần trường. Chả thơm, nước chấm vừa miệng, ăn một bát là no luôn! 😋
+---
+@tên: Nam
+@biểu tượng: ☕
+Sáng nào cũng phải có một ly cà phê sữa đá rồi mới làm việc được. Mọi người thích uống kiểu nào?
+
+# Du lịch
+@tên: Linh
+@biểu tượng: ✈️
+@tag: #dulich #dalat
+Cuối cùng cũng lên được Đà Lạt! Trời se lạnh, sương còn phủ trên đồi thông. Mai mình định đi chợ đêm.
+---
+@tên: Huy
+@biểu tượng: 🚆
+Đi tàu đêm ra biển, ngủ một giấc dậy là thấy sóng ngoài cửa sổ. Thích thật đấy!`,
   ko: `# 음식
 @tên: 지민
 @biểu tượng: 🍜
@@ -165,7 +184,7 @@ function postHtml(p) {
     <header class="sp-h"><span class="sp-av">${esc(p.emoji || '🙂')}</span><div class="sp-who"><b class="gt">${esc(p.name || '·')}</b>${p.field ? `<span class="nw-tag gt">${esc(p.field)}</span>` : ''}</div></header>
     <div class="sp-text" lang="${bcp}">${textHtml(p.body)}</div>
     ${p.tags?.length ? `<div class="sp-tags gt">${p.tags.map(esc).join(' ')}</div>` : ''}
-    <div class="sp-act"><button class="btn ${p.saved ? 'primary' : ''}" data-a="save" title="Lưu bài này để xem lại ở mục Đã lưu">⭐ ${p.saved ? 'Đã lưu' : 'Lưu'}</button><button class="btn ${openC.has(p.id) ? 'primary' : ''}" data-a="cmt" title="Bình luận">💬 ${n}</button><button class="btn" data-a="say" title="Nghe đọc bài">🔊</button><button class="btn" data-a="del" title="Xóa bài này">🗑</button></div>
+    <div class="sp-act"><button class="btn ${p.saved ? 'primary' : ''}" data-a="save" title="Lưu bài này để xem lại ở mục Đã lưu">⭐ ${p.saved ? 'Đã lưu' : 'Lưu'}</button><button class="btn ${openC.has(p.id) ? 'primary' : ''}" data-a="cmt" title="Bình luận">💬 ${n}</button><button class="btn" data-a="say" title="Nghe đọc bài">🔊</button><button class="btn" data-a="move" title="Chuyển bài này sang mục ngôn ngữ khác (ví dụ VN)">🔀</button><button class="btn" data-a="del" title="Xóa bài này">🗑</button></div>
     ${openC.has(p.id) ? commentsHtml(p) : ''}
   </div></article>`;
 }
@@ -223,7 +242,7 @@ function drawFeed() {
   const first = draw(PAGE);
   root.innerHTML = `${bar}
     <div class="row"><button class="btn primary" id="spFull" title="Chỉ hiện bài đọc và các nút tương tác, không có thư mục hay thanh phía trên (bấm Esc hoặc nút ← Thoát để quay lại)">📺 Đọc toàn màn hình</button><button class="btn ${open.topics ? 'on' : ''}" id="spTopics" title="Lọc theo chủ đề"><span>Chủ đề:</span> <b class="gt">${esc(fld === '_saved' ? '⭐ Đã lưu' : fld || 'Tất cả')}</b> <span class="ar">${open.topics ? '▲' : '▼'}</span></button><button class="btn ${open.more ? 'on' : ''}" id="spMore">＋ Thêm bài <span class="ar">${open.more ? '▲' : '▼'}</span></button></div>
-    <div class="row sp-more" ${open.more ? '' : 'hidden'}><button class="btn" id="spImport">📥 Nhập nhiều bài</button><button class="btn" id="spNew">＋ Đăng bài</button></div>
+    <div class="row sp-more" ${open.more ? '' : 'hidden'}><button class="btn" id="spImport">📥 Nhập nhiều bài</button><button class="btn" id="spNew">＋ Đăng bài</button><button class="btn" id="spMove" title="Chọn nhiều bài rồi chuyển sang mục ngôn ngữ khác (ví dụ VN)">🔀 Chuyển bài sang mục khác</button></div>
     <div class="chips sp-fl" ${open.topics ? '' : 'hidden'}>${chipsHtml(all, fields, all.filter(p => p.saved).length)}</div>
     ${first.length ? `<div class="dim sp-hint">Lướt ngẫu nhiên, không giới hạn: bài nào cũng được xem một lượt rồi mới xáo lại.</div>
       <div class="sp-wrap" id="spWrap"><div class="spf-bar"><button class="btn" id="spfClose">← Thoát</button><span class="grow"></span><button class="btn" id="spfLookup" data-lookup title="Bật rồi chạm vào từ trong bài để tra nghĩa">📖 Tra từ</button></div>
@@ -298,7 +317,17 @@ function act(e) {
   if (a === 'save') { store.put('posts', id, { saved: was ? 0 : Date.now() }); toast(was ? 'Đã bỏ lưu' : 'Đã lưu ⭐', 1500); redraw(id); refreshChips(); }
   else if (a === 'cmt') { openC.has(id) ? openC.delete(id) : openC.add(id); redraw(id); $(`.sp[data-id="${id}"] .sp-ci`, root)?.focus(); }
   else if (a === 'say') say(p.body.replace(/#\S+/g, ' '), langInfo(p.lang || 'zh').bcp);
-  else if (a === 'send') sendComment(card, id, p);
+  else if (a === 'move') { // mở / đóng hàng chọn mục ngôn ngữ đích ngay dưới bài
+    const old = $('.sp-mv', card);
+    if (old) { old.remove(); return; }
+    const to = LANGS.filter(l => l.id !== (p.lang || 'zh')).map(l => `<button class="chip" data-a="mvto" data-to="${l.id}">${l.short}<small class="lname"> ${l.name.replace('Tiếng ', '')}</small></button>`).join('');
+    $('.sp-act', card).insertAdjacentHTML('afterend', `<div class="sp-mv"><span class="dim">Chuyển bài này sang:</span> ${to}</div>`);
+  } else if (a === 'mvto') {
+    store.put('posts', id, { lang: b.dataset.to });
+    toast(`Đã chuyển sang mục ${langInfo(b.dataset.to).short} ✓`, 1800);
+    openC.delete(id); bag = bag.filter(x => x !== id);
+    removeShown();
+  } else if (a === 'send') sendComment(card, id, p);
   else if (a === 'cdel') {
     store.put('posts', id, { comments: (p.comments || []).filter(c => c.id !== b.dataset.c) });
     redraw(id);
@@ -312,7 +341,8 @@ function act(e) {
 function removeShown() {
   const feed = $('#spFeed', root);
   if (!feed) return;
-  [...feed.children].forEach(el => { const p = store.get('posts', el.dataset.id); if (!p || p.deleted) el.remove(); });
+  const lang = getLang(); // bài đã bị xóa hoặc đã chuyển sang mục ngôn ngữ khác thì gỡ khỏi trang
+  [...feed.children].forEach(el => { const p = store.get('posts', el.dataset.id); if (!p || p.deleted || (p.lang || 'zh') !== lang) el.remove(); });
   if (!feed.children.length) { drawFeed(); return; } // bỏ lưu bài cuối trong mục “Đã lưu” thì bài vẫn hiện tới khi bạn rời mục đó
   refreshChips(); pos();
 }
@@ -328,6 +358,7 @@ function bind() {
   ctx.bindBar();
   $('#spImport')?.addEventListener('click', () => { view = 'import'; drawImport(); scrollTo(0, 0); });
   $('#spNew')?.addEventListener('click', () => { view = 'compose'; drawCompose(); scrollTo(0, 0); });
+  $('#spMove')?.addEventListener('click', () => { view = 'move'; drawMove(); scrollTo(0, 0); });
   $('#spSample')?.addEventListener('click', () => { const n = importPosts(parseSocial(SAMPLES[getLang()] || SAMPLES.zh).posts); toast(`Đã thêm ${n} bài mẫu`); drawFeed(); });
   $$('.sp-fl [data-f]', root).forEach(c => { c.onclick = () => { fld = c.dataset.f; open.topics = false; drawFeed(); }; });
   for (const [k, btn, box] of [['topics', '#spTopics', '.sp-fl'], ['more', '#spMore', '.sp-more']]) { // mở / đóng nhóm nút tại chỗ, không xáo lại bài
@@ -370,6 +401,39 @@ function drawCompose() {
     toast(n ? 'Đã đăng bài ✓' : 'Bài này đã có rồi');
     view = 'feed'; fld = ''; drawFeed();
   };
+}
+
+// ---------- chuyển nhiều bài sang mục ngôn ngữ khác ----------
+function drawMove() {
+  const lang = getLang(), all = postsOf(lang), targets = LANGS.filter(l => l.id !== lang);
+  const row = p => `<label class="mvrow"><input type="checkbox" data-id="${p.id}"><span class="gt">${p.field ? `<b>${esc(p.field)}</b> · ` : ''}${esc(String(p.body).replace(/\s+/g, ' ').slice(0, 90))}${p.body.length > 90 ? '…' : ''}</span></label>`;
+  root.innerHTML = `<div class="row"><button class="btn" id="mvBack">← Quay lại</button><b>🔀 Chuyển bài sang mục khác</b></div>
+    <div class="qcard">
+      <div class="dim">Đang ở mục ${esc(langInfo().name)} (${all.length} bài). Tick các bài muốn chuyển, chọn mục đích rồi bấm Chuyển. Bài giữ nguyên nội dung, lượt lưu ⭐ và bình luận; chuyển nhầm thì chuyển lại được.</div>
+      <div class="row"><button class="btn" id="mvViet" title="Tick các bài có dấu tiếng Việt và không có chữ Hán / Hàn / Nhật">✨ Chọn bài tiếng Việt</button><button class="btn" id="mvAll">Chọn hết</button><button class="btn" id="mvNone">Bỏ chọn</button></div>
+      <div class="mvlist">${all.length ? all.map(row).join('') : '<div class="empty">Mục này chưa có bài nào.</div>'}</div>
+      <div class="row"><label class="dim">Chuyển sang <select id="mvTo">${targets.map(l => `<option value="${l.id}" ${l.id === 'vi' ? 'selected' : ''}>${l.short} · ${esc(l.name)}</option>`).join('')}</select></label>
+        <button class="btn primary" id="mvGo">🔀 Chuyển</button><span class="dim" id="mvCount"></span></div>
+    </div>`;
+  const boxes = () => $$('.mvrow input', root), picked = () => boxes().filter(b => b.checked);
+  const count = () => { const n = picked().length; $('#mvCount', root).textContent = n ? `Đã chọn ${n} bài` : 'Chưa chọn bài nào'; };
+  $('.mvlist', root).addEventListener('change', count);
+  $('#mvBack').onclick = () => { view = 'feed'; drawFeed(); };
+  $('#mvAll').onclick = () => { boxes().forEach(b => { b.checked = true; }); count(); };
+  $('#mvNone').onclick = () => { boxes().forEach(b => { b.checked = false; }); count(); };
+  $('#mvViet').onclick = () => {
+    let n = 0;
+    boxes().forEach(b => { const p = store.get('posts', b.dataset.id); b.checked = !!p && looksViet(p.body); if (b.checked) n++; });
+    count(); toast(n ? `Đã tick ${n} bài tiếng Việt` : 'Không thấy bài tiếng Việt nào trong mục này');
+  };
+  $('#mvGo').onclick = () => {
+    const ids = picked().map(b => b.dataset.id), to = $('#mvTo').value;
+    if (!ids.length) { toast('Hãy tick ít nhất một bài'); return; }
+    ids.forEach(id => store.put('posts', id, { lang: to }));
+    toast(`Đã chuyển ${ids.length} bài sang mục ${langInfo(to).short} ✓`, 3000);
+    view = 'feed'; fld = ''; drawFeed();
+  };
+  count();
 }
 
 // ---------- nhập nhiều bài ----------
@@ -434,6 +498,7 @@ export function render(rt, c) {
   root = rt; ctx = c;
   if (view === 'import') return drawImport();
   if (view === 'compose') return drawCompose();
+  if (view === 'move') return drawMove();
   drawFeed();
 }
 export function reset() { setFull(false); view = 'feed'; fld = ''; openC.clear(); }

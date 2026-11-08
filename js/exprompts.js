@@ -66,6 +66,18 @@ export const EX = {
     NG: 'NG: こんにちは',
     T: 'T: こんにちは | konnichiwa | Xin chào',
   },
+  vi: { // mục VN: nội dung đã là tiếng Việt nên ví dụ không cần phần dịch
+    TN: 'TN: Thủ đô của Việt Nam là gì? | *Hà Nội | Huế | Đà Nẵng | Cần Thơ',
+    NN: 'NN: Chọn TẤT CẢ thành phố ở miền Trung | *Huế | *Đà Nẵng | Hà Nội | Cần Thơ',
+    DS: 'DS: Hà Nội là thủ đô của Việt Nam | đúng',
+    S: 'S: Tôi / thích / đọc / sách / buổi sáng | Câu hoàn chỉnh',
+    G: 'G: Thủ đô của Việt Nam | Hà Nội',
+    'Đ': 'Đ: Mỗi sáng tôi uống một ly [cà phê] | Thức uống buổi sáng',
+    K: 'K: Mỗi [sáng] tôi uống [cà phê] trước giờ làm. | tối / trà / trưa | Điền từ còn thiếu',
+    N: 'N: Hà Nội | *Thủ đô của Việt Nam | Một loại cà phê | Một món ăn | Một con sông',
+    NG: 'NG: Xin chào các bạn',
+    T: 'T: cà phê | thức uống làm từ hạt cà phê rang',
+  },
 };
 
 const nameOf = lang => (LANGS.find(l => l.id === lang) || { name: 'Tiếng Trung' }).name;

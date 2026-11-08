@@ -280,6 +280,10 @@ body.cueedit #cueList { outline: 3px dashed var(--accent); outline-offset: -6px;
 .sp-text { flex: 1 0 auto; font-size: 22px; line-height: 1.6; overflow-wrap: anywhere; }
 .sp-tags { font-size: 17px; color: #7ec3ff; overflow-wrap: anywhere; }
 .sp-act { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 6px; }
+.sp-mv { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 6px; }
+.mvlist { display: flex; flex-direction: column; gap: 6px; max-height: 55vh; overflow-y: auto; }
+.mvrow { display: flex; align-items: flex-start; gap: 10px; padding: 8px; border: 2px solid var(--line); cursor: pointer; }
+.mvrow input { flex: none; width: 22px; height: 22px; margin-top: 2px; }
 .sp-cm { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 2px dashed var(--line); }
 .sp-cl { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
 .sp-c { display: flex; align-items: baseline; gap: 8px; padding: 6px 8px; background: var(--field); }
