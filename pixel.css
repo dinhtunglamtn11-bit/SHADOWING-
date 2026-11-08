@@ -320,9 +320,11 @@ progress::-moz-progress-bar { background: repeating-linear-gradient(90deg, #5fd0
 .g0 b, .g2 b, .g3 b { color: inherit; }
 .ok { color: var(--ok); } .bad { color: var(--bad); } .miss { color: var(--miss); }
 .ttsrate { font-family: var(--pf); font-size: 19px; }
-.spk:hover, .spk:focus { background: rgba(255, 143, 58, .3); }
+@media (hover: hover) { .spk:hover { background: rgba(255, 143, 58, .3); } }
+.spk:focus-visible, .spk.speaking { background: rgba(255, 143, 58, .3); }
 .say { border-bottom: 2px dotted var(--blue); }
-.say:hover { color: var(--blue); }
+@media (hover: hover) { .say:hover { color: var(--blue); } }
+.say.speaking { color: var(--blue); }
 #msIn, #qType { background: var(--field); }
 
 /* ---------- bảng viết chữ: bảng đen kiểu cổ điển ---------- */

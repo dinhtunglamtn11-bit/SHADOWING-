@@ -150,19 +150,37 @@ export async function generate(lang, seed) {
 let box = null, state = null, key = '', round = 0, busy = false, active = false;
 export const deactivate = () => { active = false; stopClip(); }; // gọi khi chuyển sang tab khác
 const keyOf = () => `quiz:${vnDate()}:${getLang()}:${round}`;
-const save = () => { try { localStorage.setItem(key, JSON.stringify(state)); } catch {} };
+const save = () => { if (state?.free) return; try { localStorage.setItem(key, JSON.stringify(state)); } catch {} }; // luyện ngẫu nhiên không lưu lượt
 const todayRounds = () => { let n = 0; try { for (const k of Object.keys(localStorage)) if (k.startsWith(`quiz:${vnDate()}:${getLang()}:`)) n++; } catch {} return n; };
 
 export async function render(el) {
   box = el; active = true;
   if (busy) return;
   // mở lại lượt gần nhất chưa xong trong hôm nay; nếu xong hết thì hiện kết quả
-  if (!state || state.lang !== getLang() || state.date !== vnDate()) {
+  if (!state || state.free || state.lang !== getLang() || state.date !== vnDate()) {
     round = Math.max(0, todayRounds() - 1); key = keyOf();
     try { state = JSON.parse(localStorage.getItem(key) || 'null'); } catch { state = null; }
     if (state && (state.lang !== getLang() || state.date !== vnDate())) state = null;
   }
   if (!state) { await start(); return; }
+  draw();
+}
+
+// ---------- luyện ngẫu nhiên: câu hỏi không giới hạn từ mọi video đang tick “Đang học” (và thẻ tự thêm), hết lượt thì tự ra lượt mới ----------
+export async function renderFree(el) {
+  box = el; active = true;
+  if (busy) return;
+  if (!state || !state.free || state.lang !== getLang()) { await startFree(true); return; }
+  draw();
+}
+async function startFree(reset = false) {
+  busy = true; box.innerHTML = '<div class="empty">Đang ra đề…</div>';
+  const keep = !reset && state?.free ? { n: state.n, ok: state.ok } : { n: 0, ok: 0 };
+  const g = await generate(getLang(), `free:${Date.now()}:${Math.random()}`);
+  busy = false;
+  if (!active) return; // đã chuyển sang tab khác trong lúc ra đề
+  if (g.error) { state = null; box.innerHTML = `<div class="empty">${esc(g.error)}</div>`; return; }
+  state = { free: true, date: vnDate(), lang: getLang(), qs: g.qs, i: 0, res: [], n: keep.n, ok: keep.ok };
   draw();
 }
 
@@ -180,7 +198,7 @@ async function start() {
 function draw() {
   stopClip();
   const { qs, i, res } = state;
-  if (i >= qs.length) return summary();
+  if (i >= qs.length) return state.free ? startFree() : summary();
   const q = qs[i], bcp = langInfo(q.lang).bcp, answered = res[i] != null;
   const done = res.filter(r => r).length;
   let body = '';
@@ -191,8 +209,11 @@ function draw() {
     `<div class="row"><input id="qType" type="text" lang="${bcp}" autocomplete="off" autocapitalize="off" spellcheck="false" ${answered ? `value="${esc(res[i].typed || '')}" disabled` : ''} placeholder="Gõ phần còn thiếu"><button class="btn primary" id="qSubmit" ${answered ? 'hidden' : ''}>Trả lời</button></div>`;
   const fb = answered ? `<div class="qfb ${res[i].ok ? 'ok' : 'bad'}">${res[i].ok ? '✅ Đúng!' : '❌ Chưa đúng'}</div>` +
     `<div class="qexp" lang="${bcp}">${q.lines.map((l, k) => `<div class="${k ? 'dim' : ''}">${k ? esc(l) : sayable(l, q.lang)}</div>`).join('')}</div>` +
-    `<div class="row"><button class="btn primary" id="qNext">${i + 1 >= qs.length ? 'Xem kết quả' : 'Tiếp ▶'}</button></div>` : '';
-  box.innerHTML = `<div class="qprog"><span>Câu ${i + 1}/${qs.length}</span><progress max="${qs.length}" value="${done}"></progress></div><div class="qcard">${body}${fb}</div>`;
+    `<div class="row"><button class="btn primary" id="qNext">${state.free || i + 1 < qs.length ? 'Tiếp ▶' : 'Xem kết quả'}</button></div>` : '';
+  const prog = state.free
+    ? `<div class="qprog"><span>🎲 Đã làm ${state.n} câu · đúng ${state.ok}${state.n ? ` (${Math.round(100 * state.ok / state.n)}%)` : ''}</span></div>`
+    : `<div class="qprog"><span>Câu ${i + 1}/${qs.length}</span><progress max="${qs.length}" value="${done}"></progress></div>`;
+  box.innerHTML = `${prog}<div class="qcard">${body}${fb}</div>`;
 
   $('#qPlay', box)?.addEventListener('click', async () => { if (!(await playClip(q.audio.itemId, q.audio.t0, q.audio.t1, q.lang))) toast('Không phát được: video chưa có file trên máy này'); });
   if (q.type === 'mc-listen' && !answered) setTimeout(() => $('#qPlay', box)?.click(), 200);
@@ -216,6 +237,7 @@ function opts(q, answered, mono) {
 function record(ok, extra) {
   const q = state.qs[state.i];
   state.res[state.i] = { ok, ...extra };
+  if (state.free) { state.n++; if (ok) state.ok++; }
   tracker.quiz(ok);
   if (!ok && q.itemId != null && q.idx >= 0 && cards.addCueCard(q.itemId, q.idx, { weak: true })) toast('Câu sai đã vào sổ ôn 📒');
   save(); draw();

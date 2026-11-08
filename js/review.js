@@ -25,7 +25,8 @@ function setTab(t) {
 
 function render() {
   updateBadge();
-  if (tab !== 'quiz') quiz.deactivate();
+  if (tab !== 'quiz' && tab !== 'free') quiz.deactivate();
+  if (tab === 'free') { quiz.renderFree(body()); return; }
   if (tab === 'quiz') { quiz.render(body()); return; }
   if (tab === 'mine') { sets.render(body()); return; }
   if (tab === 'write') { writing.render(body()); return; }

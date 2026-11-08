@@ -222,9 +222,11 @@ dialog.wide { width:min(980px, 96vw); }
 #hwStage .score { text-align:center; }
 /* loa đọc to */
 .spk { display:inline-block; cursor:pointer; margin-left:6px; font-size:.65em; vertical-align:middle; opacity:.75; border-radius:6px; padding:1px 3px; }
-.spk:hover, .spk:focus { opacity:1; background:#ffffff22; outline:none; }
+@media (hover: hover) { .spk:hover { opacity:1; background:#ffffff22; } }
+.spk:focus { outline:none; }
+.spk:focus-visible, .spk.speaking { opacity:1; background:#ffffff22; }
 .say { cursor:pointer; border-bottom:1px dotted var(--blue); }
-.say:hover { color:var(--blue); }
+@media (hover: hover) { .say:hover { color:var(--blue); } }
 .ttsrate { margin-left:8px; font-size:13px; }
 /* bài tập của tôi */
 .mono { font-family:ui-monospace, "Cascadia Mono", Consolas, monospace; font-size:15px; line-height:1.55; }

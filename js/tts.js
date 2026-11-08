@@ -32,11 +32,22 @@ export function voiceFor(bcp) {
     || voices.find(v => v.lang.toLowerCase().startsWith(base));
 }
 
-export function say(text, bcp, rate) {
+// Phần tử (loa / chữ) đang được đọc: tô nổi trong lúc đọc và bỏ ngay khi đọc xong, bị ngắt hoặc lỗi
+let speakingEl = null;
+const clearSpeaking = () => { speakingEl?.classList.remove('speaking'); speakingEl = null; };
+
+export function say(text, bcp, rate, el = null) {
   if (!text) return false;
   if (!('speechSynthesis' in window)) { toast('Trình duyệt này không có giọng đọc'); return false; }
   try { speechSynthesis.cancel(); } catch {}
+  clearSpeaking();
   const u = new SpeechSynthesisUtterance(text);
+  if (el) {
+    speakingEl = el; el.classList.add('speaking');
+    const done = () => { if (speakingEl === el) clearSpeaking(); else el.classList.remove('speaking'); };
+    u.onend = done; u.onerror = done;
+    setTimeout(done, Math.max(8000, text.length * 400)); // phòng khi trình duyệt không báo kết thúc
+  }
   u.lang = bcp;
   const v = voiceFor(bcp);
   if (v) u.voice = v;
@@ -62,10 +73,11 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-say]');
   if (!el) return;
   e.preventDefault(); e.stopPropagation();
-  say(el.dataset.say, el.dataset.lang);
+  say(el.dataset.say, el.dataset.lang, undefined, el);
+  el.blur?.(); // không để lại viền / màu “đang chọn” sau khi chạm trên điện thoại
 }, true);
 document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.spk')) {
-    e.preventDefault(); e.stopPropagation(); say(e.target.dataset.say, e.target.dataset.lang);
+    e.preventDefault(); e.stopPropagation(); say(e.target.dataset.say, e.target.dataset.lang, undefined, e.target);
   }
 }, true);
