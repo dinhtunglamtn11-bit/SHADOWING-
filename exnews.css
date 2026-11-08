@@ -506,3 +506,11 @@ mark.hltmp { color: inherit; }
 #langMenu[hidden] { display: none; }
 #langMenu .chip { justify-content: flex-start; }
 #langMenu .chip .lname { display: inline !important; }
+
+/* Học: thanh nút gọn, đồng màu (chỉ “Thêm video” nổi bật); nút phụ nằm sau “⋯ Công cụ” */
+#vPlayer .tools .btn:not(#btnAdd) { --c: var(--bn); --cl: var(--bnl); --cd: var(--bnd); --ct: var(--bnt); }
+#vPlayer .tools .btn#btnMoreTools.on { --c: #ffe9b8; --cl: #fff6dc; --cd: #d9bf86; --ct: #34224d; }
+#vPlayer .tools2 { padding: 8px; background: var(--panel2, var(--panel)); border: 2px dashed var(--line); }
+#vPlayer .tools2[hidden] { display: none; }
+#sfile { display: none; }
+@media (max-width: 899px) { #vPlayer .tools .btn { padding-left: 10px; padding-right: 10px; } }

@@ -569,6 +569,8 @@ export function init() {
   ['rate', 'loop', 'autopause', 'hideSub', 'wordLead'].forEach(id => $('#' + id).addEventListener('change', readPrefs));
   $('#offset').addEventListener('change', () => { if (itemId) store.put('items', itemId, { offset: off() }); });
   $('#btnSet').onclick = () => $('#settings').classList.toggle('open');
+  // nút phụ (phụ đề, sửa hàng loạt, chia đoạn, canh từ, từ vựng, khung hình) gom sau “⋯ Công cụ” cho thanh nút gọn
+  $('#btnMoreTools').onclick = e => { const m = $('#toolMore'); m.hidden = !m.hidden; e.currentTarget.classList.toggle('on', !m.hidden); $('.ar', e.currentTarget).textContent = m.hidden ? '▾' : '▴'; };
   $('#btnCard').onclick = () => {
     if (!itemId || !cues.length) { toast('Hãy mở video có phụ đề trước'); return; }
     const i = here();

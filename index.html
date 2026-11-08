@@ -66,19 +66,22 @@
     <div class="grid landscape" id="pgrid">
       <div id="left">
         <div class="tools">
-          <button class="btn" id="btnAdd">＋ Thêm video</button>
+          <button class="btn primary" id="btnAdd">＋ Thêm video</button>
+          <button class="btn" id="btnCard" title="Lưu câu đang chạy vào sổ thẻ để ôn lặp lại">📒 Lưu câu</button>
+          <button class="btn" id="btnLookup" data-lookup title="Bật rồi chạm vào từ trong phụ đề để tra nghĩa và thêm từ vào sổ thẻ (Trung tra offline; Anh, Nhật, Hàn tra bằng Wiktionary, cần mạng)">📖 Tra từ</button>
+          <button class="btn" id="btnDict" title="Nghe từng câu rồi gõ lại">✍️ Chép chính tả</button>
+          <button class="btn" id="btnSpeak" title="Ghi âm giọng bạn, nghe so sánh và chấm phát âm">🎙 Luyện nói</button>
+          <button class="btn" id="btnMoreTools" title="Thêm phụ đề, sửa phụ đề, chia đoạn, canh từ, từ vựng, khung hình">⋯ Công cụ <span class="ar">▾</span></button>
+          <button class="btn" id="btnSet" title="Cài đặt phát: lặp câu, tốc độ, dòng dưới…">⚙</button>
+        </div>
+        <div class="tools tools2" id="toolMore" hidden>
           <button class="btn" id="btnPaste" title="Thêm phụ đề từ file hoặc dán văn bản (gốc | phiên âm | nghĩa)">📄 Phụ đề</button>
           <input id="sfile" type="file" accept=".srt,.vtt">
           <button class="btn" id="btnSubEdit" title="Hộp thoại sửa nhiều câu một lúc: dán phiên âm / nghĩa hàng loạt, gộp, xuất file .srt. (Sửa từng câu: bấm nút ✏️ ở đầu danh sách câu bên phải)">📝 Sửa hàng loạt</button>
           <button class="btn" id="btnSeg" title="Chia phụ đề thành từng đoạn: video dừng cuối đoạn, lặp lại hoặc tiếp tục">📑 Chia đoạn</button>
           <button class="btn" id="btnAlign" title="Tự động tạo phụ đề và canh giờ từng từ theo giọng nói">✨ Canh từ</button>
-          <button class="btn" id="btnCard" title="Lưu câu đang chạy vào sổ thẻ để ôn lặp lại">📒 Lưu câu</button>
           <button class="btn" id="btnVocab" title="Liệt kê từ vựng trong phụ đề của video để chọn thêm vào sổ thẻ (tiếng Trung)">📚 Từ vựng</button>
-          <button class="btn" id="btnLookup" data-lookup title="Bật rồi chạm vào từ trong phụ đề để tra nghĩa và thêm từ vào sổ thẻ (Trung tra offline; Anh, Nhật, Hàn tra bằng Wiktionary, cần mạng)">📖 Tra từ</button>
-          <button class="btn" id="btnDict" title="Nghe từng câu rồi gõ lại">✍️ Chép chính tả</button>
-          <button class="btn" id="btnSpeak" title="Ghi âm giọng bạn, nghe so sánh và chấm phát âm">🎙 Luyện nói</button>
           <button class="btn" id="btnFrame">🖥 Ngang (YouTube)</button>
-          <button class="btn" id="btnSet">⚙</button>
         </div>
         <div id="itemTitle" class="ellipsis dim"></div>
         <div id="settings">
