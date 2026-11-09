@@ -534,3 +534,21 @@ mark.hltmp { color: inherit; }
 .lb .card { max-width: 100%; min-width: 0; }
 .lb .card .btn { flex: none; }
 .lb .card .ci { flex: 1 1 auto; }
+
+/* Thư viện: cột thẻ video không được rộng hơn khung (trước đây nội dung dài đẩy nút ⋯ ra ngoài và bị cắt trên điện thoại) */
+.lb .cards { grid-template-columns: minmax(0, 1fr); }
+.lb { min-width: 0; max-width: 100%; }
+.lb .card { box-sizing: border-box; width: 100%; }
+.lb .card .ci > * { max-width: 100%; }
+.lb .card .ci span.dim { overflow-wrap: anywhere; }
+.lb .card .more { margin-left: auto; }
+
+/* nhẹ cho danh sách dài: phần nằm ngoài màn hình không phải tính bố cục */
+.stch, .stc, .jr, .mu-row, .rv-row { content-visibility: auto; contain-intrinsic-size: auto 56px; }
+
+/* Flash (bài ngắn) / Focus (bài dài) */
+.sp-title { margin: 0; font-family: var(--pf); font-weight: 400; font-size: 26px; line-height: 1.2; overflow-wrap: anywhere; }
+.sp-long .sp-text { font-size: 19px; line-height: 1.75; }
+.sp-wrap.full .sp-long .sp-text, .sp-wrap.full .sp-text.clamp { font-size: clamp(19px, 2.6vw, 28px); }
+.sp-text.clamp { flex: none; max-height: 11em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 65%, transparent); mask-image: linear-gradient(#000 65%, transparent); }
+.sp-more-btn { align-self: flex-start; }

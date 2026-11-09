@@ -90,7 +90,8 @@ function onClick(e) {
   if (!e.isTrusted || !prefs.sfx || muted()) return; // chỉ tiếng bấm thật của người dùng, không phải click do mã tự gọi
   const el = e.target.closest?.(HIT);
   if (!el || el.disabled || el.closest('[disabled],[aria-disabled=true]') || el.closest(QUIET)) return;
-  play(kindOf(el));
+  const k = kindOf(el);
+  setTimeout(() => play(k), 0); // để sau: lệnh bấm chạy trước, tiếng không làm chậm
 }
 
 export function init() {

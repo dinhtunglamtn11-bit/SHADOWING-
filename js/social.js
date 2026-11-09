@@ -10,13 +10,15 @@ import * as store from './store.js';
 import { say } from './tts.js';
 import { zhText } from './prefs.js';
 import { flat } from './exparse.js';
-import { socialPrompt, SOCIAL_SYNTAX } from './exprompts.js';
+import { socialPrompt, SOCIAL_SYNTAX, FOCUS_SYNTAX } from './exprompts.js';
 import { pix } from './pixicons.js';
 
 const COLORS = ['#ff8f3a', '#5fd068', '#ff8fc0', '#7ec3ff', '#a98bff', '#ffd84d', '#ff7b88', '#4fd1c5'];
 const hash = s => [...String(s || '')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 const colorOf = p => COLORS[hash(p.field || p.name) % COLORS.length];
-const postsOf = lang => store.list('posts').filter(p => (p.lang || 'zh') === lang);
+export const KINDS = { flash: { icon: '⚡', name: 'Flash' }, focus: { icon: '🔍', name: 'Focus' } };
+let kind = 'flash'; // Flash = bài ngắn (fact hay ho); Focus = bài dài (thông tin sâu). Bài cũ chưa có trường kind thuộc Flash.
+const postsOf = lang => store.list('posts').filter(p => (p.lang || 'zh') === lang && (p.kind || 'flash') === kind);
 
 const PAGE = 8, MAX_DOM = 40; // mỗi lượt rút 8 bài; trên trang chỉ giữ tối đa ~40 bài gần nhất
 let bag = [], lastId = '', base = 0, trimT = 0, full = false;
@@ -24,16 +26,16 @@ let root = null, ctx = null, view = 'feed', fld = '';
 const openC = new Set(); // các bài đang mở khung bình luận
 
 // ---------- cú pháp nhập nhiều bài ----------
-const META = { ten: 'name', name: 'name', 'nguoi dang': 'name', 'bieu tuong': 'emoji', bieutuong: 'emoji', icon: 'emoji', emoji: 'emoji', tag: 'tags', hashtag: 'tags', the: 'tags' };
+const META = { 'tieu de': 'title', title: 'title', ten: 'name', name: 'name', 'nguoi dang': 'name', 'bieu tuong': 'emoji', bieutuong: 'emoji', icon: 'emoji', emoji: 'emoji', tag: 'tags', hashtag: 'tags', the: 'tags' };
 export function parseSocial(text) {
   const posts = [], errors = [];
   let field = '', cur = null;
-  const fresh = () => ({ name: '', emoji: '', tags: [], body: [] });
+  const fresh = () => ({ name: '', emoji: '', title: '', tags: [], body: [] });
   const flush = () => {
     if (!cur) return;
     const body = cur.body.join('\n').replace(/\n{3,}/g, '\n\n').trim();
-    if (body) posts.push({ field, name: cur.name, emoji: cur.emoji, tags: cur.tags, body });
-    else if (cur.name || cur.emoji || cur.tags.length) errors.push({ msg: `lĩnh vực “${field || 'Chung'}”: có bài chưa có nội dung` });
+    if (body) posts.push({ field, name: cur.name, emoji: cur.emoji, title: cur.title, tags: cur.tags, body });
+    else if (cur.name || cur.emoji || cur.title || cur.tags.length) errors.push({ msg: `lĩnh vực “${field || 'Chung'}”: có bài chưa có nội dung` });
     cur = null;
   };
   text.replace(/\r/g, '').split('\n').forEach(raw => {
@@ -61,7 +63,7 @@ function importPosts(list) {
     const body = z(p.body), field = z(p.field), key = field + '\n' + body;
     if (have.has(key)) return;
     have.add(key);
-    store.put('posts', uid(), { lang, field, name: z(p.name), emoji: p.emoji, tags: p.tags, body, created: base - i, saved: 0, comments: [], deleted: false });
+    store.put('posts', uid(), { lang, kind, field, name: z(p.name), title: z(p.title || ''), emoji: p.emoji, tags: p.tags, body, created: base - i, saved: 0, comments: [], deleted: false });
     n++;
   });
   return n;
@@ -165,6 +167,40 @@ KTX를 타고 부산에 갔어요. 두 시간 반밖에 안 걸려서 정말 편
 新幹線で大阪まで行きました。窓からの景色が最高でした。`,
 };
 
+// Bài mẫu cho Focus (bài dài, có tiêu đề)
+const FOCUS_SAMPLES = {
+  zh: `# 科学
+@tên: 科普君
+@biểu tượng: 🔭
+@tiêu đề: 为什么天空是蓝色的？
+@tag: #科学 #天空
+阳光看起来是白色的，其实它是由很多种颜色的光混合而成的。当阳光进入地球的大气层时，会撞上空气中的小分子。
+蓝光的波长比较短，更容易被这些小分子向四面八方散射，所以不管你往天空的哪个方向看，都会有很多蓝光进入眼睛。
+那为什么日落时天空是红色的呢？因为夕阳的光要穿过更厚的大气层才能到达我们这里，蓝光在路上几乎都被散射掉了，剩下的主要是红光和橙光。
+所以，天空的颜色其实告诉我们：光和空气之间一直在发生有趣的“游戏”。
+---
+@tên: 历史迷
+@biểu tượng: 🏯
+@tiêu đề: 长城真的能在太空中看到吗？
+很多人说，长城是唯一能在太空中用肉眼看到的人造建筑。但是，宇航员说，在轨道上几乎看不到它。
+原因很简单：长城虽然很长，但是只有几米宽，颜色又和周围的山地很接近，所以从几百公里高的地方看过去，就像一根很细的线。
+相反，夜晚的城市灯光反而更容易被看到。`,
+  en: `# Science
+@tên: Dr. Lee
+@biểu tượng: 🔭
+@tiêu đề: Why is the sky blue?
+@tag: #science #sky
+Sunlight looks white, but it is really a mix of many colours. When it enters the atmosphere, it collides with tiny gas molecules.
+Blue light has a shorter wavelength, so it is scattered in every direction much more than red light. Wherever you look in the sky, some of that scattered blue light reaches your eyes.
+At sunset the light has to travel through much more air. Most of the blue is scattered away on the way, and the red and orange are what is left.
+---
+@tên: Hana
+@biểu tượng: 🏯
+@tiêu đề: Can you really see the Great Wall from space?
+It is often said that the Great Wall is the only human-made structure visible from space. Astronauts say it is almost impossible to spot from orbit.
+It is very long but only a few metres wide, and its colour is close to the hills around it. From hundreds of kilometres up, it is like a thin thread. City lights at night are actually easier to see.`,
+};
+
 // ---------- trang lướt ----------
 const ago = t => {
   const m = Math.floor((Date.now() - (t || 0)) / 6e4);
@@ -178,11 +214,15 @@ function commentsHtml(p) {
     <div class="row"><input class="sp-ci" type="text" maxlength="500" placeholder="Viết bình luận…"><button class="btn primary" data-a="send">Gửi</button></div></div>`;
 }
 
+const openX = new Set(); // các bài dài (Focus) đã bấm “Đọc tiếp”
 function postHtml(p) {
   const bcp = langInfo(p.lang || 'zh').bcp, n = (p.comments || []).length;
+  const long = kind === 'focus' && String(p.body).length > 520, clamp = long && !openX.has(p.id); // bài dài chỉ hiện đoạn đầu cho tới khi bấm “Đọc tiếp”
   return `<article class="sp" data-id="${p.id}" style="--cc:${colorOf(p)}"><div class="sp-in">
     <header class="sp-h"><span class="sp-av">${esc(p.emoji || '🙂')}</span><div class="sp-who"><b class="gt">${esc(p.name || '·')}</b>${p.field ? `<span class="nw-tag gt">${esc(p.field)}</span>` : ''}</div></header>
-    <div class="sp-text" lang="${bcp}">${textHtml(p.body)}</div>
+    ${p.title ? `<h3 class="sp-title gt" lang="${bcp}">${esc(p.title)}</h3>` : ''}
+    <div class="sp-text ${clamp ? 'clamp' : ''}" lang="${bcp}">${textHtml(p.body)}</div>
+    ${long ? `<button class="btn sp-more-btn" data-a="expand">${clamp ? '📖 Đọc tiếp ▾' : '▴ Thu gọn'}</button>` : ''}
     ${p.tags?.length ? `<div class="sp-tags gt">${p.tags.map(esc).join(' ')}</div>` : ''}
     <div class="sp-act"><button class="btn ${p.saved ? 'primary' : ''}" data-a="save" title="Lưu bài này để xem lại ở mục Đã lưu">⭐ ${p.saved ? 'Đã lưu' : 'Lưu'}</button><button class="btn ${openC.has(p.id) ? 'primary' : ''}" data-a="cmt" title="Bình luận">💬 ${n}</button><button class="btn" data-a="say" title="Nghe đọc bài">🔊</button><button class="btn" data-a="move" title="Chuyển bài này sang mục ngôn ngữ khác (ví dụ VN)">🔀</button><button class="btn" data-a="del" title="Xóa bài này">🗑</button></div>
     ${openC.has(p.id) ? commentsHtml(p) : ''}
@@ -234,7 +274,7 @@ function drawFeed() {
   setFull(false);
   const bar = ctx.bar();
   if (!all.length) {
-    root.innerHTML = `${bar}<div class="empty"><div class="emptyart">${pix('a_world')}</div>Chưa có bài Social ${esc(langInfo().name)} nào.<br>Nhập nhiều bài một lúc bằng cú pháp (kèm prompt nhờ AI), tự đăng một bài, hoặc thêm vài bài mẫu để xem thử.
+    root.innerHTML = `${bar}<div class="empty"><div class="emptyart">${pix('a_world')}</div>${kind === 'focus' ? `Chưa có bài Focus ${esc(langInfo().name)} nào.<br><span>Focus là nơi đọc các bài dài, thông tin sâu.</span>` : `Chưa có bài Flash ${esc(langInfo().name)} nào.<br><span>Flash là nơi lướt các mẩu thông tin ngắn, đơn giản mà hay.</span>`} Nhập nhiều bài một lúc bằng cú pháp (kèm prompt nhờ AI), tự đăng một bài, hoặc thêm vài bài mẫu để xem thử.
       <div class="row c" style="margin-top:12px"><button class="btn primary" id="spImport">📥 Nhập nhiều bài</button><button class="btn" id="spNew">＋ Đăng bài</button><button class="btn" id="spSample">✨ Thêm bài mẫu</button></div></div>`;
     bind(); return;
   }
@@ -246,7 +286,7 @@ function drawFeed() {
     <div class="chips sp-fl" ${open.topics ? '' : 'hidden'}>${chipsHtml(all, fields, all.filter(p => p.saved).length)}</div>
     ${first.length ? `<div class="dim sp-hint">Lướt ngẫu nhiên, không giới hạn: bài nào cũng được xem một lượt rồi mới xáo lại.</div>
       <div class="sp-wrap" id="spWrap"><div class="spf-bar"><button class="btn" id="spfClose">← Thoát</button><span class="grow"></span><button class="btn" id="spfLookup" data-lookup title="Bật rồi chạm vào từ trong bài để tra nghĩa">📖 Tra từ</button></div>
-        <div id="spFeed" class="sp-feed" tabindex="0">${first.map(postHtml).join('')}</div>
+        <div id="spFeed" class="sp-feed ${kind === 'focus' ? 'sp-long' : ''}" tabindex="0">${first.map(postHtml).join('')}</div>
         <div class="sp-nav"><button class="btn" id="spUp">▲ Trước</button><span id="spPos" class="dim"></span><button class="btn" id="spDown">▼ Tiếp</button></div></div>` : '<div class="empty">Chưa có bài nào ở mục này.</div>'}`;
   bind();
   pos();
@@ -316,12 +356,19 @@ function act(e) {
   const a = b.dataset.a, was = p.saved;
   if (a === 'save') { store.put('posts', id, { saved: was ? 0 : Date.now() }); toast(was ? 'Đã bỏ lưu' : 'Đã lưu ⭐', 1500); redraw(id); refreshChips(); }
   else if (a === 'cmt') { openC.has(id) ? openC.delete(id) : openC.add(id); redraw(id); $(`.sp[data-id="${id}"] .sp-ci`, root)?.focus(); }
-  else if (a === 'say') say(p.body.replace(/#\S+/g, ' '), langInfo(p.lang || 'zh').bcp);
+  else if (a === 'expand') { openX.has(id) ? openX.delete(id) : openX.add(id); redraw(id); }
+  else if (a === 'say') say(`${p.title ? p.title + '。\n' : ''}${p.body}`.replace(/#\S+/g, ' '), langInfo(p.lang || 'zh').bcp);
   else if (a === 'move') { // mở / đóng hàng chọn mục ngôn ngữ đích ngay dưới bài
     const old = $('.sp-mv', card);
     if (old) { old.remove(); return; }
     const to = LANGS.filter(l => l.id !== (p.lang || 'zh')).map(l => `<button class="chip" data-a="mvto" data-to="${l.id}">${l.short}<small class="lname"> ${l.name.replace('Tiếng ', '')}</small></button>`).join('');
-    $('.sp-act', card).insertAdjacentHTML('afterend', `<div class="sp-mv"><span class="dim">Chuyển bài này sang:</span> ${to}</div>`);
+    const other = kind === 'flash' ? 'focus' : 'flash';
+    $('.sp-act', card).insertAdjacentHTML('afterend', `<div class="sp-mv"><span class="dim">Chuyển bài này sang:</span> ${to}<button class="chip" data-a="mvkind" data-to="${other}">${KINDS[other].icon} ${KINDS[other].name}</button></div>`);
+  } else if (a === 'mvkind') { // chuyển giữa Flash (ngắn) và Focus (dài)
+    store.put('posts', id, { kind: b.dataset.to });
+    toast(`Đã chuyển sang ${KINDS[b.dataset.to].name} ✓`, 1800);
+    openC.delete(id); bag = bag.filter(x => x !== id);
+    removeShown();
   } else if (a === 'mvto') {
     store.put('posts', id, { lang: b.dataset.to });
     toast(`Đã chuyển sang mục ${langInfo(b.dataset.to).short} ✓`, 1800);
@@ -342,7 +389,7 @@ function removeShown() {
   const feed = $('#spFeed', root);
   if (!feed) return;
   const lang = getLang(); // bài đã bị xóa hoặc đã chuyển sang mục ngôn ngữ khác thì gỡ khỏi trang
-  [...feed.children].forEach(el => { const p = store.get('posts', el.dataset.id); if (!p || p.deleted || (p.lang || 'zh') !== lang) el.remove(); });
+  [...feed.children].forEach(el => { const p = store.get('posts', el.dataset.id); if (!p || p.deleted || (p.lang || 'zh') !== lang || (p.kind || 'flash') !== kind) el.remove(); });
   if (!feed.children.length) { drawFeed(); return; } // bỏ lưu bài cuối trong mục “Đã lưu” thì bài vẫn hiện tới khi bạn rời mục đó
   refreshChips(); pos();
 }
@@ -359,7 +406,7 @@ function bind() {
   $('#spImport')?.addEventListener('click', () => { view = 'import'; drawImport(); scrollTo(0, 0); });
   $('#spNew')?.addEventListener('click', () => { view = 'compose'; drawCompose(); scrollTo(0, 0); });
   $('#spMove')?.addEventListener('click', () => { view = 'move'; drawMove(); scrollTo(0, 0); });
-  $('#spSample')?.addEventListener('click', () => { const n = importPosts(parseSocial(SAMPLES[getLang()] || SAMPLES.zh).posts); toast(`Đã thêm ${n} bài mẫu`); drawFeed(); });
+  $('#spSample')?.addEventListener('click', () => { const set = kind === 'focus' ? FOCUS_SAMPLES : SAMPLES, n = importPosts(parseSocial(set[getLang()] || set.zh).posts); toast(`Đã thêm ${n} bài mẫu`); drawFeed(); });
   $$('.sp-fl [data-f]', root).forEach(c => { c.onclick = () => { fld = c.dataset.f; open.topics = false; drawFeed(); }; });
   for (const [k, btn, box] of [['topics', '#spTopics', '.sp-fl'], ['more', '#spMore', '.sp-more']]) { // mở / đóng nhóm nút tại chỗ, không xáo lại bài
     $(btn, root)?.addEventListener('click', e => {
@@ -384,11 +431,12 @@ function bind() {
 // ---------- đăng một bài ----------
 function drawCompose() {
   const lang = getLang(), fields = [...new Set(postsOf(lang).map(p => p.field || '').filter(Boolean))];
-  root.innerHTML = `<div class="row"><button class="btn" id="cpBack">← Quay lại</button><b>＋ Đăng một bài</b></div>
+  root.innerHTML = `<div class="row"><button class="btn" id="cpBack">← Quay lại</button><b>＋ Đăng một bài</b><span class="nw-tag">${KINDS[kind].icon} ${KINDS[kind].name}</span></div>
     <div class="qcard">
       <div class="row"><label class="dim grow">Lĩnh vực<input id="cpField" type="text" list="cpFields" placeholder="Đời sống, Công nghệ, Du lịch…"></label><datalist id="cpFields">${fields.map(f => `<option value="${esc(f)}">`).join('')}</datalist>
         <label class="dim grow">Tên người đăng<input id="cpName" type="text" placeholder="(không bắt buộc)"></label><label class="dim">Biểu tượng<input id="cpEmoji" type="text" maxlength="4" value="🙂" style="width:64px"></label></div>
-      <label class="dim">Nội dung<textarea id="cpBody" rows="7" lang="${langInfo(lang).bcp}" placeholder="Viết bài đăng bằng ${esc(langInfo(lang).name)}…"></textarea></label>
+      <label class="dim">Tiêu đề<input id="cpTitle" type="text" placeholder="(không bắt buộc, nên có với bài dài)"></label>
+      <label class="dim">Nội dung<textarea id="cpBody" rows="${kind === 'focus' ? 14 : 7}" lang="${langInfo(lang).bcp}" placeholder="Viết bài đăng bằng ${esc(langInfo(lang).name)}…"></textarea></label>
       <label class="dim">Hashtag<input id="cpTags" type="text" placeholder="#a #b (không bắt buộc)"></label>
       <div class="row"><button class="btn primary" id="cpGo">📤 Đăng</button></div>
     </div>`;
@@ -397,7 +445,7 @@ function drawCompose() {
     const body = $('#cpBody').value.trim();
     if (!body) { toast('Hãy viết nội dung bài đăng'); return; }
     const tags = $('#cpTags').value.split(/[\s,，]+/).filter(Boolean).map(t => (t.startsWith('#') ? t : '#' + t));
-    const n = importPosts([{ field: $('#cpField').value.trim(), name: $('#cpName').value.trim(), emoji: $('#cpEmoji').value.trim(), tags, body }]);
+    const n = importPosts([{ field: $('#cpField').value.trim(), name: $('#cpName').value.trim(), emoji: $('#cpEmoji').value.trim(), title: $('#cpTitle').value.trim(), tags, body }]);
     toast(n ? 'Đã đăng bài ✓' : 'Bài này đã có rồi');
     view = 'feed'; fld = ''; drawFeed();
   };
@@ -445,7 +493,7 @@ function promptBox(host, onPaste) {
     <textarea id="sgOut" class="mono" rows="9" readonly spellcheck="false"></textarea>
     <div class="dim">Cách dùng: bấm “Chép prompt” → dán vào ChatGPT hoặc Claude → chép toàn bộ kết quả AI trả về → quay lại bấm “Dán kết quả của AI”.</div>`;
   const out = $('#sgOut', host);
-  const refresh = () => { out.value = socialPrompt({ lang, fields: $('#sgF', host).value.trim(), posts: Math.max(1, Math.min(10, +$('#sgN', host).value || 3)), level: $('#sgL', host).value.trim(), source: $('#sgRaw', host).value.trim() }); };
+  const refresh = () => { out.value = socialPrompt({ kind, lang, fields: $('#sgF', host).value.trim(), posts: Math.max(1, Math.min(10, +$('#sgN', host).value || 3)), level: $('#sgL', host).value.trim(), source: $('#sgRaw', host).value.trim() }); };
   host.addEventListener('input', refresh); refresh();
   $('#sgCopy', host).onclick = async () => {
     refresh();
@@ -462,15 +510,16 @@ function promptBox(host, onPaste) {
 
 function drawImport() {
   const lang = getLang();
-  root.innerHTML = `<div class="row"><button class="btn" id="imBack">← Quay lại</button><b>📥 Nhập nhiều bài Social</b></div>
+  const K = KINDS[kind];
+  root.innerHTML = `<div class="row"><button class="btn" id="imBack">← Quay lại</button><b>📥 Nhập nhiều bài</b><span class="nw-tag">${K.icon} ${K.name}</span></div>
     <div class="qcard">
-      <details class="help"><summary>📖 Cú pháp bài Social</summary>
-        <pre class="mono nw-syn">${esc(SOCIAL_SYNTAX)}</pre>
-        <p>Dòng bắt đầu bằng “# ” là tên một lĩnh vực mới. Các bài trong cùng lĩnh vực cách nhau bằng một dòng chỉ có “---”. Ba dòng “@tên:”, “@biểu tượng:”, “@tag:” không bắt buộc và nằm ngay đầu bài. Không có câu hỏi.</p></details>
-      <details class="help"><summary>🤖 Nhờ AI viết bài Social (prompt)</summary><div id="sgHost"></div></details>
+      <details class="help"><summary>📖 Cú pháp bài viết</summary>
+        <pre class="mono nw-syn">${esc(kind === 'focus' ? FOCUS_SYNTAX : SOCIAL_SYNTAX)}</pre>
+        <p>Dòng bắt đầu bằng “# ” là tên một lĩnh vực mới. Các bài trong cùng lĩnh vực cách nhau bằng một dòng chỉ có “---”. Các dòng “@tiêu đề:”, “@tên:”, “@biểu tượng:”, “@tag:” không bắt buộc và nằm ngay đầu bài. Không có câu hỏi.</p></details>
+      <details class="help"><summary>🤖 Nhờ AI viết bài (prompt)</summary><div id="sgHost"></div></details>
       <label class="dim">Nội dung nhập<textarea id="imText" class="mono" rows="14" spellcheck="false" placeholder="Dán kết quả của AI (hoặc tự viết theo cú pháp) vào đây…"></textarea></label>
       <div id="imCheck" class="dim"></div>
-      <div class="row"><button class="btn primary" id="imGo">📥 Nhập vào Social</button><button class="btn" id="imFile">📂 Mở file .txt</button><button class="btn" id="imEx">Chèn ví dụ</button></div>
+      <div class="row"><button class="btn primary" id="imGo">📥 Nhập vào <b>${K.name}</b></button><button class="btn" id="imFile">📂 Mở file .txt</button><button class="btn" id="imEx">Chèn ví dụ</button></div>
     </div>`;
   const ta = $('#imText');
   const check = () => {
@@ -481,13 +530,13 @@ function drawImport() {
   ta.addEventListener('input', check); check();
   promptBox($('#sgHost'), text => { ta.value = ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n\n' + text : text; check(); toast('Đã dán vào ô nội dung ✓'); });
   $('#imBack').onclick = () => { view = 'feed'; drawFeed(); };
-  $('#imEx').onclick = () => { if (!ta.value.trim() || confirm('Thay nội dung đang có bằng ví dụ?')) { ta.value = SAMPLES[lang] || SAMPLES.zh; check(); } };
+  $('#imEx').onclick = () => { if (!ta.value.trim() || confirm('Thay nội dung đang có bằng ví dụ?')) { const set = kind === 'focus' ? FOCUS_SAMPLES : SAMPLES; ta.value = set[lang] || set.zh; check(); } };
   $('#imFile').onclick = () => pickFile('.txt,text/plain').then(async ([f]) => { if (f) { ta.value = await f.text(); check(); } });
   $('#imGo').onclick = () => {
     const p = parseSocial(ta.value);
     if (!p.posts.length) { toast('Chưa có bài hợp lệ nào để nhập'); return; }
     const n = importPosts(p.posts), skip = p.posts.length - n;
-    toast(`Đã nhập ${n} bài vào Social${skip ? ` (bỏ qua ${skip} bài trùng)` : ''}${p.errors.length ? ` · ${p.errors.length} lỗi bị bỏ qua` : ''}`, 4000);
+    toast(`Đã nhập ${n} bài vào ${K.name}${skip ? ` (bỏ qua ${skip} bài trùng)` : ''}${p.errors.length ? ` · ${p.errors.length} lỗi bị bỏ qua` : ''}`, 4000);
     view = 'feed'; fld = ''; drawFeed();
   };
 }
@@ -501,7 +550,12 @@ export function render(rt, c) {
   if (view === 'move') return drawMove();
   drawFeed();
 }
-export function reset() { setFull(false); view = 'feed'; fld = ''; openC.clear(); }
+export function reset() { setFull(false); view = 'feed'; fld = ''; openC.clear(); openX.clear(); }
+// Chọn Flash (bài ngắn) hay Focus (bài dài) trước khi vẽ; đổi loại thì bắt đầu lại từ trang lướt
+export function setKind(k) {
+  if (!KINDS[k] || k === kind) return;
+  setFull(false); kind = k; view = 'feed'; fld = ''; bag = []; openC.clear(); openX.clear();
+}
 // Rời Social (sang mục Article, trang khác): thoát chế độ toàn màn hình
 export const leave = () => setFull(false);
 

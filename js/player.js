@@ -485,6 +485,7 @@ function seekCue(i, play) {
 }
 const here = () => (cur < 0 ? Math.max(0, findCue(M.currentTime)) : cur);
 
+let litCur = -2, litN = -1, litEl = null, subKey = '', subEl = null; // trạng thái đã tô sáng lần trước (bỏ qua việc vẽ lại khi không đổi)
 function step() {
   const ts = performance.now();
   const dt = lastTs ? Math.min(1.5, (ts - lastTs) / 1000) : 0;
@@ -514,16 +515,20 @@ function step() {
       let n;
       if (timed) { n = 0; while (n < cc.t.length && cc.t[n] <= rel) n++; } // chữ nào tới giờ thì sáng
       else n = Math.round(Math.min(1, Math.max(0, rel / (cc.end - cc.start))) * chs.length); // chưa có giờ: chia đều
-      chs.forEach((el, k) => el.classList.toggle('on', k < n));
+      // chỉ chạm vào DOM khi có gì đổi (sang từ mới / câu mới / khung phụ đề vẽ lại); trước đây mỗi khung hình đều bật tắt lớp của mọi chữ
+      if (litCur !== cur || litN !== n || litEl !== chs[0]) { chs.forEach((el, k) => el.classList.toggle('on', k < n)); litCur = cur; litN = n; litEl = chs[0]; }
       if (info && info.lines.length) {
-        const f = fraction(cc, rel, n, timed);
-        now.querySelectorAll('.sub').forEach((el, li) => {
-          const L = info.lines[li]; if (!L) return;
-          const lit = info.pc[n]; // phiên âm đúng số chữ: sáng cùng từng chữ gốc
-          for (let k = 0; k < el.children.length; k++) {
-            el.children[k].classList.toggle('on', L.direct ? k < lit : f > 0 && (k === 0 || L.cum[k] / L.tot < f));
-          }
-        });
+        const f = fraction(cc, rel, n, timed), key = `${cur}:${n}:${Math.round(f * 60)}`, se = now.querySelector('.sub');
+        if (subKey !== key || subEl !== se) {
+          subKey = key; subEl = se;
+          now.querySelectorAll('.sub').forEach((el, li) => {
+            const L = info.lines[li]; if (!L) return;
+            const lit = info.pc[n]; // phiên âm đúng số chữ: sáng cùng từng chữ gốc
+            for (let k = 0; k < el.children.length; k++) {
+              el.children[k].classList.toggle('on', L.direct ? k < lit : f > 0 && (k === 0 || L.cum[k] / L.tot < f));
+            }
+          });
+        }
       }
     }
   }
@@ -663,5 +668,5 @@ export function init() {
   bus.on('lang', () => { if (!itemId) now.innerHTML = EMPTY; });
   applyPrefs();
   requestAnimationFrame(loop);
-  setInterval(step, 150);
+  setInterval(() => { if (!M.paused || document.body.dataset.view === 'player') step(); }, 150); // dự phòng khi trình duyệt ngưng vẽ; trang khác và video không chạy thì khỏi tính
 }

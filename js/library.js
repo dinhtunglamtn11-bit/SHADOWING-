@@ -24,6 +24,9 @@ function itemsOf(t) {
 // thư mục lồng nhau hiện kèm đường dẫn: “HSK1 › HSK bài 1”
 const foldersOf = l => tree.flatTree(l).map(f => ({ id: f.id, name: f.label }));
 
+let rq = 0; // nhiều thay đổi liên tiếp (tick cả mục, nhập nhiều video…) chỉ vẽ lại MỘT lần ở khung hình kế tiếp
+const renderSoon = () => { if (!rq) rq = requestAnimationFrame(() => { rq = 0; render(); }); };
+
 function render() {
   $$('#libTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
   const isLesson = tab === 'lesson';
@@ -203,7 +206,7 @@ export function init() {
       else if (d.sttoggle) stOpen = !stOpen;
       else if (d.stsel) set(vids, d.stsel === '1');
       else setStudyNew(!studyNew());
-      render(); return;
+      renderSoon(); return;
     }
     const b = e.target.closest('[data-add],[data-lnk],[data-ren],[data-del]');
     if (b) {
@@ -273,7 +276,7 @@ export function init() {
     $('#editDlg').close();
   };
   $('#docBack').onclick = () => bus.emit('nav', 'library');
-  bus.on('store', c => { if (document.body.dataset.view === 'library' && (c === 'items' || c === 'folders' || c === 'sets' || c === 'tests' || c === '*')) render(); });
+  bus.on('store', c => { if (document.body.dataset.view === 'library' && (c === 'items' || c === 'folders' || c === 'sets' || c === 'tests' || c === '*')) renderSoon(); });
   bus.on('lang', () => { OPEN.clear(); showEmpty = false; render(); });
   bus.on('show', v => { if (v === 'library') render(); });
   render();

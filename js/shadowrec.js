@@ -271,6 +271,6 @@ export function init() {
   M.addEventListener('ended', () => { over = true; $('#rbBtns').hidden = true; dropAudio(); }); // hết video: xóa bản ghi (câu đang chấm dở vẫn được chấm xong, điểm vẫn hiện)
   bus.on('show', v => { if (v !== 'player') { wipe(); closeStream(); } });
   addEventListener('pagehide', () => { wipe(); closeStream(); });
-  setInterval(tick, 100);
+  setInterval(() => { if (document.body.dataset.view === 'player') tick(); }, 100);
   paint();
 }

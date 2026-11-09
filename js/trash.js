@@ -3,7 +3,7 @@ import { $, esc, toast, fmtMB } from './util.js';
 import * as store from './store.js';
 
 const KEEP_DAYS = 30, DAY = 864e5;
-const KIND = { items: 'Video / tài liệu / ghi chú', cards: 'Thẻ', sets: 'Bộ bài tập', wsets: 'Bộ viết', folders: 'Mục', articles: 'Bài đọc', wfolders: 'Thư mục chủ đề', tests: 'Bài kiểm tra', mistakes: 'Sổ lỗi', wwords: 'Từ vựng Thế giới', posts: 'Bài Social' };
+const KIND = { items: 'Video / tài liệu / ghi chú', cards: 'Thẻ', sets: 'Bộ bài tập', wsets: 'Bộ viết', folders: 'Mục', articles: 'Bài đọc', wfolders: 'Thư mục chủ đề', tests: 'Bài kiểm tra', mistakes: 'Sổ lỗi', wwords: 'Từ vựng Thế giới', posts: 'Bài Flash / Focus' };
 
 function label(c, d) {
   if (c === 'cards') return [d.front, (d.back || [])[0]].filter(Boolean).join(' · ');

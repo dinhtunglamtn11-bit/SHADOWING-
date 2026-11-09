@@ -284,6 +284,6 @@ export function init() {
   });
   bus.on('show', v => { active = v === 'quest'; if (active) render(); });
   bus.on('store', c => { if (c === 'days' || c === 'prefs' || c === '*') { updateBadge(); if (active) render(); } });
-  setInterval(() => { updateBadge(); if (active && !document.activeElement?.matches('input')) render(); }, 15000);
+  setInterval(() => { if (document.hidden) return; updateBadge(); if (active && !document.activeElement?.matches('input')) render(); }, 15000);
   updateBadge();
 }

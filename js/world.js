@@ -197,8 +197,8 @@ const dateLine = () => { const d = new Date(); return `${WD[d.getDay()]}, ${d.ge
 // Thế giới có 2 mục: Article (bài đọc + câu hỏi) và Social (lướt bài đăng ngắn, không câu hỏi)
 const store0 = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const save0 = (k, v) => { try { localStorage.setItem(k, v); } catch { /* bỏ qua */ } };
-let sec = ['social', 'story'].includes(store0('worldSec')) ? store0('worldSec') : 'article';
-const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="social" class="${sec === 'social' ? 'on' : ''}">📱 Social</button><button data-s="story" class="${sec === 'story' ? 'on' : ''}">📖 Story</button></div>`;
+let sec = (s => (s === 'social' ? 'flash' : ['flash', 'focus', 'story'].includes(s) ? s : 'article'))(store0('worldSec')); // “social” cũ nay là Flash
+const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="flash" class="${sec === 'flash' ? 'on' : ''}" title="Lướt các mẩu thông tin ngắn, đơn giản mà hay">⚡ Flash</button><button data-s="focus" class="${sec === 'focus' ? 'on' : ''}" title="Đọc các bài dài, thông tin sâu">🔍 Focus</button><button data-s="story" class="${sec === 'story' ? 'on' : ''}">📖 Story</button></div>`;
 function bindSec() {
   $$('#wSec button', root).forEach(b => {
     b.onclick = () => { if (b.dataset.s === sec) return; social.leave(); story.leave(); sec = b.dataset.s; save0('worldSec', sec); mode = 'feed'; render(); scrollTo(0, 0); };
@@ -220,7 +220,7 @@ export function render() {
   if (mode === 'import') return drawImport();
   if (mode === 'move') return drawMove();
   mode = 'feed';
-  if (sec === 'social') { tools(true, true); social.render(root, { bar: secBar, bindBar: bindSec }); return; }
+  if (sec === 'flash' || sec === 'focus') { tools(true, true); social.setKind(sec); social.render(root, { bar: secBar, bindBar: bindSec }); return; }
   if (sec === 'story') { tools(true); story.render(root, { bar: secBar, bindBar: bindSec }); return; }
   drawFeed();
 }
