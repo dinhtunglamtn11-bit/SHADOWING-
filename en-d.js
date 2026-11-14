@@ -1130,4 +1130,7 @@ export default {
   "Dùng offline": "Offline",
   "Dữ liệu & tài khoản": "Data & accounts",
   "Nhạc nền": "Background music",
+  "Hoàn thành": "Completed",
+  "Tiến độ phần này": "Progress on this section",
+  "⭐ Hoàn thành 100% phần này!": "⭐ This section is 100% complete!",
 }

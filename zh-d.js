@@ -1173,4 +1173,7 @@ export default {
   "Offline": "离线",
   "Data & accounts": "数据与账号",
   "Background music": "背景音乐",
+  "Completed": "已完成",
+  "Progress on this section": "本部分进度",
+  "⭐ This section is 100% complete!": "⭐ 本部分已 100% 完成！",
 }

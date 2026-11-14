@@ -613,3 +613,8 @@ body.focus-mode #views { padding-bottom: 12px; }
 #uiDlg .uigb h4 { margin: 6px 0 0; font-family: var(--pf); font-size: 18px; color: var(--dim); text-transform: none; }
 #uiDlg .uigb h4:first-child { margin-top: 0; }
 #uiDlg .uigb small.dim { font-size: 15px; line-height: 1.35; }
+
+/* Luyện âm: tiến độ phần + sao */
+.plcov { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; font-family: var(--pf); font-size: 18px; }
+.plcov > i { flex: 1 1 120px; min-width: 90px; height: 10px; border: 2px solid var(--line); background: var(--panel); display: block; }
+.plcov > i > b { display: block; height: 100%; background: var(--hl, #ffd84d); }
