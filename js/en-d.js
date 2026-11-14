@@ -1182,4 +1182,8 @@ export default {
   "Chương cần có tên": "The chapter needs a title",
   "Nội dung chương không được để trống": "The chapter text cannot be empty",
   "Đã lưu chương": "Chapter saved",
+  "Bấm để bỏ điểm đã lưu": "Tap to remove the saved point",
+  "Đã bỏ điểm đã lưu": "Saved point removed",
+  "Bỏ điểm đã lưu": "Remove saved point",
+  "✕ Bỏ": "✕ Remove",
 }

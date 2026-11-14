@@ -385,7 +385,7 @@ function drawDetail() {
     <div class="st-hero" style="--cc:${COLORS[hash(s.title) % COLORS.length]}"><div class="stc-cover big">${esc(s.emoji || '📖')}</div>
       <div class="stc-b"><h2 class="gt">${esc(s.title)}</h2>${s.author ? `<div class="dim gt">${esc(s.author)}</div>` : ''}
         <div class="prog"><i style="width:${progOf(s)}%"></i></div><small class="dim">${chs.length} chương · đã đọc ${Math.min(read, chs.length)}</small></div></div>
-    ${mk ? `<div class="row st-mark"><span class="grow"><b>🔖 Điểm đã lưu</b> <span class="dim">chương ${mk.n} · ${Math.round((mk.pos || 0) * 100)}% · ${d8(mk.t)}</span></span><button class="btn" id="stMark">↩ Về điểm đã lưu</button></div>` : ''}
+    ${mk ? `<div class="row st-mark"><span class="grow"><b>🔖 Điểm đã lưu</b> <span class="dim">chương ${mk.n} · ${Math.round((mk.pos || 0) * 100)}% · ${d8(mk.t)}</span></span><button class="btn" id="stMark">↩ Về điểm đã lưu</button><button class="btn" id="stUnmark" title="Bỏ điểm đã lưu">✕ Bỏ</button></div>` : ''}
     <div class="row">${chs.length ? `<button class="btn primary big" id="stRead">▶ ${s.maxN || s.pos ? 'Đọc tiếp' : 'Bắt đầu đọc'}${chs[cur] ? ` · chương ${chs[cur].n}` : ''}</button>` : ''}
       <button class="btn" id="stMore">＋ Thêm chương</button><button class="btn" id="stEdit">✎ Sửa thông tin</button><button class="btn" id="stMove" title="Chuyển truyện này sang mục ngôn ngữ khác (ví dụ VN)">🔀 Chuyển mục</button><button class="btn" id="stDel">🗑 Xóa truyện</button></div>
     ${selMode ? `<div class="row st-selbar"><span class="grow dim">Đã chọn ${sel.size}/${chs.length} chương</span><button class="btn" id="stSelPg">Chọn cả trang</button><button class="btn" id="stSelNone">Bỏ chọn</button><button class="btn danger" id="stSelDel" ${sel.size ? '' : 'disabled'}>🗑 Xóa đã chọn</button><button class="btn" id="stSelEnd">Xong</button></div>`
@@ -397,6 +397,7 @@ function drawDetail() {
   $('#stBack', root).onclick = () => { selMode = false; sel.clear(); nav('shelf'); };
   $('#stRead', root)?.addEventListener('click', () => openChapter(chs[cur].id, true));
   $('#stMark', root)?.addEventListener('click', () => openChapter(mk.ch, false, true));
+  $('#stUnmark', root)?.addEventListener('click', () => { store.put('stories', sid, { mark: null }); toast('Đã bỏ điểm đã lưu', 1800); drawDetail(); });
   $('#stMore', root).onclick = () => { draft = { title: '', author: '', emoji: '', text: '', mode: 'auto' }; nav('add', { addFor: sid }); };
   $('#stEdit', root).onclick = () => {
     const t = (prompt('Tên truyện:', s.title) || '').trim(); if (!t) return;
@@ -483,6 +484,11 @@ function setFull(on) {
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && full) setFull(false); });
 
 // Lưu tiến trình: ghi nhớ chương + vị trí hiện tại thành “điểm đã lưu” (khác vị trí tự nhớ, không bị đè khi bạn mở chương khác xem thử)
+function clearMark() {
+  store.put('stories', sid, { mark: null });
+  toast('Đã bỏ điểm đã lưu', 1800);
+  $$('[data-act=save]', root).forEach(b => { b.classList.remove('on'); b.textContent = '💾 Lưu'; b.title = 'Lưu tiến trình đọc ngay tại đây (chương và vị trí). Mở lại truyện có thể quay về đúng điểm đã lưu'; });
+}
 function saveMark() {
   const s = store.get('stories', sid), chs = chaptersOf(sid), c = chs[curIdx(chs, s)]; if (!c) return;
   const f = +fraction().toFixed(3);
@@ -499,7 +505,7 @@ function drawRead(startPos = 0) {
   const navRow = pos => `<div class="row st-nav"><button class="btn" data-go="${prev?.id || ''}" ${prev ? '' : 'disabled'}>‹ Chương trước</button><span class="grow"></span>
     <button class="btn ${pos === 'bottom' ? 'primary' : ''}" data-go="${next?.id || ''}" ${next ? '' : 'disabled'}>${next ? 'Chương sau ›' : 'Hết (hiện có)'}</button></div>`;
   const ctrl = `<span class="seg st-fs"><button data-act="dn" title="Chữ nhỏ lại">A−</button><button data-act="up" title="Chữ to lên">A+</button></span>
-    <button class="btn" data-act="edit" title="Sửa tên và nội dung chương này">✎ Sửa</button><button class="btn st-save ${mk ? 'on' : ''}" data-act="save" title="Lưu tiến trình đọc ngay tại đây (chương và vị trí). Mở lại truyện có thể quay về đúng điểm đã lưu">${mk ? '🔖 Đã lưu' : '💾 Lưu'}</button>`;
+    <button class="btn" data-act="edit" title="Sửa tên và nội dung chương này">✎ Sửa</button><button class="btn st-save ${mk ? 'on' : ''}" data-act="save" title="${mk ? 'Bấm để bỏ điểm đã lưu' : 'Lưu tiến trình đọc ngay tại đây (chương và vị trí). Mở lại truyện có thể quay về đúng điểm đã lưu'}">${mk ? '🔖 Đã lưu' : '💾 Lưu'}</button>`;
   root.innerHTML = `<div class="st-bar"><button class="btn st-title" id="stBack">← ${esc(s.title)}</button>${ctrl}<button class="btn" data-act="full" title="Chỉ hiện chữ truyện, không có thanh và thư mục xung quanh (bấm Esc hoặc nút ← Thoát để quay lại)">📺</button></div>
     <div class="nw-stage st-stage ${full ? 'full' : ''}" id="stStage"><div class="nwf-bar"><button class="btn" data-act="exit">← Thoát</button><span class="grow"></span>${ctrl}
         <button class="btn" data-act="readall" title="Đọc to chương bằng giọng máy">🔊</button><button class="btn" data-act="tapread" title="Bật rồi chạm vào một câu để nghe câu đó">👆</button><button class="btn" data-act="lookup" title="Bật rồi chạm vào từ trong truyện để tra nghĩa">📖</button></div>
@@ -512,7 +518,7 @@ function drawRead(startPos = 0) {
   const size = d => { lset('stFs', Math.max(15, Math.min(40, fs() + d))); $('#stBody', root).style.fontSize = fs() + 'px'; };
   $$('[data-act]', root).forEach(b => b.onclick = () => {
     const a = b.dataset.act;
-    if (a === 'dn') size(-2); else if (a === 'up') size(2); else if (a === 'save') saveMark(); else if (a === 'edit') { const c0 = chs[i]; if (c0) openEdit(c0.id, 'read'); }
+    if (a === 'dn') size(-2); else if (a === 'up') size(2); else if (a === 'save') { if (b.classList.contains('on')) clearMark(); else saveMark(); } else if (a === 'edit') { const c0 = chs[i]; if (c0) openEdit(c0.id, 'read'); }
     else if (a === 'full') setFull(true); else if (a === 'exit') setFull(false);
     else { proxy(a); setTimeout(() => $$('[data-act=lookup]', root).forEach(x => x.classList.toggle('on', document.body.classList.contains('lookup'))), 0); }
   });

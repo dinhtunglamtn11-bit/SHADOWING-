@@ -1225,4 +1225,8 @@ export default {
   "The chapter needs a title": "章节需要标题",
   "The chapter text cannot be empty": "章节内容不能为空",
   "Chapter saved": "章节已保存",
+  "Tap to remove the saved point": "点击取消已保存的进度点",
+  "Saved point removed": "已取消保存的进度点",
+  "Remove saved point": "取消保存的进度点",
+  "✕ Remove": "✕ 取消",
 }
