@@ -2,7 +2,7 @@
 //  - Tiếng Anh: so theo từng từ (bỏ qua hoa/thường và dấu câu).
 //  - Tiếng Trung / Nhật / Hàn: so theo từng ký tự (bỏ qua dấu câu và khoảng trắng).
 //  - Có thể chép theo "phiên âm" (dòng 2 của phụ đề) và bỏ qua dấu thanh/dấu giọng.
-import { $, esc, toast, bus, langInfo } from './util.js';
+import { $, esc, toast, bus, langInfo, autoFocus } from './util.js';
 import * as store from './store.js';
 import * as tracker from './tracker.js';
 import { addCueCard } from './cards.js';
@@ -78,7 +78,7 @@ function load(i) {
   $('#dToneRow').hidden = target() !== 'pron';
   header(); setDictIndex(i);
   replay(false);
-  $('#dText').focus();
+  autoFocus($('#dText'));
 }
 
 function replay(slow) {

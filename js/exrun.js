@@ -1,6 +1,6 @@
 // Chạy một lượt làm bài: trắc nghiệm, đúng/sai, gõ đáp án, điền từ, sắp xếp câu, kéo thả điền khuyết, nghe rồi chọn / gõ.
 // Dùng cho “Bài tập của tôi” (sets.js): làm từng câu, có đáp án ngay. Bài làm một trang (kiểm tra, bài đọc) nằm ở exsheet.js.
-import { $, $$, esc, toast, langInfo } from './util.js';
+import { $, $$, esc, toast, langInfo, autoFocus } from './util.js';
 import * as tracker from './tracker.js';
 import * as cards from './cards.js';
 import { sayable, withSpeaker, say } from './tts.js';
@@ -143,7 +143,7 @@ export function runQuiz(box0, o) {
     $('#msListenBtn', box)?.addEventListener('click', () => say(q.listen, bcp));
     $('#msSlowBtn', box)?.addEventListener('click', () => say(q.listen, bcp, 0.55));
     if (q.listen && !answered) setTimeout(() => { if (S.qs[S.i] === q && box.isConnected) say(q.listen, bcp); }, 250);
-    if (!answered) inputs[0]?.focus();
+    if (!answered) autoFocus(inputs[0]);
     if (!answered && (q.kind === 'order' || q.kind === 'cloze')) wire(q);
   }
 

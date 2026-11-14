@@ -2,7 +2,7 @@
 // (k · h, z · c · s, zh · ch · sh · r, j · q · x). 1000 mục trong pylab-data.js: 200 dễ (không thanh điệu), 500 trung bình
 // (từ, có số thanh điệu), 300 khó (cả câu: thanh mẫu + vận mẫu + thanh điệu từng chữ). Đáp án đã được rà soát từng ngữ cảnh.
 // Giọng đọc dùng giọng có sẵn của máy (không tốn mạng / token). Ghi âm chỉ nằm trong RAM, không lưu.
-import { $, $$, esc, toast, getLang, bus } from './util.js';
+import { $, $$, esc, toast, getLang, bus, autoFocus } from './util.js';
 import { say } from './tts.js';
 import * as tracker from './tracker.js';
 import { E, M, H } from './pylab-data.js';
@@ -322,7 +322,7 @@ function bindCard() {
     $('#plU', box)?.addEventListener('click', () => { const i = $('#plIn', box); i.setRangeText('ü', i.selectionStart, i.selectionEnd, 'end'); i.focus(); });
     const inp = $('#plIn', box);
     inp?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); answerType(); } });
-    if (!S.done) inp?.focus();
+    if (!S.done) autoFocus(inp);
   } else if (S.mode === 'disc') {
     $$('.qopt', box).forEach(b => b.addEventListener('click', () => { if (S.done) return; S.pick = b.dataset.v; S.done = true; record(S.pick === S.disc.ans); draw(); }));
   } else {

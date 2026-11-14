@@ -4,7 +4,7 @@
 //  - Điền từ (chọn): câu bị khuyết một từ/chữ, chọn đáp án.
 //  - Điền từ (gõ): câu bị khuyết, tự gõ đáp án.
 // Câu làm sai tự vào sổ thẻ ôn.
-import { $, esc, toast, vnDate, getLang, langInfo, isStudying } from './util.js';
+import { $, esc, toast, vnDate, getLang, langInfo, isStudying, autoFocus } from './util.js';
 import * as store from './store.js';
 import * as tracker from './tracker.js';
 import * as cards from './cards.js';
@@ -221,7 +221,7 @@ function draw() {
   $('#qSubmit', box)?.addEventListener('click', submitTyped);
   $('#qType', box)?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); submitTyped(); } });
   $('#qNext', box)?.addEventListener('click', () => { state.i++; save(); draw(); });
-  if (!answered) $('#qType', box)?.focus();
+  if (!answered) autoFocus($('#qType', box));
 }
 
 function opts(q, answered, mono) {

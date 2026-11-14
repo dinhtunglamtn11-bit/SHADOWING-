@@ -176,3 +176,7 @@ export function parseSubs(text, words = false) {
 export const isStudying = it => it.study !== false;
 export const studyNew = () => { try { return localStorage.getItem('studyNew') !== 'off'; } catch { return true; } };
 export const setStudyNew = on => { try { localStorage.setItem('studyNew', on ? 'on' : 'off'); } catch {} };
+
+// Tự đưa con trỏ vào ô gõ chỉ khi dùng chuột (máy tính). Trên điện thoại / máy tính bảng việc này làm bàn phím ảo bật lên
+// dù người học chưa chạm vào ô trả lời, nên ở đó chỉ focus khi người học tự chạm vào ô.
+export const autoFocus = el => { try { if (el && matchMedia('(hover: hover) and (pointer: fine)').matches) el.focus(); } catch { /* bỏ qua */ } };
