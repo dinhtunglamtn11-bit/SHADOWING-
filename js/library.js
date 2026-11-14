@@ -4,7 +4,7 @@ import * as store from './store.js';
 import * as tracker from './tracker.js';
 import { pickAndAdd, openItem, addByLink } from './player.js';
 import * as notes from './notes.js';
-import * as pylab from './pylab.js';
+let pylab = null; // nạp khi mở Luyện âm lần đầu (dữ liệu ~250KB)
 import { plain } from './richtext.js';
 import * as tree from './tree.js';
 import * as lessons from './lessons.js';
@@ -37,8 +37,8 @@ function render() {
   $('#libMain').hidden = isLesson || isPron; $('#lessonBox').hidden = !isLesson; $('#pronBox').hidden = !isPron;
   $$('#libTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
   $('#libTabs').hidden = isPron; // trong khu Luyện âm tạm cất Bài học / Video / Tài liệu / Ghi chú
-  if (isPron) { pylab.render($('#pronBox'), { back: () => { tab = 'video'; render(); } }); scrollTo(0, 0); return; }
-  if (!isPron) pylab.leave();
+  if (isPron) { const goPron = p => { if (tab === 'pron') p.render($('#pronBox'), { back: () => { tab = 'video'; render(); } }); }; if (pylab) goPron(pylab); else import('./pylab.js').then(m => { pylab = m; goPron(m); }); scrollTo(0, 0); return; }
+  if (!isPron) pylab?.leave();
   if (isLesson) { lessons.render($('#lessonBox'), { openDoc, openEdit, addDocs, addLink: openLinkDialog }); return; }
   const all = itemsOf(tab), folders = foldersOf(getLang());
   const q = ($('#libSearch').value || '').trim().toLowerCase();

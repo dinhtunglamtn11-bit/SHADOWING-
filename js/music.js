@@ -1,6 +1,7 @@
 // Nhạc nền: hai danh sách riêng, mỗi danh sách tự trộn ngẫu nhiên và phát liên tục.
 //   bg    = nhạc nền ở mọi mục NGOÀI Thế giới (Học, Thư viện, Ôn tập, Soạn, Nhiệm vụ)
-//   world = nhạc riêng khi đang ở Thế giới (đọc Article, Social)
+//   world = nhạc riêng khi đang ở Thế giới (Article, Flash, Focus)
+//   story = nhạc riêng khi đọc Story (sách)
 // File lưu trong máy (IndexedDB, như video), không đồng bộ, không tốn dung lượng đám mây. Danh sách + cài đặt lưu riêng từng máy.
 import { $, esc, toast, bus, uid, pickFile, fmtMB } from './util.js';
 import * as store from './store.js';
@@ -8,21 +9,21 @@ import { M } from './media.js';
 import { muted, setMuted } from './sfx.js';
 
 const LKEY = 'musicLists', CKEY = 'musicCfg', PRE = 'mus_';
-const LISTS = ['bg', 'world'];
+const LISTS = ['bg', 'world', 'story'];
 const jget = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v ?? d; } catch { return d; } };
 let lists = (() => {
   const l = jget(LKEY, null);
-  if (l) return { bg: l.bg || [], world: l.world || [] };
+  if (l) return { bg: l.bg || [], world: l.world || [], story: l.story || [] };
   const old = jget('musicList', []); // bản cũ chỉ có một danh sách: chuyển sang nhạc nền
-  return { bg: Array.isArray(old) ? old : [], world: [] };
+  return { bg: Array.isArray(old) ? old : [], world: [], story: [] };
 })();
-let cfg = { bgOn: true, worldOn: true, vol: 0.4, ...jget(CKEY, {}) };
+let cfg = { bgOn: true, worldOn: true, storyOn: true, vol: 0.4, ...jget(CKEY, {}) };
 const saveL = () => { try { localStorage.setItem(LKEY, JSON.stringify(lists)); } catch {} };
 const saveC = () => { try { localStorage.setItem(CKEY, JSON.stringify(cfg)); } catch {} };
 
-let aud = null, cur = null, curL = null, bags = { bg: [], world: [] }, forced = false, userPause = false, videoOn = false, hinted = false;
+let aud = null, cur = null, curL = null, bags = { bg: [], world: [], story: [] }, forced = false, userPause = false, videoOn = false, hinted = false;
 
-const ctx = () => (document.body.dataset.view === 'world' ? 'world' : 'bg');
+const ctx = () => (document.body.dataset.view === 'world' ? (document.body.dataset.wsec === 'story' ? 'story' : 'world') : 'bg');
 const want = () => {
   const l = ctx();
   return !muted() && !videoOn && lists[l].length && (forced || (!userPause && cfg[l + 'On']));
@@ -86,7 +87,7 @@ function draw() {
   const playing = !!aud && !aud.paused;
   $('#muPlay').textContent = playing ? '⏸ Dừng' : '▶ Phát';
   const t = playing && curL ? lists[curL].find(x => x.id === cur) : null;
-  $('#muNow').innerHTML = t ? `${curL === 'world' ? '🌍' : '🎧'} Đang phát: <b class="gt mu-name">${esc(t.name)}</b>` : 'Đang dừng.';
+  $('#muNow').innerHTML = t ? `${curL === 'world' ? '🌍' : curL === 'story' ? '📖' : '🎧'} Đang phát: <b class="gt mu-name">${esc(t.name)}</b>` : 'Đang dừng.';
   for (const l of LISTS) {
     const sec = $(`.mu-sec[data-l="${l}"]`, dlg), on = cfg[l + 'On'];
     const tg = $('[data-on]', sec); tg.classList.toggle('on', on); tg.textContent = on ? '☑ Bật' : '☐ Tắt';
@@ -120,6 +121,7 @@ export function init() {
   $('#muVol').onchange = saveC;
   bus.on('mute', () => { sync(); draw(); }); // nút âm thanh chung ở đầu trang
   bus.on('settingsOpen', draw);
+  bus.on('wsec', () => { userPause = false; forced = false; sync(); }); // đổi giữa Article / Flash / Focus / Story trong Thế giới
   // đổi mục: vào Thế giới thì chuyển sang nhạc Thế giới, ra ngoài thì về nhạc nền
   bus.on('show', () => { userPause = false; forced = false; sync(); });
   // video / âm thanh bài học đang phát thì nhạc tạm nghỉ để không lẫn tiếng

@@ -212,6 +212,7 @@ const getTime = () => Math.max(0, Math.min(300, Math.round(+store0('worldTime'))
 export function render() {
   root = $('#worldRoot');
   if (!root) return;
+  if (document.body.dataset.wsec !== sec) { document.body.dataset.wsec = sec; bus.emit('wsec'); }
   if (mode === 'read' && curId && store.get('articles', curId)) return; // đang đọc / làm câu hỏi: giữ nguyên
   if (mode === 'vocab') return wvocab.render(root, { back: () => { mode = 'feed'; drawFeed(); scrollTo(0, 0); } });
   if (mode === 'testrun' && root.querySelector('.sheet')) return;
@@ -694,7 +695,7 @@ export function init() {
   root = $('#worldRoot');
   bus.on('show', v => { if (v === 'world') render(); });
   social.init();
-  story.init();
+  document.body.dataset.wsec = sec; story.init();
   bus.on('lang', () => { wvocab.reset(); social.reset(); story.reset(); mode = 'feed'; curId = null; filter.folder = ''; filter.unread = false; if (document.body.dataset.view === 'world') render(); });
   bus.on('store', c => { if ((c === 'articles' || c === 'wfolders' || c === '*') && document.body.dataset.view === 'world' && mode === 'feed' && sec === 'article') drawFeed(); });
 }

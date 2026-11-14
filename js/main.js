@@ -21,7 +21,6 @@ import * as settings from './settings.js';
 import * as sfx from './sfx.js';
 import * as fx from './fx.js';
 import * as music from './music.js';
-import * as pylab from './pylab.js';
 import * as lbl from './lbl.js';
 import * as focusmode from './focusmode.js';
 import * as trash from './trash.js';
@@ -175,7 +174,7 @@ loadPrefs();
 syncSfx();
 bus.on('store', c => { if (c === 'prefs' || c === '*') { loadPrefs(); bus.emit('prefs'); } });
 renderLangs();
-player.init(); side.init(); library.init(); notes.init(); quests.init(); alignui.init(); dictation.init(); speak.init(); shadowrec.init(); review.init(); backup.init(); subedit.init(); subpaste.init(); segments.init(); trash.init(); lookup.init(); vocab.init(); find.init(); shortcuts.init(); offline.init(); readaloud.init(); world.init(); cueedit.init(); music.init(); pylab.init(); focusmode.init(); lbl.init();
+player.init(); side.init(); library.init(); notes.init(); quests.init(); alignui.init(); dictation.init(); speak.init(); shadowrec.init(); review.init(); backup.init(); subedit.init(); subpaste.init(); segments.init(); trash.init(); lookup.init(); vocab.init(); find.init(); shortcuts.init(); offline.init(); readaloud.init(); world.init(); cueedit.init(); music.init(); focusmode.init(); lbl.init();
 show('library');
 initFirebase();
 loadSimplifier(); // sẵn sàng đổi phồn thể → giản thể (chỉ ~100 KB)

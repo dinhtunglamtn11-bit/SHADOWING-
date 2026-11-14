@@ -5,6 +5,7 @@
 import { $, $$, esc, toast, getLang, bus, autoFocus } from './util.js';
 import { say } from './tts.js';
 import * as tracker from './tracker.js';
+import * as store from './store.js';
 import { E, M, H } from './pylab-data.js';
 import { M2, H2 } from './pylab-data2.js';
 import { M3, H3 } from './pylab-data3.js';
@@ -65,7 +66,7 @@ const LV = { 0: 'Trộn', 1: 'Dễ', 2: 'Trung bình', 3: 'Khó' };
 // ---------- thống kê (lưu trong máy, nhớ mục hay sai để cho gặp lại nhiều hơn) ----------
 const SKEY = 'pylab:v1';
 let stats = (() => { try { return JSON.parse(localStorage.getItem(SKEY) || '{}'); } catch { return {}; } })();
-const saveStats = () => { try { localStorage.setItem(SKEY, JSON.stringify(stats)); } catch { /* bỏ qua */ } };
+const saveStats = () => { try { localStorage.setItem(SKEY, JSON.stringify(stats)); } catch { /* bỏ qua */ } pushSoon(); };
 const mark2 = (id, ok) => { const s = stats[id] ||= [0, 0]; s[ok ? 0 : 1]++; saveStats(); };
 const weak = id => { const s = stats[id]; return !!s && s[1] > s[0]; };
 
@@ -73,6 +74,75 @@ const weak = id => { const s = stats[id]; return !!s && s[1] > s[0]; };
 let box = null, backCb = null;
 const AKEY = 'pylab:auto';
 const S = { fopen: null, auto: false, mode: 'type', lv: 0, set: 0, grp: 'all', bag: [], cur: null, done: false, showHz: null, n: 0, ok: 0, disc: null, rec: null, recUrl: '', recBusy: false };
+// ---------- lưu tiến trình: thoát ra rồi vào lại học tiếp đúng chỗ dở; đổi bộ lọc / chế độ thì làm lại từ đầu ----------
+const PKEY = 'pylab:prog';
+const saveProg = () => { try { localStorage.setItem(PKEY, JSON.stringify({ mode: S.mode, lv: S.lv, set: S.set, grp: S.grp, bag: S.bag, cur: S.cur?.id ?? null, done: S.done, n: S.n, ok: S.ok, pt: Date.now() })); } catch { /* bỏ qua */ } pushSoon(); };
+function loadProg() { // trả về true nếu khôi phục được một lượt đang dở
+  try {
+    const p = JSON.parse(localStorage.getItem(PKEY) || 'null');
+    if (!p || !ITEMS.some(it => it.id === p.cur)) return false;
+    const ok = k => ['type', 'disc', 'speak'].includes(k);
+    if (!ok(p.mode) || !GROUPS[p.grp]) return false;
+    S.mode = p.mode; S.lv = +p.lv || 0; S.set = +p.set || 0; S.grp = p.grp;
+    const have = new Set(ITEMS.map(it => it.id));
+    S.bag = (p.bag || []).filter(id => have.has(id));
+    S.n = +p.n || 0; S.ok = +p.ok || 0;
+    S.cur = ITEMS.find(it => it.id === p.cur); S.showHz = null; S.disc = S.mode === 'disc' ? makeDisc(S.cur) : null;
+    S.done = false;
+    if (p.done) { S.cur = null; return 'next'; } // câu cuối đã trả lời xong: sang câu kế
+    return true;
+  } catch { return false; }
+}
+// ---------- hoàn thành 100% một phần → ⭐ (phần = chế độ + bộ + mức + thanh mẫu; tính các mục đã làm ĐÚNG ít nhất một lần) ----------
+const CKEY = 'pylab:cov';
+const cov = (() => { try { return JSON.parse(localStorage.getItem(CKEY) || '{}'); } catch { return {}; } })();
+const saveCov = () => { try { localStorage.setItem(CKEY, JSON.stringify(cov)); } catch { /* bỏ qua */ } pushSoon(); };
+const hid = id => { let h = 5381; for (let i = 0; i < id.length; i++) h = ((h * 33) ^ id.charCodeAt(i)) >>> 0; return h.toString(36); };
+const covKey = () => [S.mode, S.set, S.lv, S.grp].join('|');
+function covInfo() {
+  const c = cov[covKey()], got = new Set(c?.d || []), pool = modeItems();
+  return { have: pool.reduce((n, it) => n + (got.has(hid(it.id)) ? 1 : 0), 0), total: pool.length, star: !!c?.t, c };
+}
+function addCov(id) {
+  const k = covKey(), c = cov[k] ||= { d: [], t: 0 };
+  const h = hid(id); if (!c.d.includes(h)) c.d.push(h);
+  const { have, total } = covInfo();
+  if (!c.t && total && have >= total) { c.t = Date.now(); toast('⭐ Hoàn thành 100% phần này!'); }
+  saveCov();
+}
+const nStars = () => Object.values(cov).filter(c => c.t).length;
+function covLine() {
+  const { have, total, star } = covInfo(), pct = total ? Math.floor(100 * have / total) : 0;
+  return `<div class="plcov"><span>${star ? '⭐ Hoàn thành' : 'Tiến độ phần này'}</span><span class="cvn">${have}/${total} (${star ? 100 : pct}%)</span><i><b style="width:${star ? 100 : pct}%"></b></i><span class="dim">⭐ ${nStars()}</span></div>`;
+}
+// ---------- đồng bộ giữa các máy (qua kho dữ liệu của app, tài liệu prefs/pylab) ----------
+// Gộp, không ghi đè: ⭐ và tiến độ lấy hợp của các máy; số lần sai lấy mức cao hơn; lượt đang dở lấy bản mới hơn (chỉ khi mở Luyện âm).
+let pushT = 0;
+function pushSoon() { clearTimeout(pushT); pushT = setTimeout(pushNow, 2500); }
+function pushNow() {
+  let prog = null; try { prog = JSON.parse(localStorage.getItem(PKEY) || 'null'); } catch { /* bỏ qua */ }
+  store.put('prefs', 'pylab', { cov, stats, prog });
+}
+function pullRemote(adoptProg) {
+  const r = store.get('prefs', 'pylab'); if (!r) return;
+  let ch = false;
+  for (const [k, rc] of Object.entries(r.cov || {})) {
+    const c = cov[k] ||= { d: [], t: 0 }, have = new Set(c.d);
+    for (const h of rc.d || []) if (!have.has(h)) { c.d.push(h); ch = true; }
+    if (rc.t && (!c.t || rc.t < c.t)) { c.t = rc.t; ch = true; }
+  }
+  for (const [id, v] of Object.entries(r.stats || {})) {
+    const s = stats[id] ||= [0, 0];
+    if (v[0] > s[0]) { s[0] = v[0]; ch = true; }
+    if (v[1] > s[1]) { s[1] = v[1]; ch = true; }
+  }
+  if (ch) { saveCov(); try { localStorage.setItem(SKEY, JSON.stringify(stats)); } catch { /* bỏ qua */ } }
+  if (adoptProg && r.prog?.pt) {
+    let mine = 0; try { mine = JSON.parse(localStorage.getItem(PKEY) || 'null')?.pt || 0; } catch { /* bỏ qua */ }
+    if (r.prog.pt > mine) { try { localStorage.setItem(PKEY, JSON.stringify(r.prog)); } catch { /* bỏ qua */ } }
+  }
+}
+bus.on('store', c => { if (c === 'prefs' || c === '*') { pullRemote(false); if (box) refreshHead(); } });
 const inSet = it => S.set === 0 || it.set === S.set; // Bộ 1 / Bộ 2 / cả hai
 const modeItems = () => ITEMS.filter(it => inSet(it) && (S.lv === 0 || it.lv === S.lv) && inGroup(it, S.grp) && (S.mode !== 'disc' || it.lv === 2 || (it.lv === 1 && split(it.sy[0]).i))); // phân biệt: bỏ chữ không có thanh mẫu, bỏ câu dài
 function next() {
@@ -86,6 +156,7 @@ function next() {
   const id = S.bag.shift();
   S.cur = ITEMS.find(it => it.id === id) || null; S.done = false; S.showHz = null; S.disc = null;
   if (S.cur && S.mode === 'disc') S.disc = makeDisc(S.cur);
+  saveProg();
   draw();
   if (S.auto && S.cur && S.mode !== 'speak') setTimeout(() => play(), 150); // mặc định KHÔNG tự đọc: chỉ phát khi bấm “Nghe”
 }
@@ -226,6 +297,7 @@ function head() {
     <div class="seg" id="plMode"><button data-m="type" class="${S.mode === 'type' ? 'on' : ''}" title="Nghe rồi gõ pinyin">🎧 Nghe &amp; gõ</button><button data-m="disc" class="${S.mode === 'disc' ? 'on' : ''}" title="Nghe rồi chọn đáp án để phân biệt âm gần giống">🔀 Phân biệt</button><button data-m="speak" class="${S.mode === 'speak' ? 'on' : ''}" title="Đọc theo mẫu, ghi âm và so sánh">🎙 Đọc &amp; nói</button></div>
     <div class="row plfilters">${fb('set', 'Bộ:', SETNAME[S.set])}${fb('lv', 'Mức:', lvName(S.lv))}${fb('grp', 'Thanh mẫu:', GROUPS[S.grp][0])}</div>
     ${filterOptions()}
+    ${covLine()}
     <div class="dim plstat">Phiên này: ${S.n} câu${S.n ? ` · đúng ${S.ok} (${Math.round(100 * S.ok / S.n)}%)` : ''} · ${nWeak ? `${nWeak} mục hay sai (sẽ gặp nhiều hơn)` : 'chưa có mục hay sai'}</div>
   </div>`;
 }
@@ -296,18 +368,18 @@ function draw() {
 }
 function bindHead() {
   $('#plBack', box)?.addEventListener('click', () => { leave(); backCb?.(); });
-  $$('#plMode [data-m]', box).forEach(b => b.onclick = () => { if (S.mode === b.dataset.m) return; S.mode = b.dataset.m; S.fopen = null; if (S.mode === 'disc' && S.lv === 3) S.lv = 0; S.bag = []; next(); });
+  $$('#plMode [data-m]', box).forEach(b => b.onclick = () => { if (S.mode === b.dataset.m) return; S.mode = b.dataset.m; S.fopen = null; if (S.mode === 'disc' && S.lv === 3) S.lv = 0; S.bag = []; S.n = S.ok = 0; next(); });
   $$('.plf', box).forEach(b => b.onclick = () => { S.fopen = S.fopen === b.dataset.f ? null : b.dataset.f; refreshHead(); });
-  $$('#plLv [data-l]', box).forEach(b => b.onclick = () => { S.lv = +b.dataset.l; S.fopen = null; S.bag = []; next(); });
-  $$('#plSet [data-s]', box).forEach(b => b.onclick = () => { S.set = +b.dataset.s; S.fopen = null; S.bag = []; next(); });
-  $$('#plGrp [data-g]', box).forEach(b => b.onclick = () => { S.grp = b.dataset.g; S.fopen = null; S.bag = []; next(); });
+  $$('#plLv [data-l]', box).forEach(b => b.onclick = () => { S.lv = +b.dataset.l; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
+  $$('#plSet [data-s]', box).forEach(b => b.onclick = () => { S.set = +b.dataset.s; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
+  $$('#plGrp [data-g]', box).forEach(b => b.onclick = () => { S.grp = b.dataset.g; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
 }
 function answerType() {
   const v = $('#plIn', box).value;
   if (!v.trim()) { toast('Hãy gõ đáp án'); return; }
   S.res = gradeItem(S.cur, v); S.done = true; record(S.res.ok); draw();
 }
-function record(ok) { S.n++; if (ok) S.ok++; mark2(S.cur.id, ok); tracker.quiz(ok); }
+function record(ok) { S.n++; if (ok) S.ok++; mark2(S.cur.id, ok); tracker.quiz(ok); if (ok) addCov(S.cur.id); saveProg(); }
 function bindCard() {
   $('#plPlay', box)?.addEventListener('click', () => play());
   $('#plAuto', box)?.addEventListener('click', e => {
@@ -346,10 +418,16 @@ export function render(el, opts = {}) {
   box = el; backCb = opts.back || null;
   try { S.auto = localStorage.getItem(AKEY) === '1'; } catch { /* bỏ qua */ }
   S.fopen = null;
-  if (!S.cur) next(); else draw();
+  if (!S.cur) {
+    pullRemote(true); pushSoon();
+    const r = loadProg();
+    if (r === 'next') next(); else if (r) { draw(); toast('Tiếp tục phần đang học dở'); } else next();
+  } else draw();
 }
 export function leave() { stopRec(true); try { speechSynthesis.cancel(); } catch { /* bỏ qua */ } }
 export function init() {
   bus.on('show', v => { if (v !== 'library') leave(); });
   bus.on('lang', () => { if (getLang() !== 'zh') leave(); });
 }
+
+init();
