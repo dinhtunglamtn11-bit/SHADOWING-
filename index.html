@@ -439,26 +439,20 @@
 <dialog id="uiDlg">
   <div class="hd"><span class="grow">⚙ Cài đặt</span><button class="btn" id="uiClose">✕</button></div>
   <div class="bd">
-    <h3>Ngôn ngữ giao diện</h3>
-    <div class="uirow"><div class="seg uiseg" data-k="lang"><button data-v="vi">Tiếng Việt</button><button data-v="en">English</button><button data-v="zh">中文</button></div></div>
-    <small class="dim">Chỉ đổi chữ của giao diện. Nội dung học (phụ đề, thẻ, ghi chú) giữ nguyên.</small>
-    <h3>Tài khoản video</h3>
-    <div class="uirow"><span>YouTube / TikTok</span><button class="btn" id="loginOpen">🔑 Đăng nhập…</button></div>
-
-    <h3>Màu sắc</h3>
+    <div class="uirow uitop"><span>🌐 Ngôn ngữ giao diện</span><div class="seg uiseg" data-k="lang"><button data-v="vi">Tiếng Việt</button><button data-v="en">English</button><button data-v="zh">中文</button></div></div>
+    <details class="uigrp"><summary>🎨 Giao diện</summary><div class="uigb"><h4>Màu sắc</h4>
     <div class="uirow"><span>Chủ đề</span><div class="seg uiseg" data-k="theme"><button data-v="day">Ngày</button><button data-v="night">Đêm</button><button data-v="auto">Theo máy</button></div></div>
     <div class="uirow"><span>Bảng màu</span><div class="seg uiseg" data-k="pal"><button data-v="candy">Kẹo</button><button data-v="pastel">Pastel</button><button data-v="forest">Rừng</button><button data-v="sunset">Hoàng hôn</button></div></div>
     <div class="uirow"><span>Màu chữ đang đọc</span><div class="seg uiseg" data-k="hl"><button data-v="yellow"><i class="sw" style="background:#ffd84d"></i>Vàng</button><button data-v="pink"><i class="sw" style="background:#ff9fcb"></i>Hồng</button><button data-v="blue"><i class="sw" style="background:#7fd8ff"></i>Xanh lam</button><button data-v="green"><i class="sw" style="background:#9af09a"></i>Xanh lá</button><button data-v="orange"><i class="sw" style="background:#ffb066"></i>Cam</button></div></div>
-
-    <h3>Kiểu pixel</h3>
+<h4>Kiểu pixel</h4>
     <div class="uirow"><span>Độ dày pixel</span><div class="seg uiseg" data-k="px"><button data-v="2">Mịn</button><button data-v="3">Vừa</button><button data-v="4">Thô</button></div></div>
     <div class="uirow"><span>Góc khung</span><div class="seg uiseg" data-k="corner"><button data-v="notch">Khuyết góc</button><button data-v="square">Vuông</button></div></div>
     <div class="uirow"><span>Phông chữ giao diện</span><div class="seg uiseg" data-k="font"><button data-v="pixel">Pixel</button><button data-v="clean">Rõ nét</button></div></div>
     <div class="uirow"><span>Biểu tượng</span><div class="seg uiseg" data-k="icons"><button data-v="pixel">Pixel</button><button data-v="emoji">Emoji</button></div></div>
     <div class="uirow"><span>Nền trang</span><div class="seg uiseg" data-k="bg"><button data-v="check">Ca-rô</button><button data-v="plain">Trơn</button></div></div>
     <div class="uirow"><span>Hiệu ứng chuyển động</span><div class="seg uiseg" data-k="motion"><button data-v="on">Bật</button><button data-v="off">Tắt</button></div></div>
-
-    <h3>Cỡ chữ</h3>
+    </div></details>
+    <details class="uigrp"><summary>🔠 Cỡ chữ & đọc</summary><div class="uigb">
     <div class="uirow"><span>Giao diện</span><div class="seg uiseg" data-k="zoom"><button data-v="90">90%</button><button data-v="100">100%</button><button data-v="115">115%</button><button data-v="130">130%</button></div></div>
     <div class="uirow"><span>Phụ đề đang chạy</span><div class="seg uiseg" data-k="sub"><button data-v="80">80%</button><button data-v="100">100%</button><button data-v="125">125%</button><button data-v="150">150%</button></div></div>
     <div class="uirow"><span>Nền trang đọc bài</span><div class="seg uiseg" data-k="rd"><button data-v="default">Theo giao diện</button><button data-v="white">Trắng · chữ đen</button><button data-v="paper">Giấy · chữ nâu</button><button data-v="green">Xanh dịu</button><button data-v="dark">Đen · chữ sáng</button></div></div>
@@ -466,8 +460,8 @@
     <small class="dim">Bật: nút hiện biểu tượng kèm chữ. Tắt: chỉ còn biểu tượng, trên toàn app (rê chuột hoặc giữ lên biểu tượng để xem tên). Các nút ＋ màu xanh và nút chính giữ nguyên.</small>
     <small class="dim">Áp dụng cho nửa bài đọc ở Thế giới → Article, để đọc dễ hơn hoặc tập trung hơn.</small>
     <div class="uipv" lang="zh-CN"><div class="main"><span class="w">你好，</span><span class="w on">今天</span><span class="w">天气很好</span></div><div class="sub l2">nǐ hǎo jīn tiān tiān qì hěn hǎo</div><div class="sub l3">Xin chào, hôm nay thời tiết rất đẹp</div></div>
-
-    <h3>Học tập</h3>
+    </div></details>
+    <details class="uigrp"><summary>📚 Học tập</summary><div class="uigb">
     <div class="uirow"><span>Mục tiêu mỗi ngày (phút)</span><input id="uiGoal" type="number" min="1" max="600"></div>
     <div class="uirow"><span>Thẻ mới mỗi ngày</span><input id="uiNew" type="number" min="1" max="200"></div>
     <div class="uirow"><span>Thuật toán ôn thẻ</span><div class="seg uiseg" data-k="srs"><button data-v="fsrs">FSRS (khuyên dùng)</button><button data-v="sm2">Cổ điển</button></div></div>
@@ -477,18 +471,17 @@
 
     <div class="uirow"><span>Tốc độ phát mặc định</span><div class="seg uiseg" data-k="rate"><button data-v="0.75">0.75×</button><button data-v="0.9">0.9×</button><button data-v="1">1×</button><button data-v="1.25">1.25×</button></div></div>
     <small class="dim">Mỗi video nhớ tốc độ riêng khi bạn đổi ở ⚙ trong màn Học; video chưa chọn thì dùng tốc độ này.</small>
-
-    <h3>🔊 Âm thanh</h3>
+    </div></details>
+    <details class="uigrp"><summary>🔊 Âm thanh & nhạc</summary><div class="uigb"><h4>Âm thanh</h4>
     <div class="uirow"><span>Tất cả âm thanh</span><div class="seg uiseg" data-k="mute" data-nosfx><button data-v="0">Bật</button><button data-v="1">Tắt</button></div></div>
     <small class="dim">Cũng là nút 🔊 ở đầu trang: tắt / bật cùng lúc cả nhạc nền và tiếng nút bấm.</small>
-    <h3>Tiếng nút bấm</h3>
+<h4>Tiếng nút bấm</h4>
     <div class="uirow"><span>Âm thanh</span><div class="seg uiseg" data-k="sfx" data-nosfx><button data-v="1">Bật</button><button data-v="0">Tắt</button></div></div>
     <div class="uirow"><span>Âm lượng</span><input id="sfxVol" type="range" min="0" max="100" step="5"></div>
     <div class="uirow"><span>Kiểu âm</span><div class="seg uiseg" data-k="sfxKind" data-nosfx><button data-v="soft">Pixel mịn</button><button data-v="chip">Pixel cổ điển</button><button data-v="bubble">Nhẹ nhàng</button></div></div>
     <div class="row"><button id="sfxTest" class="btn" data-nosfx>🔊 Thử âm</button></div>
     <small class="dim">Âm thanh do máy tự tạo (không có file âm thanh) nên tự cập nhật cùng app. Bật / tắt, âm lượng và kiểu âm được đồng bộ giữa các máy khi đã đăng nhập. Thanh phát video và khung luyện nói luôn im lặng để không lẫn vào tiếng bạn đang nghe hoặc ghi âm.</small>
-
-    <h3>🎵 Nhạc nền</h3>
+<h4>Nhạc nền</h4>
     <div id="musicBox">
       <div id="muNow" class="dim"></div>
       <div class="row"><button class="btn" id="muPrev" data-nosfx>↺ Từ đầu</button><button class="btn primary" id="muPlay" data-nosfx>▶ Phát</button><button class="btn" id="muNext" data-nosfx>Bài khác ›</button></div>
@@ -508,30 +501,33 @@
       </div>
       <small class="dim">Chọn được nhiều file mp3 một lúc. Mỗi danh sách tự trộn ngẫu nhiên, phát hết lượt rồi mới xáo lại. File chỉ lưu trong máy này (không đồng bộ, không tốn dung lượng đám mây); máy khác cần tải lên lại.</small>
     </div>
-
-    <h3>Phím tắt (màn Học)</h3>
+    </div></details>
+    <details class="uigrp"><summary>⌨ Phím tắt</summary><div class="uigb">
     <small class="dim">Bấm vào một phím rồi nhấn phím mới. Esc: hủy · Backspace: gỡ phím.</small>
     <div id="keyList"></div>
     <div class="row"><button id="keyReset" class="btn">Đặt lại phím tắt</button></div>
-
-    <h3>Giọng đọc (máy này)</h3>
+    </div></details>
+    <details class="uigrp"><summary>🗣 Giọng đọc</summary><div class="uigb">
     <small class="dim">Chọn giọng đọc cho từng ngôn ngữ. Mỗi máy có bộ giọng riêng nên lựa chọn này chỉ áp dụng cho máy đang dùng. Giọng “Tự chọn” là giọng đầu tiên máy tìm được.</small>
     <div id="voiceList"></div>
     <div class="uirow"><span>Đọc cả phần tiếng Việt / tiếng Anh trong ghi chú</span><input type="checkbox" id="readVi"></div>
-
-    <h3>Dùng offline (tải sẵn)</h3>
+    </div></details>
+    <details class="uigrp"><summary>⬇ Dùng offline</summary><div class="uigb">
     <small class="dim">Bấm một lần khi có Wi-Fi để máy này dùng được các tính năng lúc mất mạng. Không gồm file video, PDF, âm thanh của bạn vì những file đó không đồng bộ giữa các máy. Mô hình AI khá nặng, nên chỉ tải khi cần chấm phát âm hoặc canh từ.</small>
     <div id="offList"></div>
     <progress id="offProg" max="1" value="0" hidden></progress>
     <div class="dim" id="offStat"></div>
     <div class="row"><button id="offGo" class="btn primary">⬇ Tải mục đã chọn</button></div>
-
-    <h3>Dữ liệu</h3>
+    </div></details>
+    <details class="uigrp"><summary>💾 Dữ liệu & tài khoản</summary><div class="uigb"><h4>Tài khoản video</h4>
+    <div class="uirow"><span>YouTube / TikTok</span><button class="btn" id="loginOpen">🔑 Đăng nhập…</button></div>
+<h4>Dữ liệu</h4>
     <div class="row"><button id="btnData" class="btn">💾 Sao lưu và khôi phục…</button><button id="btnTrash" class="btn">🗑 Thùng rác</button></div>
     <div class="uirow"><span>Nhắc sao lưu</span><div class="seg uiseg" data-k="bk"><button data-v="0">Tắt</button><button data-v="7">Mỗi tuần</button><button data-v="14">2 tuần</button><button data-v="30">Mỗi tháng</button></div></div>
     <small class="dim" id="bkLast"></small>
     <div class="row"><button id="uiReset" class="btn danger">Đặt lại giao diện</button></div>
     <small class="dim">Cài đặt giao diện lưu riêng trên từng thiết bị. Mục tiêu và số thẻ mới được đồng bộ khi đã đăng nhập.</small>
+    </div></details>
   </div>
 </dialog>
 

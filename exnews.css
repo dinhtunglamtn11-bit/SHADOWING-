@@ -599,3 +599,17 @@ body.focus-mode > header, body.focus-mode #nav, body.focus-mode #bkBar { display
 body.focus-mode #views { padding-bottom: 12px; }
 #focusExit { position: fixed; z-index: 90; top: max(8px, env(safe-area-inset-top)); right: 8px; }
 #focusExit[hidden] { display: none; }
+
+/* ===== Cài đặt: nhóm thu gọn, thoáng ===== */
+#uiDlg .bd { gap: 12px; padding: 16px; }
+#uiDlg .uitop { padding-bottom: 4px; }
+#uiDlg .uigrp { border: var(--px) solid var(--line); background: var(--panel); }
+#uiDlg .uigrp > summary { list-style: none; cursor: pointer; padding: 10px 14px; font-family: var(--pf); font-size: 22px; display: flex; align-items: center; gap: 8px; user-select: none; }
+#uiDlg .uigrp > summary::-webkit-details-marker { display: none; }
+#uiDlg .uigrp > summary::after { content: '▾'; margin-left: auto; transition: transform .15s; }
+#uiDlg .uigrp[open] > summary::after { transform: rotate(180deg); }
+#uiDlg .uigrp[open] > summary { border-bottom: 3px dashed var(--line); }
+#uiDlg .uigb { display: flex; flex-direction: column; gap: 12px; padding: 14px; }
+#uiDlg .uigb h4 { margin: 6px 0 0; font-family: var(--pf); font-size: 18px; color: var(--dim); text-transform: none; }
+#uiDlg .uigb h4:first-child { margin-top: 0; }
+#uiDlg .uigb small.dim { font-size: 15px; line-height: 1.35; }
