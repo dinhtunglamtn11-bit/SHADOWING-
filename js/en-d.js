@@ -1186,4 +1186,5 @@ export default {
   "Đã bỏ điểm đã lưu": "Saved point removed",
   "Bỏ điểm đã lưu": "Remove saved point",
   "✕ Bỏ": "✕ Remove",
+  "Chỉ {}/{} dòng có giờ [mm:ss]: {} dòng còn lại sẽ được chia đều vào khoảng giữa các mốc giờ (theo độ dài chữ). Muốn canh chính xác hơn, hãy thêm giờ cho nhiều dòng hơn hoặc chọn “AI tự canh giờ”.": "Only {1}/{2} lines have a [mm:ss] time: the other {3} lines will be spread evenly between the timed lines (by text length). For more accurate timing, add times to more lines or choose “AI sets the timing”.",
 }

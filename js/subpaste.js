@@ -11,6 +11,7 @@
 import { $, $$, esc, toast, bus, langInfo, parseSubs, tokensOf } from './util.js';
 import { currentItemId, currentCues, currentLang, applyCues, setCuesFromFile, simplifyCues } from './player.js';
 import * as store from './store.js';
+import { M } from './media.js';
 import { getBlob } from './alignui.js';
 import { decodeAudio, transcribeAll, addPinyin } from './align.js';
 import { zhText } from './prefs.js';
@@ -132,9 +133,32 @@ function assignExisting(cues, entries, keepL1) {
   return { cues: out, used: map.filter(x => x >= 0).length, byText };
 }
 
-function buildTimed(entries) {
-  const es = entries.filter(e => e.start != null).sort((a, b) => a.start - b.start);
-  return es.map((e, i) => ({ start: +e.start.toFixed(2), end: +(i + 1 < es.length ? Math.max(e.start + 0.4, es[i + 1].start - 0.02) : e.start + 3).toFixed(2), lines: e.lines }));
+// Dòng có giờ [mm:ss] là mốc. Dòng không có giờ KHÔNG bị bỏ: được chia đều (theo độ dài chữ) vào khoảng giữa hai mốc kề nhau.
+export function buildTimed(entries, totalDur = 0) {
+  const len = e => Math.max(1, [...(e.lines[0] || '')].filter(ch => LETTER.test(ch)).length);
+  let last = -1;
+  const es = entries.map(e => { // mốc phải tăng dần: mốc lùi lại thì coi như dòng không có giờ
+    if (e.start != null && e.start >= last) { last = e.start; return { ...e }; }
+    return { ...e, start: null };
+  });
+  const anchors = es.map((e, i) => (e.start != null ? i : -1)).filter(i => i >= 0);
+  if (!anchors.length) return [];
+  const out = [];
+  const spread = (from, to, t0, t1) => { // các dòng from..to-1 chia đều khoảng [t0, t1]
+    const ws = []; for (let i = from; i < to; i++) ws.push(len(es[i]));
+    const tot = ws.reduce((a, b) => a + b, 0); let acc = 0;
+    for (let i = from; i < to; i++) {
+      const s = t0 + (t1 - t0) * acc / tot; acc += ws[i - from]; const e = t0 + (t1 - t0) * acc / tot;
+      out.push({ start: +s.toFixed(2), end: +Math.max(e - 0.02, s + 0.3).toFixed(2), lines: es[i].lines });
+    }
+  };
+  if (anchors[0] > 0) spread(0, anchors[0], 0, Math.max(es[anchors[0]].start, 0.3 * anchors[0]));
+  anchors.forEach((a, k) => {
+    const nextA = anchors[k + 1] ?? es.length, t0 = es[a].start;
+    const t1 = nextA < es.length ? es[nextA].start : (totalDur > t0 + 1 ? totalDur : t0 + 3 * (nextA - a));
+    spread(a, nextA, t0, Math.max(t1, t0 + 0.4 * (nextA - a)));
+  });
+  return out;
 }
 
 // Chữ trong văn bản dán chưa có giờ: nghe âm thanh để biết chỗ nào là chỗ nào rồi dàn các câu theo độ dài chữ
@@ -184,6 +208,7 @@ function preview() {
     `<div class="dim">Cách áp dụng: ${MODE_TEXT[mode]}</div>` +
     es.slice(0, 3).map(e => `<div class="pvrow" lang="${langInfo(lang).bcp}"><b>${esc(e.lines[0] || '')}</b><span>${esc(e.lines[1] || '—')}</span><span>${esc(e.lines[2] || '—')}</span></div>`).join('') +
     (n > 3 ? `<div class="dim">… và ${n - 3} câu nữa</div>` : '');
+  if (mode === 'times' && wt < n) $('#pgPreview').insertAdjacentHTML('beforeend', `<div class="miss">Chỉ ${wt}/${n} dòng có giờ [mm:ss]: ${n - wt} dòng còn lại sẽ được chia đều vào khoảng giữa các mốc giờ (theo độ dài chữ). Muốn canh chính xác hơn, hãy thêm giờ cho nhiều dòng hơn hoặc chọn “AI tự canh giờ”.</div>`);
   $('#pgKeepRow').hidden = mode !== 'existing';
   $('#pgModelRow').hidden = mode !== 'ai';
   $('#pgApply').disabled = false;
@@ -201,7 +226,7 @@ async function apply() {
     let cues;
     if (mode === 'srt') cues = entries.map(e => ({ start: e.start, end: e.end, lines: e.lines, ...(e.t ? { t: e.t } : {}) }));
     else if (mode === 'times') {
-      cues = buildTimed(entries);
+      cues = buildTimed(entries, isFinite(M.duration) ? M.duration : 0);
       if (!cues.length) throw new Error('Không có dòng nào có giờ [mm:ss] ở đầu.');
     } else if (mode === 'existing') {
       if (!currentCues().length) throw new Error('Video chưa có câu nào. Hãy chọn cách “AI tự canh giờ”, hoặc thêm giờ [mm:ss] vào đầu mỗi dòng.');

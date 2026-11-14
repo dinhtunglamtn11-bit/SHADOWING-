@@ -1229,4 +1229,5 @@ export default {
   "Saved point removed": "已取消保存的进度点",
   "Remove saved point": "取消保存的进度点",
   "✕ Remove": "✕ 取消",
+  "Only {1}/{2} lines have a [mm:ss] time: the other {3} lines will be spread evenly between the timed lines (by text length). For more accurate timing, add times to more lines or choose “AI sets the timing”.": "只有 {1}/{2} 行带有 [mm:ss] 时间：其余 {3} 行会按文字长度平均分配到相邻时间点之间。想要更准确，请给更多行加上时间，或选择“AI 自动对时间”。",
 }
