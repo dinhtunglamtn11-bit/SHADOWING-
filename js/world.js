@@ -198,7 +198,7 @@ const dateLine = () => { const d = new Date(); return `${WD[d.getDay()]}, ${d.ge
 const store0 = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const save0 = (k, v) => { try { localStorage.setItem(k, v); } catch { /* bỏ qua */ } };
 let sec = (s => (s === 'social' ? 'flash' : ['flash', 'focus', 'story'].includes(s) ? s : 'article'))(store0('worldSec')); // “social” cũ nay là Flash
-const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="flash" class="${sec === 'flash' ? 'on' : ''}" title="Lướt các mẩu thông tin ngắn, đơn giản mà hay">⚡ Flash</button><button data-s="focus" class="${sec === 'focus' ? 'on' : ''}" title="Đọc các bài dài, thông tin sâu">🔍 Focus</button><button data-s="story" class="${sec === 'story' ? 'on' : ''}">📖 Story</button></div>`;
+const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="flash" class="${sec === 'flash' ? 'on' : ''}" title="Lướt các mẩu thông tin ngắn, đơn giản mà hay">⚡ Flash</button><button data-s="focus" class="${sec === 'focus' ? 'on' : ''}" title="Đọc các bài dài, thông tin sâu">🔭 Focus</button><button data-s="story" class="${sec === 'story' ? 'on' : ''}">📜 Story</button></div>`;
 function bindSec() {
   $$('#wSec button', root).forEach(b => {
     b.onclick = () => { if (b.dataset.s === sec) return; social.leave(); story.leave(); sec = b.dataset.s; save0('worldSec', sec); mode = 'feed'; render(); scrollTo(0, 0); };

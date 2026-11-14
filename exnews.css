@@ -586,3 +586,16 @@ mark.hltmp { color: inherit; }
 .plfilters .plf b { font-weight: 400; }
 .plopt { padding: 8px; border: 2px dashed var(--line); background: var(--panel2, var(--panel)); }
 #plAuto.on { background: var(--accent); }
+
+/* Chữ cạnh biểu tượng: tắt = chỉ còn biểu tượng (trừ nút ＋ xanh, nút chính và nút trong hộp thoại) */
+:root[data-lbl=off] .bl { display: none; }
+:root[data-lbl=off] .primary .bl, :root[data-lbl=off] dialog .bl, :root[data-lbl=off] [data-nolbl] .bl { display: inline; }
+:root[data-lbl=off] #nav button > span { display: none; }
+:root[data-lbl=off] button[data-lbl]:not(.primary):not([data-nolbl]) { padding-left: 10px; padding-right: 10px; }
+:root[data-lbl=off] .tools .btn[data-lbl], :root[data-lbl=off] #libTabs button[data-lbl], :root[data-lbl=off] #rvTabs button[data-lbl], :root[data-lbl=off] #wSec button[data-lbl], :root[data-lbl=off] #qTabs button[data-lbl] { min-width: 44px; justify-content: center; }
+
+/* Chế độ tập trung khi học: ẩn thanh trên và thanh dưới */
+body.focus-mode > header, body.focus-mode #nav, body.focus-mode #bkBar { display: none !important; }
+body.focus-mode #views { padding-bottom: 12px; }
+#focusExit { position: fixed; z-index: 90; top: max(8px, env(safe-area-inset-top)); right: 8px; }
+#focusExit[hidden] { display: none; }

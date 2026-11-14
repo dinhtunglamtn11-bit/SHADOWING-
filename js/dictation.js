@@ -134,7 +134,7 @@ function enter() {
 }
 function exit() {
   on = false; setDictMode(false);
-  $('#dictPanel').hidden = true; $('#btnDict').textContent = '✍️ Chép chính tả';
+  $('#dictPanel').hidden = true; $('#btnDict').textContent = '⌨ Chép chính tả';
 }
 
 export function init() {
@@ -155,5 +155,5 @@ export function init() {
   $('#dText').addEventListener('keydown', e => { if (e.ctrlKey && e.key === ' ') { e.preventDefault(); replay(false); } });
   bus.on('exitDict', () => { if (on) exit(); });
   bus.on('dictGo', i => { if (on) load(i); });
-  bus.on('dictExit', () => { on = false; $('#dictPanel').hidden = true; $('#btnDict').textContent = '✍️ Chép chính tả'; });
+  bus.on('dictExit', () => { on = false; $('#dictPanel').hidden = true; $('#btnDict').textContent = '⌨ Chép chính tả'; });
 }

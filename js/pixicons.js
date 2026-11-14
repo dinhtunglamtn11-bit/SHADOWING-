@@ -122,6 +122,78 @@ const ICONS = {
     '.kkkkkkk.', 'kwwwwwwwk', 'kwbbbbbwk', 'kwwwwwwwk', 'kwbbbbbwk', 'kwwwwwwwk',
     'kwbbbbwwk', 'kwwwwwwwk', 'kwbbbwwwk', 'kwwwwwwwk', '.kkkkkkk.',
   ],
+  // --- biểu tượng riêng cho từng mục để không bị nhầm (Ghi chú, Nhật ký, Viết chữ, Soạn, Sổ lỗi, Sổ thẻ…) ---
+  memo: [ // Ghi chú: tập giấy nhớ màu vàng có vòng gáy
+    '.k.k.k.k.', 'kkkkkkkkk', 'kyyyyyyyk', 'kyoooooyk', 'kyyyyyyyk', 'kyoooooyk',
+    'kyyyyyyyk', 'kyooooyyk', 'kyyyyyyYk', 'kYYYYYYYk', '.kkkkkkk.',
+  ],
+  journal: [ // Nhật ký: sổ bìa xanh lá
+    '.kkkkkkk.', 'kgggggggk', 'kgwwwwwgk', 'kgwGGGwgk', 'kgwwwwwgk', 'kgwGGGwgk',
+    'kgwwwwwgk', 'kgggggggk', 'kGGGGrGGk', '.kkkkrkk.',
+  ],
+  clipboard: [ // Bài tập của tôi: bảng kẹp giấy
+    '...kkk...', 'kkkkykkkk', 'knnnnnnnk', 'knwwwwwnk', 'knwbbbwnk', 'knwwwwwnk',
+    'knwbbbwnk', 'knwwwwwnk', 'knnnnnnNk', '.kkkkkkk.',
+  ],
+  redbook: [ // Sổ lỗi: cuốn sách đỏ
+    '.kkkkkkk.', 'krrrrrrrk', 'krwwwwwrk', 'krrrrrrrk', 'krwwwrrrk', 'krrrrrrRk',
+    'kRRRRRRRk', 'kccccccck', '.kkkkkkk.',
+  ],
+  box: [ // Sổ thẻ: hộp đựng thẻ
+    '.kkkkkkk.', 'kpppppppk', 'kwwwwwwwk', 'kkkkkkkkk', 'knnnnnnnk', 'knnwwwnnk',
+    'knnwwwnnk', 'knnnnnnNk', 'kNNNNNNNk', '.kkkkkkk.',
+  ],
+  brush: [ // Viết chữ: bút lông
+    '........kk.', '.......knnk', '......knnkk', '.....knnk..', '....knnk...', '...kssk....',
+    '..kssk.....', '.kddk......', 'kdddk......', 'kdkk.......', 'kk.........',
+  ],
+  writing: [ // Soạn: bút viết trên dòng kẻ
+    '........kk.', '.......kppk', '......kppkk', '.....kyyk..', '....kyYk...', '...kyYk....',
+    '..kcYk.....', '.kckk......', 'kbbbbbbbbbk',
+  ],
+  scope: [ // Focus: tâm ngắm
+    '.....k.....', '...kkbkk...', '..kb.b.bk..', '.kb..b..bk.', '.kb..b..bk.', 'kkbbbrbbbkk',
+    '.kb..b..bk.', '.kb..b..bk.', '..kb.b.bk..', '...kkbkk...', '.....k.....',
+  ],
+  bolt: [ // Flash: tia chớp
+    '.....kkk.', '....kyyk.', '...kyyk..', '..kyyk...', '.kyyyyyk.', '..kkkyyk.',
+    '....kyk..', '...kyk...', '...kk....',
+  ],
+  bookmark: [ // Lưu câu: dấu trang
+    'kkkkkkkk', 'krrrrrrk', 'krrrrrrk', 'krrrrrrk', 'krrrrrrk', 'krrrrrrk', 'krrkkrrk', 'krk..krk', 'kk....kk',
+  ],
+  scroll: [ // Story: cuộn giấy
+    '.kkkkkkkkk.', 'kyyyyyyyyYk', '.kkkkkkkkk.', '.kccccccck.', '.kcbbbbbck.', '.kccccccck.',
+    '.kcbbbbbck.', '.kccccccck.', '.kkkkkkkkk.', 'kyyyyyyyyYk', '.kkkkkkkkk.',
+  ],
+  books: [ // Thư viện: chồng sách
+    '.kkkkkkkkk.', 'kbbbwwwbbBk', 'kkkkkkkkkkk', 'krrrrwwrrRk', 'kkkkkkkkkkk', 'kgggwwgggGk', 'kkkkkkkkkkk',
+  ],
+  abc: [ // Từ vựng: chữ Aa
+    '.kkkkkkkkk.', 'kwwwwwwwwwk', 'kwwbwwwwwwk', 'kwbwbwwwwwk', 'kwbbbwwbbwk', 'kwbwbwbwbwk',
+    'kwbwbwwbbwk', 'kwwwwwwwwwk', '.kkkkkkkkk.',
+  ],
+  subtitle: [ // Phụ đề: khung chữ chạy
+    '.kkkkkkkkk.', 'kwwwwwwwwwk', 'kwbbwwbbbwk', 'kwwwwwwwwwk', 'kwbbbbwwwwk', 'kwwwwwwwwwk',
+    '.kkkkkkkkk.', '..kk.......', '...k.......',
+  ],
+  sections: [ // Chia đoạn: trang chia thành các phần
+    '.kkkkkkkkk.', 'kwbbbbbbwwk', 'kwwwwwwwwwk', 'kvvvvvvvvvk', 'kwbbbbbwwwk', 'kwwwwwwwwwk',
+    'kvvvvvvvvvk', 'kwbbbbwwwwk', '.kkkkkkkkk.',
+  ],
+  expand: [ // Tập trung: bốn góc mở rộng
+    'kkkk...kkkk', 'kbbk...kbbk', 'kbk.....kbk', 'kk.......kk', '...........', '...........',
+    '...........', 'kk.......kk', 'kbk.....kbk', 'kbbk...kbbk', 'kkkk...kkkk',
+  ],
+  cal: [ // Tuần: lịch có tờ đỏ
+    '.k.....k.', 'kkkkkkkkk', 'krrrrrrrk', 'kkkkkkkkk', 'kwwwwwwwk', 'kwbwbwbwk', 'kwwwwwwwk', 'kwbwbwbwk', 'kwwwwwwwk', '.kkkkkkk.',
+  ],
+  cal2: [ // Tháng: lịch ô lưới
+    '.k.....k.', 'kkkkkkkkk', 'kgggggggk', 'kkkkkkkkk', 'kwkwkwkwk', 'kkkkkkkkk', 'kwkwkwkwk', 'kkkkkkkkk', 'kwkwkwkwk', 'kkkkkkkkk',
+  ],
+  medal: [ // Thành tựu: huy chương
+    '.kr...bk.', '.krk.kbk.', '..krkbk..', '..kkkkk..', '.kyyyyyk.', 'kyywyyyYk', 'kyywyyyYk', 'kyyyyyyYk', '.kYYYYYk.', '..kkkkk..',
+  ],
   folder: [
     'kkkk.......', 'koookkkkkkk', 'kooooooooOk', 'kyyyyyyyyYk', 'kyyyyyyyyYk', 'kyyyyyyyyYk', 'kYYYYYYYYYk', 'kkkkkkkkkkk',
   ],
@@ -348,6 +420,8 @@ const MAP = {
   '🧹': 'eraser', '💾': 'floppy', '⚙': 'gear', '☰': 'menu',
   '📈': 'chart', '🔎': 'search', '🔍': 'search', '🔔': 'bell', '⌨': 'keyboard', '🏆': 'trophy', '❤': 'heart', '♥': 'heart', '⭐': 'star', '💎': 'gem', '📰': 'news', '🎲': 'dice', '📕': 'book', '📗': 'book', '📘': 'book', '🌍': 'globe', '🌎': 'globe', '🌏': 'globe',
 };
+// Mỗi mục lớn có biểu tượng riêng: trước đây 📝 📄 📋 📑 cùng là tờ giấy, ✍ ✏ 🖊 cùng là bút chì, 📖 📚 📕 cùng là cuốn sách…
+Object.assign(MAP, { '📝': 'memo', '📋': 'clipboard', '📑': 'sections', '🖊': 'brush', '✍': 'writing', '📚': 'books', '📕': 'redbook', '🗂': 'box', '⚡': 'bolt', '📓': 'journal', '🔭': 'scope', '📜': 'scroll', '🔖': 'bookmark', '🔤': 'abc', '💬': 'subtitle', '⛶': 'expand', '📅': 'cal', '🗓': 'cal2', '🏅': 'medal', '🌅': 'sun', '🎓': 'book' });
 const RE = new RegExp('(' + Object.keys(MAP).join('|') + ')\\uFE0F?', 'gu');
 // vùng chứa nội dung của người dùng hoặc ô nhập: không đổi emoji ở đó
 const DENY = 'script,style,textarea,input,select,option,.pxe,#now,.cue:not(.ed),.qtext,.qexp,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.wvw,.wvm,.wvs,.mbq,.nw-emoji,.stc-cover,.nw-h,.nw-lead,.nw-ttl,.nw-text,.sp-text,.sp-ct,.sp-av,.sp-tags,.wchip,.slot,[contenteditable]';

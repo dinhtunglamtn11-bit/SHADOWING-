@@ -21,7 +21,7 @@
   try {
     var u = JSON.parse(localStorage.getItem('ui') || 'null');
     if (!u) u = { theme: localStorage.getItem('theme') === 'night' ? 'night' : 'day' };
-    var D = { pal: 'candy', px: '3', corner: 'notch', font: 'pixel', icons: 'pixel', bg: 'check', motion: 'on', hl: 'yellow', rd: 'default' };
+    var D = { pal: 'candy', px: '3', corner: 'notch', font: 'pixel', icons: 'pixel', bg: 'check', motion: 'on', hl: 'yellow', rd: 'default', lbl: 'on' };
     for (var k in D) d.dataset[k] = u[k] || D[k];
     var t = u.theme || 'day';
     if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day';
@@ -59,6 +59,7 @@
   <button data-view="quest"><i>🎯</i><span>Nhiệm vụ</span><em id="qBadge"></em></button>
 </nav>
 
+<button id="focusExit" class="btn" hidden title="Thoát chế độ tập trung (Esc)">✕ Thoát</button>
 <main id="views">
 
   <!-- ===== Học ===== -->
@@ -67,20 +68,21 @@
       <div id="left">
         <div class="tools">
           <button class="btn primary" id="btnAdd">＋ Thêm video</button>
-          <button class="btn" id="btnCard" title="Lưu câu đang chạy vào sổ thẻ để ôn lặp lại">📒 Lưu câu</button>
+          <button class="btn" id="btnCard" title="Lưu câu đang chạy vào sổ thẻ để ôn lặp lại">🔖 Lưu câu</button>
           <button class="btn" id="btnLookup" data-lookup title="Bật rồi chạm vào từ trong phụ đề để tra nghĩa và thêm từ vào sổ thẻ (Trung tra offline; Anh, Nhật, Hàn tra bằng Wiktionary, cần mạng)">📖 Tra từ</button>
-          <button class="btn" id="btnDict" title="Nghe từng câu rồi gõ lại">✍️ Chép chính tả</button>
+          <button class="btn" id="btnDict" title="Nghe từng câu rồi gõ lại">⌨ Chép chính tả</button>
           <button class="btn" id="btnSpeak" title="Ghi âm giọng bạn, nghe so sánh và chấm phát âm">🎙 Luyện nói</button>
+          <button class="btn" id="btnFocusMode" title="Toàn màn hình để tập trung học: ẩn thanh trên và thanh dưới (thoát bằng nút Thoát, phím Esc hoặc nút Back)">⛶ Tập trung</button>
           <button class="btn" id="btnMoreTools" title="Thêm phụ đề, sửa phụ đề, chia đoạn, canh từ, từ vựng, khung hình">⋯ Công cụ <span class="ar">▾</span></button>
           <button class="btn" id="btnSet" title="Cài đặt phát: lặp câu, tốc độ, dòng dưới…">⚙</button>
         </div>
         <div class="tools tools2" id="toolMore" hidden>
-          <button class="btn" id="btnPaste" title="Thêm phụ đề từ file hoặc dán văn bản (gốc | phiên âm | nghĩa)">📄 Phụ đề</button>
+          <button class="btn" id="btnPaste" title="Thêm phụ đề từ file hoặc dán văn bản (gốc | phiên âm | nghĩa)">💬 Phụ đề</button>
           <input id="sfile" type="file" accept=".srt,.vtt">
-          <button class="btn" id="btnSubEdit" title="Hộp thoại sửa nhiều câu một lúc: dán phiên âm / nghĩa hàng loạt, gộp, xuất file .srt. (Sửa từng câu: bấm nút ✏️ ở đầu danh sách câu bên phải)">📝 Sửa hàng loạt</button>
+          <button class="btn" id="btnSubEdit" title="Hộp thoại sửa nhiều câu một lúc: dán phiên âm / nghĩa hàng loạt, gộp, xuất file .srt. (Sửa từng câu: bấm nút ✏️ ở đầu danh sách câu bên phải)">✏️ Sửa hàng loạt</button>
           <button class="btn" id="btnSeg" title="Chia phụ đề thành từng đoạn: video dừng cuối đoạn, lặp lại hoặc tiếp tục">📑 Chia đoạn</button>
           <button class="btn" id="btnAlign" title="Tự động tạo phụ đề và canh giờ từng từ theo giọng nói">✨ Canh từ</button>
-          <button class="btn" id="btnVocab" title="Liệt kê từ vựng trong phụ đề của video để chọn thêm vào sổ thẻ (tiếng Trung)">📚 Từ vựng</button>
+          <button class="btn" id="btnVocab" title="Liệt kê từ vựng trong phụ đề của video để chọn thêm vào sổ thẻ (tiếng Trung)">🔤 Từ vựng</button>
           <button class="btn" id="btnFrame">🖥 Ngang (YouTube)</button>
         </div>
         <div id="itemTitle" class="ellipsis dim"></div>
@@ -220,7 +222,7 @@
         <button data-t="quiz">🧩 Bài tập hôm nay</button>
         <button data-t="free" title="Câu hỏi ngẫu nhiên không giới hạn từ các tài liệu bạn đã tick “Đang học”">🎲 Luyện ngẫu nhiên</button>
         <button data-t="write">🖊 Viết chữ</button>
-        <button data-t="mine">📝 Bài tập của tôi</button>
+        <button data-t="mine">📋 Bài tập của tôi</button>
         <button data-t="mistakes">📕 Sổ lỗi</button>
         <button data-t="deck">🗂 Sổ thẻ</button>
       </div>
@@ -460,6 +462,8 @@
     <div class="uirow"><span>Giao diện</span><div class="seg uiseg" data-k="zoom"><button data-v="90">90%</button><button data-v="100">100%</button><button data-v="115">115%</button><button data-v="130">130%</button></div></div>
     <div class="uirow"><span>Phụ đề đang chạy</span><div class="seg uiseg" data-k="sub"><button data-v="80">80%</button><button data-v="100">100%</button><button data-v="125">125%</button><button data-v="150">150%</button></div></div>
     <div class="uirow"><span>Nền trang đọc bài</span><div class="seg uiseg" data-k="rd"><button data-v="default">Theo giao diện</button><button data-v="white">Trắng · chữ đen</button><button data-v="paper">Giấy · chữ nâu</button><button data-v="green">Xanh dịu</button><button data-v="dark">Đen · chữ sáng</button></div></div>
+    <div class="uirow"><span>Chữ cạnh biểu tượng</span><div class="seg uiseg" data-k="lbl"><button data-v="on">Bật</button><button data-v="off">Tắt</button></div></div>
+    <small class="dim">Bật: nút hiện biểu tượng kèm chữ. Tắt: chỉ còn biểu tượng, trên toàn app (rê chuột hoặc giữ lên biểu tượng để xem tên). Các nút ＋ màu xanh và nút chính giữ nguyên.</small>
     <small class="dim">Áp dụng cho nửa bài đọc ở Thế giới → Article, để đọc dễ hơn hoặc tập trung hơn.</small>
     <div class="uipv" lang="zh-CN"><div class="main"><span class="w">你好，</span><span class="w on">今天</span><span class="w">天气很好</span></div><div class="sub l2">nǐ hǎo jīn tiān tiān qì hěn hǎo</div><div class="sub l3">Xin chào, hôm nay thời tiết rất đẹp</div></div>
 
