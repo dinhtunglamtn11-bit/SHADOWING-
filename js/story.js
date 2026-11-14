@@ -67,20 +67,33 @@ async function decodeFile(f) { // file .txt tiếng Trung đời cũ có thể l
   return t;
 }
 
-async function saveChapters(storyId, list, lang) {
-  const have = new Set(chaptersOf(storyId).map(c => c.title + '|' + (c.body || '').slice(0, 80)));
-  let n = chaptersOf(storyId).reduce((m, c) => Math.max(m, c.n), 0), added = 0;
+async function saveChapters(storyId, list, lang, after = null) { // after: chèn sau chương số này (null = nối vào cuối)
+  const cur = chaptersOf(storyId), have = new Set(cur.map(c => c.title + '|' + (c.body || '').slice(0, 80)));
   const z = s => (lang === 'zh' ? zhText(s, 'zh') : s);
+  const fresh = []; let dup = 0;
   for (const c of list) {
     const title = z(c.title), body = z(c.body), key = title + '|' + body.slice(0, 80);
-    if (have.has(key)) continue;
-    have.add(key);
-    store.put('chapters', uid(), { story: storyId, n: ++n, title, body, lang, created: Date.now(), deleted: false });
-    if (++added % 25 === 0) await new Promise(r => setTimeout(r, 0)); // nhường giao diện khi nhập truyện rất dài
+    if (have.has(key)) { dup++; continue; }
+    have.add(key); fresh.push({ title, body });
   }
-  const s = store.get('stories', storyId);
-  store.put('stories', storyId, { count: n, ...(s?.ch ? {} : { ch: chaptersOf(storyId)[0]?.id || '' }) });
-  return added;
+  const end = cur.reduce((m, c) => Math.max(m, c.n), 0), at = after == null ? end : Math.max(0, Math.min(end, after));
+  const s = store.get('stories', storyId), k = fresh.length;
+  if (k && at < end) { // chèn giữa: dời số thứ tự các chương phía sau
+    for (const c of cur) if (c.n > at) store.put('chapters', c.id, { n: c.n + k });
+  }
+  let n = at;
+  for (let i = 0; i < k; i++) {
+    store.put('chapters', uid(), { story: storyId, n: ++n, title: fresh[i].title, body: fresh[i].body, lang, created: Date.now(), deleted: false });
+    if ((i + 1) % 25 === 0) await new Promise(r => setTimeout(r, 0)); // nhường giao diện khi nhập truyện rất dài
+  }
+  const patch = { count: end + k };
+  if (k && at < end) { // chèn trước chỗ đã đọc: các chương đã đọc vẫn tính là đã đọc, điểm đã lưu dời theo
+    if ((s?.maxN || 0) > at) patch.maxN = s.maxN + k;
+    if (s?.mark && s.mark.n > at) patch.mark = { ...s.mark, n: s.mark.n + k };
+  }
+  if (!s?.ch) patch.ch = chaptersOf(storyId)[0]?.id || '';
+  store.put('stories', storyId, patch);
+  return { added: k, dup, from: at + 1, to: at + k };
 }
 
 const SAMPLES = {
@@ -226,47 +239,67 @@ function bindShelf() {
 // ---------- thêm truyện / thêm chương ----------
 function drawAdd() {
   const s = addFor ? store.get('stories', addFor) : null, d = draft;
+  const lg = s?.lang || getLang(), z = x => (lg === 'zh' ? zhText(x, 'zh') : x);
+  const cur = s ? chaptersOf(addFor) : [], total = cur.length;
+  const kind = d.kind || (s ? 'one' : 'many'); // thêm vào truyện có sẵn: mặc định một chương; truyện mới: nhiều chương
+  const defTitle = n => (lg === 'zh' ? `第${n}章` : lg === 'vi' ? `Chương ${n}` : `Chapter ${n}`);
   root.innerHTML = `${head()}<div class="row"><button class="btn" id="stCancel">← ${s ? esc(s.title) : 'Truyện của tôi'}</button></div>
     <div class="qcard st-form">
       <h3>${s ? 'Thêm chương vào truyện' : 'Thêm truyện mới'}</h3>
-      ${s ? '' : `<div class="row"><label class="dim grow">Tên truyện<input id="stfTitle" type="text" value="${esc(d.title)}" placeholder="Tên truyện"></label>
+      ${s ? `<div class="st-ctx"><b class="gt">${esc(s.title)}</b> <span class="dim">đang có ${total} chương</span></div>` : `<div class="row"><label class="dim grow">Tên truyện<input id="stfTitle" type="text" value="${esc(d.title)}" placeholder="Tên truyện"></label>
         <label class="dim grow">Tác giả<input id="stfAuthor" type="text" value="${esc(d.author)}" placeholder="(không bắt buộc)"></label>
         <label class="dim">Biểu tượng<input id="stfEmoji" type="text" value="${esc(d.emoji)}" maxlength="4" style="width:72px" placeholder="📖"></label></div>`}
-      <div class="row"><button class="btn" id="stfFile">📂 Chọn file .txt</button>
-        <div class="seg" id="stfMode"><button data-m="auto" class="${d.mode === 'auto' ? 'on' : ''}" title="Nhận các dòng như “第一章”, “Chương 1”, “Chapter 1”, “# Tiêu đề” là đầu chương">Tự nhận chương</button><button data-m="size" class="${d.mode === 'size' ? 'on' : ''}" title="Cắt đều theo độ dài (khoảng 5000 chữ một phần), dùng khi truyện không có dòng tiêu đề chương">Chia theo độ dài</button></div></div>
-      <textarea id="stfText" class="edwide" rows="14" spellcheck="false" placeholder="Dán chữ của truyện vào đây (có thể dán cả cuốn tiểu thuyết, hoặc chọn file .txt)…">${esc(d.text)}</textarea>
-      <div id="stfInfo" class="dim"></div>
+      <div class="seg" id="stfKind"><button data-k="one" class="${kind === 'one' ? 'on' : ''}" title="Dán nội dung của đúng một chương">✍ Một chương</button><button data-k="many" class="${kind === 'many' ? 'on' : ''}" title="Dán nhiều chương một lúc hoặc cả cuốn, app tự tách chương">📚 Nhiều chương</button></div>
+      ${kind === 'one' ? `<label class="dim">Tên chương<input id="stfCt" type="text" value="${esc(d.ctitle || '')}" placeholder="${esc(defTitle(total + 1))} (để trống thì dùng tên này)"></label>`
+        : `<div class="row"><button class="btn" id="stfFile">📂 Chọn file .txt</button>
+        <div class="seg" id="stfMode"><button data-m="auto" class="${d.mode === 'auto' ? 'on' : ''}" title="Nhận các dòng như “第一章”, “Chương 1”, “Chapter 1”, “# Tiêu đề” là đầu chương">Tự nhận chương</button><button data-m="size" class="${d.mode === 'size' ? 'on' : ''}" title="Cắt đều theo độ dài (khoảng 5000 chữ một phần), dùng khi truyện không có dòng tiêu đề chương">Chia theo độ dài</button></div></div>`}
+      <textarea id="stfText" class="edwide" rows="${kind === 'one' ? 12 : 10}" spellcheck="false" placeholder="${kind === 'one' ? 'Dán nội dung chương vào đây…' : 'Dán chữ của truyện vào đây (có thể dán cả cuốn tiểu thuyết, hoặc chọn file .txt)…'}">${esc(d.text)}</textarea>
+      ${total ? `<label class="dim st-at">Vị trí: sau chương số <input id="stfAt" type="number" min="0" max="${total}" value="${d.after ?? ''}" placeholder="${total}" style="width:84px"> <span class="dim">(để trống = nối vào cuối truyện, sau chương ${total}; 0 = đầu truyện)</span></label>` : ''}
+      <div id="stfInfo" class="st-info"></div>
       <div class="row"><button class="btn primary" id="stfSave">💾 Lưu</button><button class="btn" id="stfCancel2">Hủy</button></div>
-      <div class="dim">Truyện rất dài: dán từng phần cũng được, bấm “＋ Thêm chương” ở trang truyện để nối tiếp. Chương trùng sẽ được bỏ qua.</div>
+      <div class="dim">Truyện rất dài: dán từng phần cũng được, bấm “＋ Thêm chương” ở trang truyện để nối tiếp. Chương trùng nội dung sẽ được bỏ qua.</div>
     </div>`;
   bindBase();
   const text = $('#stfText', root), info = $('#stfInfo', root);
   let t = 0;
+  const atVal = () => { const v = $('#stfAt', root)?.value.trim(); return v === '' || v == null ? null : Math.max(0, Math.min(total, Math.floor(+v) || 0)); };
+  const build = () => { // danh sách chương sẽ thêm
+    if (kind === 'many') return parseChapters(d.text, d.mode);
+    const body = clean(d.text.replace(/\r/g, '').split('\n')); if (!body) return [];
+    const title = ($('#stfCt', root)?.value || d.ctitle || '').trim() || defTitle((atVal() ?? total) + 1);
+    return body.length > 20000 ? splitBySize(body, 12000, (i, n) => `${title} (${i}/${n})`) : [{ title, body }];
+  };
   const analyze = () => {
-    d.text = text.value;
-    const chs = parseChapters(d.text, d.mode);
-    info.innerHTML = chs.length
-      ? `<b>Tìm thấy ${chs.length} chương</b> · ${d.text.length.toLocaleString('vi-VN')} ký tự<br><span class="gt">${chs.slice(0, 3).map(c => esc(c.title)).join(' · ')}${chs.length > 3 ? ' …' : ''}</span>`
-      : 'Chưa có nội dung.';
+    d.text = text.value; d.after = $('#stfAt', root)?.value ?? d.after;
+    const chs = build(), have = new Set(cur.map(c => c.title + '|' + (c.body || '').slice(0, 80)));
+    const isDup = c => have.has(z(c.title) + '|' + z(c.body).slice(0, 80));
+    const fresh = chs.filter(c => !isDup(c)), at = atVal() ?? total, from = at + 1;
+    if (!chs.length) { info.innerHTML = '<span class="dim">Chưa có nội dung.</span>'; return chs; }
+    let k = 0;
+    const rows = chs.slice(0, 200).map(c => { const dup = isDup(c); return `<div class="st-pr ${dup ? 'dup' : ''}"><span class="stn">${dup ? '—' : from + k++}</span><span class="gt grow">${esc(c.title)}</span><small class="dim">${c.body.length.toLocaleString('vi-VN')} ký tự${dup ? ' · đã có, bỏ qua' : ''}</small></div>`; }).join('');
+    info.innerHTML = `<b>${fresh.length ? `Sẽ thêm ${fresh.length} chương${s ? ` (số ${from}${fresh.length > 1 ? '–' + (at + fresh.length) : ''}${at < total ? `, chèn sau chương ${at}` : ', nối vào cuối'})` : ''}` : 'Không có chương mới (tất cả đã có sẵn)'}</b>${chs.length - fresh.length ? ` · ${chs.length - fresh.length} chương trùng sẽ bỏ qua` : ''}<div class="st-prl">${rows}${chs.length > 200 ? `<div class="dim">… và ${chs.length - 200} chương nữa</div>` : ''}</div>`;
     return chs;
   };
   text.addEventListener('input', () => { clearTimeout(t); t = setTimeout(analyze, 350); });
-  const sync = () => { if (!s) { d.title = $('#stfTitle', root).value; d.author = $('#stfAuthor', root).value; d.emoji = $('#stfEmoji', root).value; } };
-  $$('#stfMode button', root).forEach(b => b.onclick = () => { sync(); d.text = text.value; d.mode = b.dataset.m; drawAdd(); });
-  $('#stfFile', root).onclick = async () => {
+  $('#stfAt', root)?.addEventListener('input', analyze);
+  $('#stfCt', root)?.addEventListener('input', () => { d.ctitle = $('#stfCt', root).value; analyze(); });
+  const sync = () => { d.text = text.value; d.after = $('#stfAt', root)?.value ?? d.after; if ($('#stfCt', root)) d.ctitle = $('#stfCt', root).value; if (!s) { d.title = $('#stfTitle', root).value; d.author = $('#stfAuthor', root).value; d.emoji = $('#stfEmoji', root).value; } };
+  $$('#stfKind button', root).forEach(b => b.onclick = () => { if (b.dataset.k === kind) return; sync(); d.kind = b.dataset.k; drawAdd(); });
+  $$('#stfMode button', root).forEach(b => b.onclick = () => { sync(); d.mode = b.dataset.m; drawAdd(); });
+  $('#stfFile', root)?.addEventListener('click', async () => {
     const [f] = await pickFile('.txt,.md,text/plain');
     if (!f) return;
     sync();
     d.text = await decodeFile(f);
     if (!s && !d.title) d.title = f.name.replace(/\.[^.]+$/, '');
     drawAdd();
-  };
+  });
   const back = () => nav(s ? 'detail' : 'shelf', { sid: addFor, page: -1 });
   $('#stCancel', root).onclick = back; $('#stfCancel2', root).onclick = back;
   $('#stfSave', root).onclick = async () => {
     sync();
     const chs = analyze(), lang = getLang();
-    if (!chs.length) { toast('Hãy dán chữ hoặc chọn file truyện trước'); return; }
+    if (!chs.length) { toast(kind === 'one' ? 'Hãy dán nội dung chương trước' : 'Hãy dán chữ hoặc chọn file truyện trước'); return; }
     if (!s && !d.title.trim()) { toast('Hãy đặt tên cho truyện'); return; }
     $('#stfSave', root).disabled = true; info.textContent = 'Đang lưu…';
     let id = addFor;
@@ -274,12 +307,30 @@ function drawAdd() {
       id = uid();
       store.put('stories', id, { lang, title: d.title.trim(), author: d.author.trim(), emoji: d.emoji.trim(), count: 0, ch: '', maxN: 0, created: Date.now(), deleted: false });
     }
-    const n = await saveChapters(id, chs, s?.lang || lang);
-    toast(n ? `Đã thêm ${n} chương` : 'Không có chương mới (đã có sẵn)', 2500);
+    const r = await saveChapters(id, chs, s?.lang || lang, atVal());
+    toast(r.added ? `Đã thêm ${r.added} chương (số ${r.from}${r.added > 1 ? '–' + r.to : ''})${r.dup ? ` · bỏ qua ${r.dup} chương trùng` : ''}` : 'Không có chương mới (đã có sẵn)', 3000);
     draft = { title: '', author: '', emoji: '', text: '', mode: 'auto' };
-    nav('detail', { sid: id, page: -1 });
+    page = r.added && s ? Math.floor((r.from - 1) / PER) : -1; // mở đúng trang có chương vừa thêm
+    nav('detail', { sid: id, page });
   };
   if (d.text) analyze();
+}
+
+// ---------- xóa chương (xóa hẳn, đánh số lại các chương còn lại, giữ nguyên tiến trình đọc hợp lý) ----------
+let selMode = false; const sel = new Set();
+function delChapters(ids) {
+  const s = store.get('stories', sid); if (!s) return;
+  const all = chaptersOf(sid), gone = new Set(ids), keep = all.filter(c => !gone.has(c.id));
+  const maxN = s.maxN || 0, readKept = keep.filter(c => c.n <= maxN).length;
+  let ch = s.ch;
+  if (gone.has(s.ch)) { // đang đọc đúng chương bị xóa: chuyển sang chương kế (hoặc chương trước nếu hết)
+    const i = all.findIndex(c => c.id === s.ch);
+    ch = (all.slice(i + 1).find(c => !gone.has(c.id)) || all.slice(0, i).reverse().find(c => !gone.has(c.id)))?.id || '';
+  }
+  all.filter(c => gone.has(c.id)).forEach(c => store.purge('chapters', c.id));
+  keep.forEach((c, i) => { if (c.n !== i + 1) store.put('chapters', c.id, { n: i + 1 }); });
+  const mi = s.mark ? keep.findIndex(c => c.id === s.mark.ch) : -1;
+  store.put('stories', sid, { count: keep.length, maxN: readKept, ch, ...(gone.has(s.ch) ? { pos: 0 } : {}), mark: mi >= 0 ? { ...s.mark, n: mi + 1 } : null });
 }
 
 // ---------- trang truyện: mục lục ----------
@@ -290,7 +341,7 @@ function drawDetail() {
   if (page < 0) page = Math.floor(cur / PER); // lần đầu vào: mở đúng trang có chương đang đọc
   page = Math.min(page, pages - 1);
   const slice = chs.slice(page * PER, page * PER + PER), read = s.maxN || 0;
-  const row = c => `<div class="stch ${c.id === s.ch ? 'cur' : ''} ${c.n <= read ? 'done' : ''}" data-ch="${c.id}" role="button" tabindex="0"><span class="stn">${c.n}</span><span class="gt grow">${esc(c.title)}</span><span class="stm">${c.id === s.mark?.ch ? '🔖' : ''}${c.id === s.ch ? '▶' : c.n <= read ? '✓' : ''}</span></div>`;
+  const row = c => `<div class="stch ${c.id === s.ch ? 'cur' : ''} ${c.n <= read ? 'done' : ''} ${sel.has(c.id) ? 'sel' : ''}" data-ch="${c.id}" role="button" tabindex="0">${selMode ? `<span class="stck">${sel.has(c.id) ? '☑' : '☐'}</span>` : ''}<span class="stn">${c.n}</span><span class="gt grow">${esc(c.title)}</span><span class="stm">${c.id === s.mark?.ch ? '🔖' : ''}${c.id === s.ch ? '▶' : c.n <= read ? '✓' : ''}</span>${selMode ? '' : `<button class="btn stdel" data-del="${c.id}" title="Xóa chương này">🗑</button>`}</div>`;
   const mk = s.mark && store.get('chapters', s.mark.ch) ? s.mark : null, d8 = t => { const d = new Date(t); return `${d.getDate()}/${d.getMonth() + 1}`; };
   root.innerHTML = `${head()}<div class="row"><button class="btn" id="stBack">← Truyện của tôi</button></div>
     <div class="st-hero" style="--cc:${COLORS[hash(s.title) % COLORS.length]}"><div class="stc-cover big">${esc(s.emoji || '📖')}</div>
@@ -299,11 +350,13 @@ function drawDetail() {
     ${mk ? `<div class="row st-mark"><span class="grow"><b>🔖 Điểm đã lưu</b> <span class="dim">chương ${mk.n} · ${Math.round((mk.pos || 0) * 100)}% · ${d8(mk.t)}</span></span><button class="btn" id="stMark">↩ Về điểm đã lưu</button></div>` : ''}
     <div class="row">${chs.length ? `<button class="btn primary big" id="stRead">▶ ${s.maxN || s.pos ? 'Đọc tiếp' : 'Bắt đầu đọc'}${chs[cur] ? ` · chương ${chs[cur].n}` : ''}</button>` : ''}
       <button class="btn" id="stMore">＋ Thêm chương</button><button class="btn" id="stEdit">✎ Sửa thông tin</button><button class="btn" id="stMove" title="Chuyển truyện này sang mục ngôn ngữ khác (ví dụ VN)">🔀 Chuyển mục</button><button class="btn" id="stDel">🗑 Xóa truyện</button></div>
+    ${selMode ? `<div class="row st-selbar"><span class="grow dim">Đã chọn ${sel.size}/${chs.length} chương</span><button class="btn" id="stSelPg">Chọn cả trang</button><button class="btn" id="stSelNone">Bỏ chọn</button><button class="btn danger" id="stSelDel" ${sel.size ? '' : 'disabled'}>🗑 Xóa đã chọn</button><button class="btn" id="stSelEnd">Xong</button></div>`
+      : chs.length > 1 ? `<div class="row"><button class="btn" id="stSelOn">☑ Chọn nhiều chương để xóa</button></div>` : ''}
     ${chs.length > PER ? `<div class="row"><button class="btn" data-pg="-1" ${page === 0 ? 'disabled' : ''}>‹</button><span class="dim">Trang ${page + 1}/${pages}</span><button class="btn" data-pg="1" ${page >= pages - 1 ? 'disabled' : ''}>›</button>
       <label class="dim">Đến chương số <input id="stJump" type="number" min="1" max="${chs.length}" style="width:84px"></label></div>` : ''}
     <div class="stlist">${slice.map(row).join('') || '<div class="empty">Truyện chưa có chương nào.</div>'}</div>`;
   bindBase();
-  $('#stBack', root).onclick = () => nav('shelf');
+  $('#stBack', root).onclick = () => { selMode = false; sel.clear(); nav('shelf'); };
   $('#stRead', root)?.addEventListener('click', () => openChapter(chs[cur].id, true));
   $('#stMark', root)?.addEventListener('click', () => openChapter(mk.ch, false, true));
   $('#stMore', root).onclick = () => { draft = { title: '', author: '', emoji: '', text: '', mode: 'auto' }; nav('add', { addFor: sid }); };
@@ -334,8 +387,23 @@ function drawDetail() {
   $('#stJump', root)?.addEventListener('change', e => {
     const c = chs[Math.max(1, Math.min(chs.length, +e.target.value || 1)) - 1]; if (c) { page = Math.floor((c.n - 1) / PER); drawDetail(); }
   });
+  $('#stSelOn', root)?.addEventListener('click', () => { selMode = true; sel.clear(); drawDetail(); });
+  $('#stSelEnd', root)?.addEventListener('click', () => { selMode = false; sel.clear(); drawDetail(); });
+  $('#stSelNone', root)?.addEventListener('click', () => { sel.clear(); drawDetail(); });
+  $('#stSelPg', root)?.addEventListener('click', () => { slice.forEach(c => sel.add(c.id)); drawDetail(); });
+  $('#stSelDel', root)?.addEventListener('click', () => {
+    const ids = chs.filter(c => sel.has(c.id)).map(c => c.id); if (!ids.length) return;
+    if (!confirm(`Xóa ${ids.length} chương đã chọn? Không thể hoàn tác.`)) return;
+    delChapters(ids); selMode = false; sel.clear(); toast(`Đã xóa ${ids.length} chương`); drawDetail();
+  });
+  $$('.stdel', root).forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    const c = store.get('chapters', b.dataset.del); if (!c) return;
+    if (!confirm(`Xóa chương ${c.n}: “${c.title}”? Không thể hoàn tác.`)) return;
+    delChapters([b.dataset.del]); toast('Đã xóa chương'); drawDetail();
+  }));
   $$('.stch', root).forEach(el => {
-    const open = () => openChapter(el.dataset.ch, false);
+    const open = () => { if (selMode) { const id = el.dataset.ch; sel.has(id) ? sel.delete(id) : sel.add(id); drawDetail(); } else openChapter(el.dataset.ch, false); };
     el.addEventListener('click', open);
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
   });
@@ -361,6 +429,7 @@ function openChapter(cid, resume, atMark = false) {
   const s = store.get('stories', c.story);
   const keepPos = atMark ? s?.mark?.pos || 0 : resume && s?.ch === cid ? s.pos || 0 : 0;
   store.put('stories', c.story, { ch: cid, pos: keepPos, last: Date.now() });
+  selMode = false; sel.clear();
   sid = c.story; cleanup(true); view = 'read'; drawRead(keepPos); if (!full) scrollTo(0, 0);
 }
 

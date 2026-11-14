@@ -618,3 +618,19 @@ body.focus-mode #views { padding-bottom: 12px; }
 .plcov { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; font-family: var(--pf); font-size: 18px; }
 .plcov > i { flex: 1 1 120px; min-width: 90px; height: 10px; border: 2px solid var(--line); background: var(--panel); display: block; }
 .plcov > i > b { display: block; height: 100%; background: var(--hl, #ffd84d); }
+
+/* Story: xóa chương */
+.stdel { flex: none; padding: 0 6px; min-height: 0; opacity: .55; }
+.stch:hover .stdel, .stdel:focus-visible { opacity: 1; }
+.stck { flex: none; font-size: 20px; }
+.stch.sel { border-style: solid; background: var(--panel2, var(--panel)); }
+.st-selbar { gap: 6px; }
+
+/* Story: thêm chương */
+.st-ctx { padding: 4px 0; }
+#stfKind button { font-size: 19px; }
+.st-info { display: grid; gap: 6px; }
+.st-prl { max-height: 220px; overflow: auto; border: 2px dashed var(--line); padding: 4px 8px; display: grid; gap: 2px; }
+.st-pr { display: flex; gap: 8px; align-items: baseline; }
+.st-pr.dup { opacity: .5; text-decoration: line-through; }
+.st-at input { text-align: center; }
