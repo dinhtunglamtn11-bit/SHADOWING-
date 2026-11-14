@@ -636,3 +636,22 @@ body.focus-mode #views { padding-bottom: 12px; }
 .st-at input { text-align: center; }
 .stedit { flex: none; padding: 0 6px; min-height: 0; opacity: .55; }
 .stch:hover .stedit, .stedit:focus-visible { opacity: 1; }
+
+/* Tải phụ đề */
+.pgx-cols { gap: 6px 14px; align-items: center; }
+.pgx-prev { margin: 0; max-height: 180px; overflow: auto; background: var(--panel); border: 2px dashed var(--line); padding: 8px 10px; font-size: 15px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+
+/* Bài tập gắn với video */
+.vxpanel { position: relative; overflow-y: auto; padding: 8px; background: var(--panel); border-left: 4px solid var(--ink); display: flex; flex-direction: column; gap: 10px; }
+.vxpanel[hidden] { display: none; }
+body.vx-on #cueList { display: none; }
+.vxpanel .cuebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vxbody { display: flex; flex-direction: column; gap: 10px; }
+.vxbody textarea { width: 100%; box-sizing: border-box; }
+.vxinfo { padding: 0 2px; }
+@media (max-width: 820px) { .vxpanel { max-height: calc(60dvh / var(--zf, 1)); border-left: 0; border-top: 4px solid var(--ink); } }
+.vxsyn { border: 2px dashed var(--line); padding: 6px 10px; }
+.vxsyn > summary { cursor: pointer; font-family: var(--pf); font-size: 19px; padding: 2px 0; }
+.vxsyn[open] > summary { margin-bottom: 8px; }
+.vxsyn textarea { width: 100%; box-sizing: border-box; margin-bottom: 6px; }
+.vxverdict { border: var(--px, 3px) solid var(--ink); background: var(--panel2, var(--panel)); padding: 8px 12px; margin-bottom: 8px; display: grid; gap: 2px; }

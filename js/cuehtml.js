@@ -3,7 +3,7 @@
 import { esc, fmt } from './util.js';
 
 export function modeBar(editing, count) {
-  return `<div class="cuebar"><div class="seg cuemode" id="cueMode"><button data-cm="read" class="${editing ? '' : 'on'}" title="Chế độ đọc: chỉ xem và chạm vào câu để phát, không sửa được">📖</button><button data-cm="edit" class="${editing ? 'on' : ''}" title="Chế độ sửa: sửa chữ, phiên âm, nghĩa và giờ bắt đầu / kết thúc của từng câu ngay tại đây">✏️</button></div>` +
+  return `<div class="cuebar"><div class="seg cuemode" id="cueMode"><button data-cm="read" class="${editing ? '' : 'on'}" title="Chế độ đọc: chỉ xem và chạm vào câu để phát, không sửa được">📖</button><button data-cm="ex" title="Bài tập gắn với video này: trắc nghiệm, đúng/sai, điền từ, chọn nhiều đáp án…">📝</button><button data-cm="edit" class="${editing ? 'on' : ''}" title="Chế độ sửa: sửa chữ, phiên âm, nghĩa và giờ bắt đầu / kết thúc của từng câu ngay tại đây">✏️</button></div>` +
     (editing
       ? `<span class="dim cuehint">Đang sửa · tự động lưu</span><span class="grow"></span><span class="dim" id="cueSaved"></span><button class="btn" data-ea="addlast" title="Thêm một câu mới ở cuối">＋ Thêm câu</button>`
       : `<span class="dim cuehint">${count ? count + ' câu · đang ở chế độ đọc' : 'Chế độ đọc'}</span>`) + '</div>';

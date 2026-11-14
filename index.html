@@ -78,6 +78,7 @@
         </div>
         <div class="tools tools2" id="toolMore" hidden>
           <button class="btn" id="btnPaste" title="Thêm phụ đề từ file hoặc dán văn bản (gốc | phiên âm | nghĩa)">💬 Phụ đề</button>
+          <button class="btn" id="btnVx" title="Làm bài tập (trắc nghiệm, đúng/sai, điền từ, chọn nhiều đáp án…) gắn với video này, vừa xem video vừa làm">📝 Bài tập</button>
           <input id="sfile" type="file" accept=".srt,.vtt">
           <button class="btn" id="btnSubEdit" title="Hộp thoại sửa nhiều câu một lúc: dán phiên âm / nghĩa hàng loạt, gộp, xuất file .srt. (Sửa từng câu: bấm nút ✏️ ở đầu danh sách câu bên phải)">✏️ Sửa hàng loạt</button>
           <button class="btn" id="btnSeg" title="Chia phụ đề thành từng đoạn: video dừng cuối đoạn, lặp lại hoặc tiếp tục">📑 Chia đoạn</button>
@@ -192,6 +193,7 @@
         </div>
       </div>
       <div id="cueList"></div>
+      <div id="vxPanel" class="vxpanel" hidden></div>
     </div>
   </section>
 
@@ -366,11 +368,29 @@
 <dialog id="pgDlg" class="wide">
   <div class="hd"><span class="grow">📄 Thêm phụ đề</span><button class="btn" id="pgClose">✕</button></div>
   <div class="bd form">
-    <div class="seg" id="pgTabs"><button data-t="file">📂 Từ file</button><button data-t="paste" class="on">📋 Dán văn bản</button></div>
+    <div class="seg" id="pgTabs"><button data-t="file">📂 Từ file</button><button data-t="paste" class="on">📋 Dán văn bản</button><button data-t="export">⬇ Tải xuống</button></div>
 
     <div id="pgFilePane" hidden>
       <small>Chọn file <b>.srt</b> hoặc <b>.vtt</b>. File có thể có 1, 2 hoặc 3 dòng chữ mỗi câu: dòng 1 chữ gốc, dòng 2 phiên âm, dòng 3 nghĩa.</small>
       <div class="row"><button class="btn primary" id="pgPick">📂 Chọn file phụ đề</button></div>
+    </div>
+
+    <div id="pgExportPane" hidden>
+      <small>Tải phụ đề của video đang mở về máy, kèm giờ bắt đầu – kết thúc của từng câu. Hãy bấm 💾 Lưu trong màn “✏️ Sửa phụ đề” trước nếu bạn vừa sửa.</small>
+      <div id="pgxInfo" class="dim"></div>
+      <label>Định dạng
+        <select id="pgxFmt">
+          <option value="srt">.srt: phụ đề chuẩn, dùng được trong trình phát video (khuyên dùng)</option>
+          <option value="vtt">.vtt: phụ đề cho web / YouTube</option>
+          <option value="txt">.txt: danh sách [mm:ss.ss] chữ gốc | phiên âm | nghĩa (dán lại vào app được)</option>
+          <option value="csv">.csv: bảng (bắt đầu, kết thúc, chữ gốc, phiên âm, nghĩa) mở bằng Excel</option>
+        </select></label>
+      <div class="row pgx-cols"><span class="dim">Gồm các dòng:</span>
+        <label class="chk"><input type="checkbox" id="pgxL1" checked> Chữ gốc</label>
+        <label class="chk"><input type="checkbox" id="pgxL2" checked> Phiên âm</label>
+        <label class="chk"><input type="checkbox" id="pgxL3" checked> Nghĩa</label></div>
+      <pre id="pgxPrev" class="pgx-prev"></pre>
+      <div class="row"><button class="btn primary" id="pgxGo">⬇ Tải xuống</button></div>
     </div>
 
     <div id="pgPastePane">

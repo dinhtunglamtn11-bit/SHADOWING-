@@ -1,6 +1,6 @@
 // Sửa phụ đề ngay trong danh sách câu bên phải khung học: nút 📖 (đọc) / ✏️ (sửa) ở đầu cột.
 // Ở chế độ sửa mỗi câu là một thẻ: giờ bắt đầu / kết thúc, 3 dòng chữ (gốc, phiên âm, nghĩa); gõ tới đâu tự lưu tới đó.
-import { $, toast, langInfo, fmt } from './util.js';
+import { $, toast, langInfo, fmt, bus } from './util.js';
 import { currentCues, currentLang, setEditMode, isEditing, editCue, replaceCues, videoCueTime, playCue } from './player.js';
 
 // gõ “14.5”, “0:14.5” hoặc “1:05” đều được
@@ -46,7 +46,7 @@ export function init() {
   const list = $('#cueList');
   list.addEventListener('click', e => {
     const m = e.target.closest('[data-cm]');
-    if (m) { setEditMode(m.dataset.cm === 'edit'); return; }
+    if (m) { if (m.dataset.cm === 'ex') { bus.emit('vx', 'toggle'); return; } setEditMode(m.dataset.cm === 'edit'); return; }
     if (!isEditing()) return;
     const card = e.target.closest('.cue.ed'), i = card ? +card.dataset.i : -1;
     const tk = e.target.closest('[data-tk]');

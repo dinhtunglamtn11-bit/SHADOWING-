@@ -260,6 +260,45 @@ async function apply() {
   } finally { ctl = null; $('#pgStop').hidden = true; $('#pgProg').hidden = true; $('#pgApply').disabled = !parsed.entries.length; }
 }
 
+// ---------- tải phụ đề về máy ----------
+const pad = (n, w = 2) => String(n).padStart(w, '0');
+const tcode = (s, sep) => { const ms = Math.round(Math.max(0, s) * 1000); return `${pad(Math.floor(ms / 3600000))}:${pad(Math.floor(ms / 60000) % 60)}:${pad(Math.floor(ms / 1000) % 60)}${sep}${pad(ms % 1000, 3)}`; };
+const mmss = s => { const c = Math.round(Math.max(0, s) * 100), m = Math.floor(c / 6000); return `${pad(m)}:${pad(Math.floor(c / 100) % 60)}.${pad(c % 100)}`; };
+const pickLines = (c, use) => c.lines.map((l, i) => (use[i] ? l : null)).filter(l => l != null);
+export function buildExport(cues, fmt, use = [true, true, true]) {
+  const rows = cues.map(c => ({ c, ls: pickLines(c, use) })).filter(r => r.ls.some(l => (l || '').trim()));
+  if (fmt === 'srt') return rows.map((r, i) => `${i + 1}\n${tcode(r.c.start, ',')} --> ${tcode(r.c.end, ',')}\n${r.ls.map(l => l || '–').join('\n')}\n`).join('\n');
+  if (fmt === 'vtt') return 'WEBVTT\n\n' + rows.map(r => `${tcode(r.c.start, '.')} --> ${tcode(r.c.end, '.')}\n${r.ls.map(l => l || '–').join('\n')}\n`).join('\n');
+  if (fmt === 'csv') {
+    const q = s => '"' + String(s ?? '').replace(/"/g, '""') + '"';
+    return ['Bắt đầu,Kết thúc,Chữ gốc,Phiên âm,Nghĩa', ...rows.map(r => [q(tcode(r.c.start, '.')), q(tcode(r.c.end, '.')), ...[0, 1, 2].map(i => q(use[i] ? r.c.lines[i] || '' : ''))].join(','))].join('\r\n');
+  }
+  return rows.map(r => `[${mmss(r.c.start)}] ${r.ls.map(l => (l || '').replace(/\|/g, '\\|')).join(' | ')}`).join('\n'); // txt: dán lại vào app được
+}
+function exportState() {
+  const cues = currentCues(), use = [$('#pgxL1').checked, $('#pgxL2').checked, $('#pgxL3').checked], fmt = $('#pgxFmt').value;
+  return { cues, use, fmt };
+}
+function drawExport() {
+  const { cues, use, fmt } = exportState();
+  $('#pgxInfo').textContent = cues.length ? `Video đang có ${cues.length} câu phụ đề.` : 'Video này chưa có phụ đề để tải.';
+  const text = cues.length ? buildExport(cues.slice(0, 4), fmt, use) : '';
+  $('#pgxPrev').textContent = text ? text + (cues.length > 4 ? `\n… (${cues.length - 4} câu nữa)` : '') : '';
+  $('#pgxGo').disabled = !cues.length || !use.some(Boolean);
+}
+function doExport() {
+  const { cues, use, fmt } = exportState();
+  if (!cues.length || !use.some(Boolean)) return;
+  const it = store.get('items', currentItemId());
+  const name = (((it && (it.title || it.name)) || 'phu-de').replace(/[\/:*?"<>|]+/g, ' ').trim() || 'phu-de') + '.' + fmt;
+  const body = buildExport(cues, fmt, use), bom = fmt === 'srt' || fmt === 'vtt' ? '' : '﻿'; // txt/csv: BOM để Excel và Notepad đọc đúng chữ Hán
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([bom + body], { type: 'text/plain;charset=utf-8' }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(`Đã tải ${name} (${cues.length} câu) ✓`, 3000);
+}
+
 function open(showPrompt) {
   if (!currentItemId()) { toast('Hãy mở một video trước'); return; }
   const lang = currentLang();
@@ -272,7 +311,8 @@ function open(showPrompt) {
 }
 function setTab(t) {
   $$('#pgTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
-  $('#pgFilePane').hidden = t !== 'file'; $('#pgPastePane').hidden = t !== 'paste';
+  $('#pgFilePane').hidden = t !== 'file'; $('#pgPastePane').hidden = t !== 'paste'; $('#pgExportPane').hidden = t !== 'export';
+  if (t === 'export') drawExport();
 }
 
 export function init() {
@@ -290,6 +330,8 @@ export function init() {
     try { await navigator.clipboard.writeText(t); toast('Đã sao chép prompt. Dán vào ChatGPT/Claude kèm lời thoại của bạn.', 5000); }
     catch { $('#pgPromptText').select(); document.execCommand?.('copy'); toast('Đã chọn sẵn prompt, bấm Ctrl+C để sao chép'); }
   };
+  $('#pgxFmt').addEventListener('change', drawExport); ['#pgxL1', '#pgxL2', '#pgxL3'].forEach(s => $(s).addEventListener('change', drawExport));
+  $('#pgxGo').onclick = doExport;
   $('#pgApply').onclick = apply;
   $('#pgStop').onclick = () => ctl?.abort();
 }
