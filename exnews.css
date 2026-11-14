@@ -552,3 +552,28 @@ mark.hltmp { color: inherit; }
 .sp-wrap.full .sp-long .sp-text, .sp-wrap.full .sp-text.clamp { font-size: clamp(19px, 2.6vw, 28px); }
 .sp-text.clamp { flex: none; max-height: 11em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 65%, transparent); mask-image: linear-gradient(#000 65%, transparent); }
 .sp-more-btn { align-self: flex-start; }
+
+/* Luyện âm (pinyin) */
+.plhead { display: grid; gap: 8px; margin-bottom: 10px; }
+.plhead .seg, .plhead .chips { flex-wrap: wrap; }
+.plstat { font-size: 15px; }
+.plcard { display: grid; gap: 10px; }
+.plhz { font-size: 34px; line-height: 1.3; overflow-wrap: anywhere; }
+.plhz.big { font-size: 46px; text-align: center; }
+.plpy { font-size: 24px; overflow-wrap: anywhere; }
+.plpy.big { font-size: 30px; text-align: center; }
+.plans { display: grid; gap: 4px; margin: 4px 0; }
+#plIn { flex: 1; min-width: 0; font-size: 22px; }
+.plrows { display: flex; flex-wrap: wrap; gap: 6px; }
+.plsy { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; border: 2px solid var(--line); min-width: 54px; }
+.plsy.ok { border-color: #2f9a4a; }
+.plsy.bad { border-color: #d63b4b; }
+.plch { font-size: 26px; font-weight: 400; }
+.plk { display: flex; gap: 2px; font-size: 18px; }
+.plk i { font-style: normal; padding: 0 4px; background: var(--field); }
+.plk i.ok { color: #2f9a4a; }
+.plk i.bad { color: #d63b4b; background: rgba(214, 59, 75, .16); }
+.plg { font-size: 14px; }
+.plleg { font-size: 14px; }
+#plRec.on { background: #ff7b88; }
+#libTabs button[hidden] { display: none; }

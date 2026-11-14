@@ -4,6 +4,7 @@ import * as store from './store.js';
 import * as tracker from './tracker.js';
 import { pickAndAdd, openItem, addByLink } from './player.js';
 import * as notes from './notes.js';
+import * as pylab from './pylab.js';
 import { plain } from './richtext.js';
 import * as tree from './tree.js';
 import * as lessons from './lessons.js';
@@ -29,8 +30,14 @@ const renderSoon = () => { if (!rq) rq = requestAnimationFrame(() => { rq = 0; r
 
 function render() {
   $$('#libTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
-  const isLesson = tab === 'lesson';
-  $('#libMain').hidden = isLesson; $('#lessonBox').hidden = !isLesson;
+  const zh = getLang() === 'zh';
+  $('#libPron').hidden = !zh; // “Luyện âm” chỉ có cho Tiếng Trung
+  if (tab === 'pron' && !zh) tab = 'video';
+  const isLesson = tab === 'lesson', isPron = tab === 'pron';
+  $('#libMain').hidden = isLesson || isPron; $('#lessonBox').hidden = !isLesson; $('#pronBox').hidden = !isPron;
+  $$('#libTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  if (isPron) { pylab.render($('#pronBox')); return; }
+  if (!isPron) pylab.leave();
   if (isLesson) { lessons.render($('#lessonBox'), { openDoc, openEdit, addDocs, addLink: openLinkDialog }); return; }
   const all = itemsOf(tab), folders = foldersOf(getLang());
   const q = ($('#libSearch').value || '').trim().toLowerCase();
