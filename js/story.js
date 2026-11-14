@@ -316,6 +316,44 @@ function drawAdd() {
   if (d.text) analyze();
 }
 
+// ---------- sửa chương (tên + nội dung) ----------
+let editCh = null, editBack = 'read', edDraft = null;
+function openEdit(cid, back) {
+  const c = store.get('chapters', cid); if (!c) return;
+  if (full) setFull(false);
+  sid = c.story; cleanup(); editCh = cid; editBack = back; edDraft = { title: c.title || '', body: c.body || '' };
+  view = 'edit'; drawEdit(); scrollTo(0, 0);
+}
+function drawEdit() {
+  const c = store.get('chapters', editCh), s = c && store.get('stories', c.story);
+  if (!c || !s) { editCh = null; view = 'shelf'; drawShelf(); return; }
+  const d = edDraft, bcp = langInfo(s.lang || 'zh').bcp, num = x => x.length.toLocaleString('vi-VN');
+  root.innerHTML = `${head()}<div class="row"><button class="btn" id="edBack">← ${esc(s.title)}</button></div>
+    <div class="qcard st-form" id="stEdForm"><h3>Sửa chương ${c.n}</h3>
+      <label class="dim">Tên chương<input id="edTitle" type="text" lang="${bcp}" value="${esc(d.title)}"></label>
+      <textarea id="edBody" class="edwide" rows="16" spellcheck="false" lang="${bcp}">${esc(d.body)}</textarea>
+      <div class="dim" id="edInfo"></div>
+      <div class="row"><button class="btn primary" id="edSave">💾 Lưu thay đổi</button><button class="btn" id="edCancel">Hủy</button></div>
+      <div class="dim">Mỗi dòng là một đoạn. Sửa xong bấm Lưu; bấm Hủy để bỏ các thay đổi.</div></div>`;
+  bindBase();
+  const t = $('#edTitle', root), b = $('#edBody', root), info = $('#edInfo', root);
+  const upd = () => { d.title = t.value; d.body = b.value; info.textContent = `${num(b.value)} ký tự`; };
+  t.addEventListener('input', upd); b.addEventListener('input', upd); upd();
+  const done = () => { const cid = editCh, st = c.story; editCh = null; edDraft = null; if (editBack === 'detail') nav('detail', { sid: st, page: -1 }); else openChapter(cid, true); };
+  const dirty = () => d.title !== (c.title || '') || d.body !== (c.body || '');
+  const leaveEd = () => { if (dirty() && !confirm('Bỏ các thay đổi chưa lưu?')) return; done(); };
+  $('#edBack', root).onclick = leaveEd; $('#edCancel', root).onclick = leaveEd;
+  $('#edSave', root).onclick = () => {
+    upd();
+    const title = d.title.trim(), body = d.body.replace(/\r/g, '').replace(/[ \t]+$/gm, '').trim();
+    if (!title) { toast('Chương cần có tên'); return; }
+    if (!body) { toast('Nội dung chương không được để trống'); return; }
+    const lg = s.lang || 'zh', z = x => (lg === 'zh' ? zhText(x, 'zh') : x);
+    store.put('chapters', editCh, { title: z(title), body: z(body) });
+    toast('Đã lưu chương', 1800); done();
+  };
+}
+
 // ---------- xóa chương (xóa hẳn, đánh số lại các chương còn lại, giữ nguyên tiến trình đọc hợp lý) ----------
 let selMode = false; const sel = new Set();
 function delChapters(ids) {
@@ -341,7 +379,7 @@ function drawDetail() {
   if (page < 0) page = Math.floor(cur / PER); // lần đầu vào: mở đúng trang có chương đang đọc
   page = Math.min(page, pages - 1);
   const slice = chs.slice(page * PER, page * PER + PER), read = s.maxN || 0;
-  const row = c => `<div class="stch ${c.id === s.ch ? 'cur' : ''} ${c.n <= read ? 'done' : ''} ${sel.has(c.id) ? 'sel' : ''}" data-ch="${c.id}" role="button" tabindex="0">${selMode ? `<span class="stck">${sel.has(c.id) ? '☑' : '☐'}</span>` : ''}<span class="stn">${c.n}</span><span class="gt grow">${esc(c.title)}</span><span class="stm">${c.id === s.mark?.ch ? '🔖' : ''}${c.id === s.ch ? '▶' : c.n <= read ? '✓' : ''}</span>${selMode ? '' : `<button class="btn stdel" data-del="${c.id}" title="Xóa chương này">🗑</button>`}</div>`;
+  const row = c => `<div class="stch ${c.id === s.ch ? 'cur' : ''} ${c.n <= read ? 'done' : ''} ${sel.has(c.id) ? 'sel' : ''}" data-ch="${c.id}" role="button" tabindex="0">${selMode ? `<span class="stck">${sel.has(c.id) ? '☑' : '☐'}</span>` : ''}<span class="stn">${c.n}</span><span class="gt grow">${esc(c.title)}</span><span class="stm">${c.id === s.mark?.ch ? '🔖' : ''}${c.id === s.ch ? '▶' : c.n <= read ? '✓' : ''}</span>${selMode ? '' : `<button class="btn stedit" data-edit="${c.id}" title="Sửa chương này">✎</button><button class="btn stdel" data-del="${c.id}" title="Xóa chương này">🗑</button>`}</div>`;
   const mk = s.mark && store.get('chapters', s.mark.ch) ? s.mark : null, d8 = t => { const d = new Date(t); return `${d.getDate()}/${d.getMonth() + 1}`; };
   root.innerHTML = `${head()}<div class="row"><button class="btn" id="stBack">← Truyện của tôi</button></div>
     <div class="st-hero" style="--cc:${COLORS[hash(s.title) % COLORS.length]}"><div class="stc-cover big">${esc(s.emoji || '📖')}</div>
@@ -396,6 +434,7 @@ function drawDetail() {
     if (!confirm(`Xóa ${ids.length} chương đã chọn? Không thể hoàn tác.`)) return;
     delChapters(ids); selMode = false; sel.clear(); toast(`Đã xóa ${ids.length} chương`); drawDetail();
   });
+  $$('.stedit', root).forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openEdit(b.dataset.edit, 'detail'); }));
   $$('.stdel', root).forEach(b => b.addEventListener('click', e => {
     e.stopPropagation();
     const c = store.get('chapters', b.dataset.del); if (!c) return;
@@ -460,7 +499,7 @@ function drawRead(startPos = 0) {
   const navRow = pos => `<div class="row st-nav"><button class="btn" data-go="${prev?.id || ''}" ${prev ? '' : 'disabled'}>‹ Chương trước</button><span class="grow"></span>
     <button class="btn ${pos === 'bottom' ? 'primary' : ''}" data-go="${next?.id || ''}" ${next ? '' : 'disabled'}>${next ? 'Chương sau ›' : 'Hết (hiện có)'}</button></div>`;
   const ctrl = `<span class="seg st-fs"><button data-act="dn" title="Chữ nhỏ lại">A−</button><button data-act="up" title="Chữ to lên">A+</button></span>
-    <button class="btn st-save ${mk ? 'on' : ''}" data-act="save" title="Lưu tiến trình đọc ngay tại đây (chương và vị trí). Mở lại truyện có thể quay về đúng điểm đã lưu">${mk ? '🔖 Đã lưu' : '💾 Lưu'}</button>`;
+    <button class="btn" data-act="edit" title="Sửa tên và nội dung chương này">✎ Sửa</button><button class="btn st-save ${mk ? 'on' : ''}" data-act="save" title="Lưu tiến trình đọc ngay tại đây (chương và vị trí). Mở lại truyện có thể quay về đúng điểm đã lưu">${mk ? '🔖 Đã lưu' : '💾 Lưu'}</button>`;
   root.innerHTML = `<div class="st-bar"><button class="btn st-title" id="stBack">← ${esc(s.title)}</button>${ctrl}<button class="btn" data-act="full" title="Chỉ hiện chữ truyện, không có thanh và thư mục xung quanh (bấm Esc hoặc nút ← Thoát để quay lại)">📺</button></div>
     <div class="nw-stage st-stage ${full ? 'full' : ''}" id="stStage"><div class="nwf-bar"><button class="btn" data-act="exit">← Thoát</button><span class="grow"></span>${ctrl}
         <button class="btn" data-act="readall" title="Đọc to chương bằng giọng máy">🔊</button><button class="btn" data-act="tapread" title="Bật rồi chạm vào một câu để nghe câu đó">👆</button><button class="btn" data-act="lookup" title="Bật rồi chạm vào từ trong truyện để tra nghĩa">📖</button></div>
@@ -473,7 +512,7 @@ function drawRead(startPos = 0) {
   const size = d => { lset('stFs', Math.max(15, Math.min(40, fs() + d))); $('#stBody', root).style.fontSize = fs() + 'px'; };
   $$('[data-act]', root).forEach(b => b.onclick = () => {
     const a = b.dataset.act;
-    if (a === 'dn') size(-2); else if (a === 'up') size(2); else if (a === 'save') saveMark();
+    if (a === 'dn') size(-2); else if (a === 'up') size(2); else if (a === 'save') saveMark(); else if (a === 'edit') { const c0 = chs[i]; if (c0) openEdit(c0.id, 'read'); }
     else if (a === 'full') setFull(true); else if (a === 'exit') setFull(false);
     else { proxy(a); setTimeout(() => $$('[data-act=lookup]', root).forEach(x => x.classList.toggle('on', document.body.classList.contains('lookup'))), 0); }
   });
@@ -493,6 +532,7 @@ function drawRead(startPos = 0) {
 // ---------- vào / ra ----------
 export function render(rt, c) {
   root = rt; ctx = c; active = true;
+  if (view === 'edit' && editCh && store.get('chapters', editCh)) return $('#stEdForm', root) ? undefined : drawEdit();
   if (view === 'add') return drawAdd();
   if (view === 'move') return drawMove();
   if (view === 'detail' && sid) return drawDetail();

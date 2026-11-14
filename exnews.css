@@ -634,3 +634,5 @@ body.focus-mode #views { padding-bottom: 12px; }
 .st-pr { display: flex; gap: 8px; align-items: baseline; }
 .st-pr.dup { opacity: .5; text-decoration: line-through; }
 .st-at input { text-align: center; }
+.stedit { flex: none; padding: 0 6px; min-height: 0; opacity: .55; }
+.stch:hover .stedit, .stedit:focus-visible { opacity: 1; }
