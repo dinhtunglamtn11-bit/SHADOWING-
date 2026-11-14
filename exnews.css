@@ -577,3 +577,12 @@ mark.hltmp { color: inherit; }
 .plleg { font-size: 14px; }
 #plRec.on { background: #ff7b88; }
 #libTabs button[hidden] { display: none; }
+
+/* Luyện âm: hàng bộ lọc gọn (3 nút mũi tên) */
+#libTabs[hidden] { display: none; }
+.plbar { align-items: center; }
+.plfilters { gap: 6px; }
+.plfilters .plf { padding-left: 10px; padding-right: 10px; }
+.plfilters .plf b { font-weight: 400; }
+.plopt { padding: 8px; border: 2px dashed var(--line); background: var(--panel2, var(--panel)); }
+#plAuto.on { background: var(--accent); }

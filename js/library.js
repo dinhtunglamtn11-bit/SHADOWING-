@@ -36,7 +36,8 @@ function render() {
   const isLesson = tab === 'lesson', isPron = tab === 'pron';
   $('#libMain').hidden = isLesson || isPron; $('#lessonBox').hidden = !isLesson; $('#pronBox').hidden = !isPron;
   $$('#libTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
-  if (isPron) { pylab.render($('#pronBox')); return; }
+  $('#libTabs').hidden = isPron; // trong khu Luyện âm tạm cất Bài học / Video / Tài liệu / Ghi chú
+  if (isPron) { pylab.render($('#pronBox'), { back: () => { tab = 'video'; render(); } }); scrollTo(0, 0); return; }
   if (!isPron) pylab.leave();
   if (isLesson) { lessons.render($('#lessonBox'), { openDoc, openEdit, addDocs, addLink: openLinkDialog }); return; }
   const all = itemsOf(tab), folders = foldersOf(getLang());

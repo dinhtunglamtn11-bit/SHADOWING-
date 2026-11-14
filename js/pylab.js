@@ -70,8 +70,9 @@ const mark2 = (id, ok) => { const s = stats[id] ||= [0, 0]; s[ok ? 0 : 1]++; sav
 const weak = id => { const s = stats[id]; return !!s && s[1] > s[0]; };
 
 // ---------- trạng thái ----------
-let box = null;
-const S = { mode: 'type', lv: 0, set: 0, grp: 'all', bag: [], cur: null, done: false, showHz: null, n: 0, ok: 0, disc: null, rec: null, recUrl: '', recBusy: false };
+let box = null, backCb = null;
+const AKEY = 'pylab:auto';
+const S = { fopen: null, auto: false, mode: 'type', lv: 0, set: 0, grp: 'all', bag: [], cur: null, done: false, showHz: null, n: 0, ok: 0, disc: null, rec: null, recUrl: '', recBusy: false };
 const inSet = it => S.set === 0 || it.set === S.set; // Bộ 1 / Bộ 2 / cả hai
 const modeItems = () => ITEMS.filter(it => inSet(it) && (S.lv === 0 || it.lv === S.lv) && inGroup(it, S.grp) && (S.mode !== 'disc' || it.lv === 2 || (it.lv === 1 && split(it.sy[0]).i))); // phân biệt: bỏ chữ không có thanh mẫu, bỏ câu dài
 function next() {
@@ -86,7 +87,7 @@ function next() {
   S.cur = ITEMS.find(it => it.id === id) || null; S.done = false; S.showHz = null; S.disc = null;
   if (S.cur && S.mode === 'disc') S.disc = makeDisc(S.cur);
   draw();
-  if (S.cur && S.mode !== 'speak') setTimeout(() => play(), 150);
+  if (S.auto && S.cur && S.mode !== 'speak') setTimeout(() => play(), 150); // mặc định KHÔNG tự đọc: chỉ phát khi bấm “Nghe”
 }
 const bcp = 'zh-CN';
 function play(slow = false) {
@@ -206,15 +207,31 @@ const poolCounts = () => {
   const c = {}; for (const g of Object.keys(GROUPS)) c[g] = ITEMS.filter(it => inSet(it) && (S.lv === 0 || it.lv === S.lv) && inGroup(it, g)).length;
   return c;
 };
+const SETNAME = { 0: 'Cả 3 bộ', 1: 'Bộ 1', 2: 'Bộ 2', 3: 'Bộ 3' };
+const SETTIP = { 0: 'Cả ba bộ', 1: 'Bộ 1: 200 dễ + 500 trung bình + 300 khó', 2: 'Bộ 2: 500 trung bình (từ dài hơn) + 500 khó (câu dài hơn)', 3: 'Bộ 3: 200 trung bình + 800 khó (câu mới, dài, dày thanh mẫu dễ nhầm)' };
+const lvName = l => (l === 0 ? 'Mọi mức' : LV[l]);
+// Thanh bộ lọc gọn: ba nút có mũi tên ▼, bấm nút nào thì xổ ra lựa chọn của nút đó (mở một nút thì nút kia tự đóng)
+function filterOptions() {
+  const cnt = poolCounts();
+  if (S.fopen === 'set') return `<div class="chips plopt" id="plSet">${[0, 1, 2, 3].map(s => `<button class="chip ${S.set === s ? 'on' : ''}" data-s="${s}" title="${SETTIP[s]}">${SETNAME[s]} <small>${ITEMS.filter(it => s === 0 || it.set === s).length}</small></button>`).join('')}</div>`;
+  if (S.fopen === 'lv') return `<div class="chips plopt" id="plLv">${[0, 1, 2, 3].filter(l => S.mode !== 'disc' || l < 3).map(l => `<button class="chip ${S.lv === l ? 'on' : ''}" data-l="${l}">${lvName(l)} <small>${ITEMS.filter(it => inSet(it) && (l === 0 || it.lv === l)).length}</small></button>`).join('')}</div>`;
+  if (S.fopen === 'grp') return `<div class="chips plopt" id="plGrp">${Object.entries(GROUPS).map(([k, [n]]) => `<button class="chip ${S.grp === k ? 'on' : ''}" data-g="${k}">${n} <small>${cnt[k]}</small></button>`).join('')}</div>`;
+  return '';
+}
 function head() {
-  const cnt = poolCounts(), nWeak = ITEMS.filter(it => weak(it.id)).length;
+  const nWeak = ITEMS.filter(it => weak(it.id)).length, o = S.fopen;
+  const fb = (k, label, val) => `<button class="btn plf ${o === k ? 'on' : ''}" data-f="${k}"><span class="dim">${label}</span> <b>${val}</b> <span class="ar">${o === k ? '▲' : '▼'}</span></button>`;
   return `<div class="plhead">
+    <div class="row plbar"><button class="btn" id="plBack">← Thư viện</button><b class="grow">🔊 Luyện âm</b></div>
     <div class="seg" id="plMode"><button data-m="type" class="${S.mode === 'type' ? 'on' : ''}" title="Nghe rồi gõ pinyin">🎧 Nghe &amp; gõ</button><button data-m="disc" class="${S.mode === 'disc' ? 'on' : ''}" title="Nghe rồi chọn đáp án để phân biệt âm gần giống">🔀 Phân biệt</button><button data-m="speak" class="${S.mode === 'speak' ? 'on' : ''}" title="Đọc theo mẫu, ghi âm và so sánh">🎙 Đọc &amp; nói</button></div>
-    <div class="seg" id="plSet"><button data-s="0" class="${S.set === 0 ? 'on' : ''}" title="Cả ba bộ">Cả 3 bộ <small>${ITEMS.length}</small></button><button data-s="1" class="${S.set === 1 ? 'on' : ''}" title="Bộ 1: 200 dễ + 500 trung bình + 300 khó">Bộ 1 <small>1000</small></button><button data-s="2" class="${S.set === 2 ? 'on' : ''}" title="Bộ 2: 500 trung bình (từ dài hơn) + 500 khó (câu dài hơn)">Bộ 2 <small>1000</small></button><button data-s="3" class="${S.set === 3 ? 'on' : ''}" title="Bộ 3: 200 trung bình + 800 khó (câu mới, dài, dày thanh mẫu dễ nhầm)">Bộ 3 <small>1000</small></button></div>
-    <div class="seg" id="plLv">${[0, 1, 2, 3].filter(l => S.mode !== 'disc' || l < 3).map(l => `<button data-l="${l}" class="${S.lv === l ? 'on' : ''}">${LV[l]} <small>${ITEMS.filter(it => inSet(it) && (l === 0 || it.lv === l)).length}</small></button>`).join('')}</div>
-    <div class="chips" id="plGrp">${Object.entries(GROUPS).map(([k, [n]]) => `<button class="chip ${S.grp === k ? 'on' : ''}" data-g="${k}">${n} <small>${cnt[k]}</small></button>`).join('')}</div>
+    <div class="row plfilters">${fb('set', 'Bộ:', SETNAME[S.set])}${fb('lv', 'Mức:', lvName(S.lv))}${fb('grp', 'Thanh mẫu:', GROUPS[S.grp][0])}</div>
+    ${filterOptions()}
     <div class="dim plstat">Phiên này: ${S.n} câu${S.n ? ` · đúng ${S.ok} (${Math.round(100 * S.ok / S.n)}%)` : ''} · ${nWeak ? `${nWeak} mục hay sai (sẽ gặp nhiều hơn)` : 'chưa có mục hay sai'}</div>
   </div>`;
+}
+function refreshHead() { // chỉ vẽ lại phần đầu, giữ nguyên câu hỏi và chữ bạn đang gõ
+  const el = $('.plhead', box); if (!el) return;
+  el.outerHTML = head(); bindHead();
 }
 function hintFor(it) {
   return it.lv === 1 ? 'Gõ pinyin KHÔNG thanh điệu (ví dụ: kan). Có thể gõ v thay cho ü.'
@@ -245,7 +262,7 @@ function drawType() {
       <div class="row"><button class="btn primary" id="plNext">Tiếp ▶</button></div>`;
   }
   return `<div class="qlabel">${LV[it.lv]} · ${it.lv === 3 ? 'nghe cả câu rồi gõ' : it.lv === 2 ? 'nghe từ, gõ pinyin + thanh điệu' : 'nghe, gõ pinyin không thanh'}</div>
-    <div class="row c"><button class="btn primary big" id="plPlay">🔊 Nghe</button><button class="btn" id="plSlow">🐢 Chậm</button><button class="btn ${hzShown ? 'on' : ''}" id="plHz">👁 ${hzShown ? 'Ẩn chữ Hán' : 'Xem chữ Hán'}</button></div>
+    <div class="row c"><button class="btn primary big" id="plPlay">🔊 Nghe</button><button class="btn" id="plSlow">🐢 Chậm</button><button class="btn plauto ${S.auto ? 'on' : ''}" id="plAuto" title="Bật thì sang câu mới sẽ tự đọc; tắt thì chỉ đọc khi bạn bấm Nghe">🔁 <span class="lbl">${S.auto ? 'Tự phát: Bật' : 'Tự phát: Tắt'}</span></button><button class="btn ${hzShown ? 'on' : ''}" id="plHz">👁 ${hzShown ? 'Ẩn chữ Hán' : 'Xem chữ Hán'}</button></div>
     ${hzShown && !S.done ? `<div class="plhz big" lang="zh">${esc(it.hz)}</div>` : ''}
     ${input}<div class="dim">${hintFor(it)}</div>${fb}`;
 }
@@ -259,7 +276,7 @@ function drawDisc() {
     <div class="plans"><div class="plhz" lang="zh">${esc(it.hz)}</div><div class="plpy">${esc(markAll(it.sy.join(' ')))}</div></div>
     <div class="row"><button class="btn primary" id="plNext">Tiếp ▶</button></div>` : '';
   return `<div class="qlabel">${d.note}</div>
-    <div class="row c"><button class="btn primary big" id="plPlay">🔊 Nghe</button><button class="btn" id="plSlow">🐢 Chậm</button></div>
+    <div class="row c"><button class="btn primary big" id="plPlay">🔊 Nghe</button><button class="btn" id="plSlow">🐢 Chậm</button><button class="btn plauto ${S.auto ? 'on' : ''}" id="plAuto" title="Bật thì sang câu mới sẽ tự đọc; tắt thì chỉ đọc khi bạn bấm Nghe">🔁 <span class="lbl">${S.auto ? 'Tự phát: Bật' : 'Tự phát: Tắt'}</span></button></div>
     <div class="qopts">${opts}</div>${fb}`;
 }
 function drawSpeak() {
@@ -278,10 +295,12 @@ function draw() {
   bindHead(); bindCard();
 }
 function bindHead() {
-  $$('#plMode [data-m]', box).forEach(b => b.onclick = () => { if (S.mode === b.dataset.m) return; S.mode = b.dataset.m; if (S.mode === 'disc' && S.lv === 3) S.lv = 0; S.bag = []; next(); });
-  $$('#plLv [data-l]', box).forEach(b => b.onclick = () => { S.lv = +b.dataset.l; S.bag = []; next(); });
-  $$('#plSet [data-s]', box).forEach(b => b.onclick = () => { S.set = +b.dataset.s; S.bag = []; next(); });
-  $$('#plGrp [data-g]', box).forEach(b => b.onclick = () => { S.grp = b.dataset.g; S.bag = []; next(); });
+  $('#plBack', box)?.addEventListener('click', () => { leave(); backCb?.(); });
+  $$('#plMode [data-m]', box).forEach(b => b.onclick = () => { if (S.mode === b.dataset.m) return; S.mode = b.dataset.m; S.fopen = null; if (S.mode === 'disc' && S.lv === 3) S.lv = 0; S.bag = []; next(); });
+  $$('.plf', box).forEach(b => b.onclick = () => { S.fopen = S.fopen === b.dataset.f ? null : b.dataset.f; refreshHead(); });
+  $$('#plLv [data-l]', box).forEach(b => b.onclick = () => { S.lv = +b.dataset.l; S.fopen = null; S.bag = []; next(); });
+  $$('#plSet [data-s]', box).forEach(b => b.onclick = () => { S.set = +b.dataset.s; S.fopen = null; S.bag = []; next(); });
+  $$('#plGrp [data-g]', box).forEach(b => b.onclick = () => { S.grp = b.dataset.g; S.fopen = null; S.bag = []; next(); });
 }
 function answerType() {
   const v = $('#plIn', box).value;
@@ -291,6 +310,10 @@ function answerType() {
 function record(ok) { S.n++; if (ok) S.ok++; mark2(S.cur.id, ok); tracker.quiz(ok); }
 function bindCard() {
   $('#plPlay', box)?.addEventListener('click', () => play());
+  $('#plAuto', box)?.addEventListener('click', e => {
+    S.auto = !S.auto; try { localStorage.setItem(AKEY, S.auto ? '1' : '0'); } catch { /* bỏ qua */ }
+    const b = e.currentTarget; b.classList.toggle('on', S.auto); $('.lbl', b).textContent = S.auto ? 'Tự phát: Bật' : 'Tự phát: Tắt';
+  });
   $('#plSlow', box)?.addEventListener('click', () => play(true));
   $('#plNext', box)?.addEventListener('click', next);
   if (S.mode === 'type') {
@@ -319,8 +342,10 @@ document.addEventListener('keydown', e => {
 });
 
 // ---------- vào / ra ----------
-export function render(el) {
-  box = el;
+export function render(el, opts = {}) {
+  box = el; backCb = opts.back || null;
+  try { S.auto = localStorage.getItem(AKEY) === '1'; } catch { /* bỏ qua */ }
+  S.fopen = null;
   if (!S.cur) next(); else draw();
 }
 export function leave() { stopRec(true); try { speechSynthesis.cancel(); } catch { /* bỏ qua */ } }
