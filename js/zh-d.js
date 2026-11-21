@@ -1273,4 +1273,11 @@ export default {
   "Watch the video again with subtitles / pronunciation, listen line by line, then retry.": "带着字幕/拼音重新看视频，逐句听，然后重做。",
   "Needs more practice": "需要多练习",
   "Try slower playback, turn on pronunciation and meaning, replay in segments, then retry.": "试试放慢速度、打开拼音和释义、分段重听，然后重做。",
+  "Character Lame": "角色 Lame",
+  "Show at screen edge": "在屏幕边缘显示",
+  "Wearing and holding": "穿戴和手持",
+  "You can only choose cards you have bought in Passport. Lame hides while you watch a video so it does not cover the study buttons.": "只能选择你在 Passport 中已购买的卡片。观看视频时 Lame 会隐藏，以免挡住学习按钮。",
+  "Glass (new)": "玻璃（新）",
+  "Small": "小",
+  "Large": "大",
 }
