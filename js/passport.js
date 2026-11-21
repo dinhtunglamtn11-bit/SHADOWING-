@@ -14,7 +14,7 @@ const KEY = 'passport:v1', WELCOME = 100;
 const TEST_COINS = 3000; // XU THỬ NGHIỆM: cộng thẳng vào số xu để thử mua. Khi thử xong, đổi thành 0 (xu đã mua vẫn giữ, chỉ không cộng thêm nữa).
 let P = load(), root = null, active = false, pushT = 0;
 const S = { group: 1, show: 'all', cc: 'jp' };
-const CC = { jp: ['Nhật Bản', 'Japan'], kr: ['Hàn Quốc', 'South Korea'], cn: ['Trung Quốc', 'China'] };
+const CC = { jp: ['Nhật Bản', 'Japan'], kr: ['Hàn Quốc', 'South Korea'], cn: ['Trung Quốc', 'China'], vn: ['Việt Nam', 'Vietnam'] };
 const kk = (cc, x) => (cc === 'jp' ? x : cc + ':' + x); // khóa câu chuyện: Nhật giữ khóa cũ, nước khác thêm tiền tố
 const mine = () => K.items.filter(i => i.cc === S.cc);
 const t = (vi, en) => (uiLang === 'vi' ? vi : en);
@@ -82,6 +82,11 @@ const lastVideo = () => store.list('items').filter(i => i.type !== 'note' && (+i
 function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
   const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 64, 48);
   if (cc === 'jp') { c.fillStyle = '#e8452c'; c.beginPath(); c.arc(32, 24, 14, 0, 7); c.fill(); return; }
+  if (cc === 'vn') {
+    c.fillStyle = '#da251d'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#ffff00'; c.beginPath();
+    for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 6 : 15; c.lineTo(32 + Math.cos(a) * r, 25 + Math.sin(a) * r); }
+    c.closePath(); c.fill(); return;
+  }
   if (cc === 'cn') {
     c.fillStyle = '#de2910'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#ffde00';
     const star = (x, y, r, rot) => { c.beginPath(); for (let i = 0; i < 10; i++) { const a = rot + i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * 0.4 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } c.closePath(); c.fill(); };
@@ -166,8 +171,10 @@ async function ensure() {
   if (K) return;
   const kit = await import('./pass-kit.js');
   await Promise.all([...[1, 2, 3, 4, 5].map(i => import(`./pass-jp${i}.js`)), ...[1, 2, 3, 4, 5].map(i => import(`./pass-kr${i}.js`)), ...[1, 2, 3, 4, 5].map(i => import(`./pass-cn${i}.js`))]);
+  await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-vn${i}.js`)));
+  await import('./pass-vn6.js');
   await import('./pass-cn6.js'); // chỉnh lại thẻ Trung Quốc: phải nạp sau khi cn1–5 đã đăng ký xong
-  ST = { jp: await import('./pass-story.js'), kr: await import('./pass-story-kr.js'), cn: await import('./pass-story-cn.js') };
+  ST = { jp: await import('./pass-story.js'), kr: await import('./pass-story-kr.js'), cn: await import('./pass-story-cn.js'), vn: await import('./pass-story-vn.js') };
   K = { items: kit.ITEMS, byId: Object.fromEntries(kit.ITEMS.map(i => [i.id, i])), render: kit.render, paint: kit.paint };
 }
 async function open() {
