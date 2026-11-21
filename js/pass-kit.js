@@ -26,16 +26,16 @@ export class D {
 export function paint(canvas, g, s) { const h = g.length, w = g[0].length; canvas.width = w * s; canvas.height = h * s; const c = canvas.getContext('2d'); c.clearRect(0, 0, canvas.width, canvas.height); g.forEach((row, y) => row.forEach((col, x) => { if (col) { c.fillStyle = col; c.fillRect(x * s, y * s, s, s); } })); }
 
 // ---------- nhân vật Lame 16×28 ----------
-const MW = 16, MH = 28, MOY = 6;
+export const MW = 16, MH = 28, MOY = 6;
 const rp = (a, c, n, b) => a + c.repeat(n) + b, face = f => '..oh' + f + 'ho..';
-const M_HEAD = ["....oooooooo....", "...ohhhhhhhho...", "..ohhHHhhhhhho..", "..ohhhhhhhhhho..", "..ohhhhhhhhhho..", face('ssssssss'), face('sesssses'), face('skssssks'), face('sssmmsss'), "...oSSSSSSSSo..."];
-const M_TOP = ["......oSSo......", rp('..o', 't', 10, 'o..'), rp('..ou', 't', 8, 'uo..'), rp('..ou', 't', 8, 'uo..'), rp('..os', 't', 8, 'so..'), rp('..oS', 'b', 8, 'So..'), rp('...o', 'p', 8, 'o...'), "...opppoopppo...", "...ollo..ollo...", "..ooxxo..oxxoo.."];
-const M_KIM = ["......oSSo......", rp('..o', 't', 10, 'o..'), rp('..ou', 't', 8, 'uo..'), rp('..ou', 't', 8, 'uo..'), rp('..os', 't', 8, 'so..'), rp('..o', 'b', 10, 'o..'), rp('..o', 'b', 10, 'o..'), rp('..o', 't', 10, 'o..'), '..o' + 'tTtTtTtTtT' + 'o..', "..ooxxo..oxxoo.."];
-const M_HAK = ["......oSSo......", rp('..o', 't', 10, 'o..'), rp('..ou', 't', 8, 'uo..'), rp('..ou', 't', 8, 'uo..'), rp('..os', 't', 8, 'so..'), rp('..oS', 'b', 8, 'So..'), rp('..o', 'p', 10, 'o..'), '.o' + 'pPppPppPppPp' + 'o.', '.o' + 'pPppPppPppPp' + 'o.', "..ooxxo..oxxoo.."];
-const M_DRESS = ["......oSSo......", rp('..o', 't', 10, 'o..'), rp('..ou', 't', 8, 'uo..'), rp('..ou', 't', 8, 'uo..'), rp('..os', 't', 8, 'so..'), rp('..oS', 'b', 8, 'So..'), rp('..o', 't', 10, 'o..'), '.o' + 'tttttttttttt' + 'o.', '.o' + 'tTtTtTtTtTtT' + 'o.', "..ooxxo..oxxoo.."];
-const MP = { s:'#ffd5b5', S:'#eab08f', o:'#2b1d3a', e:'#1b1030', k:'#ff9bb0', m:'#c4506a', h:'#6b4429', H:'#8a5a39' };
+export const M_HEAD = ["....oooooooo....", "...ohhhhhhhho...", "..ohhHHhhhhhho..", "..ohhhhhhhhhho..", "..ohhhhhhhhhho..", face('ssssssss'), face('sesssses'), face('skssssks'), face('sssmmsss'), "...oSSSSSSSSo..."];
+export const M_TOP = ["......oSSo......", rp('..o', 't', 10, 'o..'), rp('..ou', 't', 8, 'uo..'), rp('..ou', 't', 8, 'uo..'), rp('..os', 't', 8, 'so..'), rp('..oS', 'b', 8, 'So..'), rp('...o', 'p', 8, 'o...'), "...opppoopppo...", "...ollo..ollo...", "..ooxxo..oxxoo.."];
+export const M_KIM = ["......oSSo......", rp('..o', 't', 10, 'o..'), rp('..ou', 't', 8, 'uo..'), rp('..ou', 't', 8, 'uo..'), rp('..os', 't', 8, 'so..'), rp('..o', 'b', 10, 'o..'), rp('..o', 'b', 10, 'o..'), rp('..o', 't', 10, 'o..'), '..o' + 'tTtTtTtTtT' + 'o..', "..ooxxo..oxxoo.."];
+export const M_HAK = ["......oSSo......", rp('..o', 't', 10, 'o..'), rp('..ou', 't', 8, 'uo..'), rp('..ou', 't', 8, 'uo..'), rp('..os', 't', 8, 'so..'), rp('..oS', 'b', 8, 'So..'), rp('..o', 'p', 10, 'o..'), '.o' + 'pPppPppPppPp' + 'o.', '.o' + 'pPppPppPppPp' + 'o.', "..ooxxo..oxxoo.."];
+export const M_DRESS = ["......oSSo......", rp('..o', 't', 10, 'o..'), rp('..ou', 't', 8, 'uo..'), rp('..ou', 't', 8, 'uo..'), rp('..os', 't', 8, 'so..'), rp('..oS', 'b', 8, 'So..'), rp('..o', 't', 10, 'o..'), '.o' + 'tttttttttttt' + 'o.', '.o' + 'tTtTtTtTtTtT' + 'o.', "..ooxxo..oxxoo.."];
+export const MP = { s:'#ffd5b5', S:'#eab08f', o:'#2b1d3a', e:'#1b1030', k:'#ff9bb0', m:'#c4506a', h:'#6b4429', H:'#8a5a39' };
 const rng = (r0, r1, c0, c1, ch) => { const a = []; for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) a.push([r, c, ch]); return a; };
-const OUTM = {
+export const OUTM = {
   kimono:   { map: M_KIM, pal: { o:'#2b1d3a', t:'#b8232b', T:'#ffd84d', u:'#b8232b', b:'#ffd84d', w:'#fff7e6', S:'#eab08f', s:'#ffd5b5', x:'#c9a36a' }, patch: [[11,6,'w'],[11,7,'w'],[12,7,'w'],[12,8,'w'],[13,8,'w'],[12,4,'T'],[13,10,'T'],[17,5,'T'],[17,10,'T'],[12,11,'T'],[13,4,'T'],[14,6,'T'],[16,4,'T'],[16,11,'T']] },
   yukata:   { map: M_KIM, pal: { o:'#2b1d3a', t:'#2f4fb8', T:'#e8f0ff', u:'#2f4fb8', b:'#ff6b9a', w:'#ffffff', S:'#eab08f', s:'#ffd5b5', x:'#c9a36a' }, patch: [[11,6,'w'],[11,7,'w'],[12,7,'w'],[12,8,'w'],[13,8,'w'],[12,4,'T'],[13,10,'T'],[17,5,'T'],[17,9,'T'],[12,11,'T'],[13,4,'T']] },
   furisode: { map: M_KIM, pal: { o:'#2b1d3a', t:'#d6246e', T:'#ffd84d', u:'#d6246e', b:'#ffd84d', w:'#fff7e6', S:'#eab08f', s:'#ffd5b5', x:'#c9a36a' }, patch: [...rng(12, 18, 1, 1, 'u'), ...rng(12, 18, 14, 14, 'u'), ...rng(14, 17, 0, 0, 'u'), ...rng(14, 17, 15, 15, 'u'), [11,6,'w'],[11,7,'w'],[12,7,'w'],[12,8,'w'],[13,8,'w'],[14,5,'T'],[15,10,'T'],[17,4,'T'],[17,11,'T'],[14,1,'T'],[16,14,'T'],[13,5,'T']] },
@@ -48,7 +48,7 @@ const MACC = {
   hood: { y0: 0, pal: { w: '#ffffff', W: '#dfe6f8' }, rows: ["...wwwwwwwwww...", "..wwWWWWWWWWww..", "..wwwwwwwwwwww..", "..ww........ww.."] },
   hachimaki: { y0: 3, pal: { w: '#ffffff', r: '#e8452c' }, rows: ["..wwwwwwwwwwww..", "...wwwrrwwww...."] },
 };
-function mStamp(g, rows, y0, pal, patch) {
+export function mStamp(g, rows, y0, pal, patch) {
   const R = rows.map(r => r.split(''));
   (patch || []).forEach(([r, c, ch]) => { if (R[r - 10]) R[r - 10][c] = ch; });
   R.forEach((row, i) => { const y = y0 + MOY + i; if (y < 0 || y >= MH) return; row.forEach((c, x) => { if (c !== '.' && pal[c]) g[y][x] = pal[c]; }); });
@@ -62,8 +62,9 @@ export function charSprite(outfit, acc) {
 
 // ---------- đăng ký thẻ ----------
 export const ITEMS = [];
+let CUR = 'jp'; export const setCC = c => { CUR = c; };
 // add(nhóm, mục nhỏ, id, tên Việt, tên Anh, ghi chú, hàm vẽ, tùy chọn { scene, use, char })
-export function add(gr, sub, id, vi, en, note, fn, o = {}) { ITEMS.push({ gr, sub, id, vi, en, note, fn, ...o }); }
+export function add(gr, sub, id, vi, en, note, fn, o = {}) { ITEMS.push({ gr, sub, id, vi, en, note, fn, cc: CUR, ...o }); }
 export function render(item) {
   if (item.char) return charSprite(item.char[0], item.char[1]);
   const d = new D(); item.fn(d); if (!item.scene) d.outline(); return d.g;

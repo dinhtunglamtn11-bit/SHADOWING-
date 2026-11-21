@@ -1,4 +1,5 @@
-import { add, SC } from './pass-kit.js';
+import { add, SC, setCC } from './pass-kit.js';
+setCC('jp');
 // Nhật Bản · Nhóm 3: Ẩm thực
 const G3 = 3, F1 = 'Món ăn', F2 = 'Đồ uống và trà đạo', F3 = 'Món theo mùa và dịp lễ', F4 = 'Quy tắc bàn ăn';
 const bowl = (d, cx, y, w, h, c, rim = 'w') => { d.e(cx, y, w / 2, h, c); d.r(cx - w / 2, y - 4, w, 4, '_'); d.r(Math.round(cx - w / 2), y, w, 1, rim); };

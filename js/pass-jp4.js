@@ -1,4 +1,5 @@
-import { add, SC } from './pass-kit.js';
+import { add, SC, setCC } from './pass-kit.js';
+setCC('jp');
 // Nhật Bản · Nhóm 4: Văn hóa và nghệ thuật
 const G4 = 4, A1 = 'Lễ hội và ngày lễ', A2 = 'Nhạc cụ', A3 = 'Nghệ thuật biểu diễn', A4 = 'Nghệ thuật truyền thống khác', A5 = 'Văn hóa hiện đại';
 

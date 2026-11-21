@@ -1,4 +1,5 @@
-import { add, SC } from './pass-kit.js';
+import { add, SC, setCC } from './pass-kit.js';
+setCC('jp');
 // Nhật Bản · Nhóm 5: Con vật, linh vật, tín ngưỡng, lịch sử
 const G5 = 5, Z1 = 'Động vật', Z2 = 'Linh vật', Z3 = 'Tín ngưỡng', Z4 = 'Nhân vật và lịch sử', Z5 = 'Người nổi tiếng';
 const PET = { use: 'pet' };

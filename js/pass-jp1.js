@@ -1,4 +1,5 @@
-import { add, SC } from './pass-kit.js';
+import { add, SC, setCC } from './pass-kit.js';
+setCC('jp');
 // Nhật Bản · Nhóm 1: Nơi chốn và thiên nhiên
 const G1 = 1, S1 = 'Địa danh', S2 = 'Mùa và thiên nhiên', S3 = 'Vùng miền', S4 = 'Hiện tượng đặc biệt';
 

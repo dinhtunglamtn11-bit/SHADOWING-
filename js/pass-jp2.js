@@ -1,4 +1,5 @@
-import { add, SC } from './pass-kit.js';
+import { add, SC, setCC } from './pass-kit.js';
+setCC('jp');
 // Nhật Bản · Nhóm 2: Con người và đời sống
 const G2 = 2, T1 = 'Trang phục', T2 = 'Phụ kiện', T3 = 'Nhà ở và đồ dùng', T4 = 'Thói quen và phép tắc';
 
