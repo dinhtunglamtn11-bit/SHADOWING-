@@ -14,7 +14,9 @@ const KEY = 'passport:v1', WELCOME = 100;
 const TEST_COINS = 3000; // XU THỬ NGHIỆM: cộng thẳng vào số xu để thử mua. Khi thử xong, đổi thành 0 (xu đã mua vẫn giữ, chỉ không cộng thêm nữa).
 let P = load(), root = null, active = false, pushT = 0;
 const S = { group: 1, show: 'all', cc: 'jp' };
-const CC = { jp: ['Nhật Bản', 'Japan'], kr: ['Hàn Quốc', 'South Korea'], cn: ['Trung Quốc', 'China'], vn: ['Việt Nam', 'Vietnam'] };
+const CC = { jp: ['Nhật Bản', 'Japan'], kr: ['Hàn Quốc', 'South Korea'], cn: ['Trung Quốc', 'China'], vn: ['Việt Nam', 'Vietnam'], fr: ['Pháp', 'France'] };
+const CONT = { as: ['Châu Á', 'Asia'], eu: ['Châu Âu', 'Europe'] }; // thứ tự hiển thị các châu
+const CC_CONT = { jp: 'as', kr: 'as', cn: 'as', vn: 'as', fr: 'eu' };
 const kk = (cc, x) => (cc === 'jp' ? x : cc + ':' + x); // khóa câu chuyện: Nhật giữ khóa cũ, nước khác thêm tiền tố
 const mine = () => K.items.filter(i => i.cc === S.cc);
 const t = (vi, en) => (uiLang === 'vi' ? vi : en);
@@ -82,6 +84,7 @@ const lastVideo = () => store.list('items').filter(i => i.type !== 'note' && (+i
 function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
   const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 64, 48);
   if (cc === 'jp') { c.fillStyle = '#e8452c'; c.beginPath(); c.arc(32, 24, 14, 0, 7); c.fill(); return; }
+  if (cc === 'fr') { c.fillStyle = '#0055a4'; c.fillRect(0, 0, 22, 48); c.fillStyle = '#fff'; c.fillRect(22, 0, 21, 48); c.fillStyle = '#ef4135'; c.fillRect(43, 0, 21, 48); return; }
   if (cc === 'vn') {
     c.fillStyle = '#da251d'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#ffff00'; c.beginPath();
     for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 6 : 15; c.lineTo(32 + Math.cos(a) * r, 25 + Math.sin(a) * r); }
@@ -111,7 +114,8 @@ function draw() {
     <span class="grow"></span><button class="btn" id="ppHow">❓ ${t('Cách kiếm xu', 'How to earn coins')}</button></div>`);
   h.push(`<div class="pp-how" id="ppHowBox" ${openHow ? '' : 'hidden'}><b>${t(`Hôm nay đã kiếm được ${todayTot} xu`, `Earned today: ${todayTot} coins`)}</b>${today.map(([k, n]) => `<div class="ppr"><span>${esc(t(k, EARN[k] || k))}</span><b>+${n}</b></div>`).join('')}
     <div class="dim">${t('Xu tính từ việc học thật: phút học, thẻ ôn, câu trả lời đúng, nhiệm vụ ngày (+8 mỗi nhiệm vụ, +20 khi xong hết), đạt mục tiêu ngày (+15), nhiệm vụ tuần (+30) và nhiệm vụ tháng (+100). Mỗi loại có mức tối đa mỗi ngày.', 'Coins come from real study: study minutes, card reviews, correct answers, daily quests (+8 each, +20 when all are done), reaching the daily goal (+15), weekly quests (+30) and monthly quests (+100). Each kind has a daily limit.')}</div></div>`);
-  h.push(`<div class="pp-cont2"><span class="dim">${t('Châu Á', 'Asia')}</span>${Object.keys(CC).map(c => { const a = stat(K.items.filter(i => i.cc === c)); return `<button class="pp-ctry${c === S.cc ? ' on' : ''}" data-cc="${c}"><canvas class="ppFlag" data-cc="${c}" width="64" height="48"></canvas><span><b>${CC[c][uiLang === 'vi' ? 0 : 1]}</b><span class="dim">${a.n}/${a.t}${a.n === a.t ? ' ⭐' : ''}</span></span></button>`; }).join('')}
+  const ctryBtn = c => { const a = stat(K.items.filter(i => i.cc === c)); return `<button class="pp-ctry${c === S.cc ? ' on' : ''}" data-cc="${c}"><canvas class="ppFlag" data-cc="${c}" width="64" height="48"></canvas><span><b>${CC[c][uiLang === 'vi' ? 0 : 1]}</b><span class="dim">${a.n}/${a.t}${a.n === a.t ? ' ⭐' : ''}</span></span></button>`; };
+  h.push(`<div class="pp-cont2">${Object.keys(CONT).map(k => `<div class="pp-cg"><span class="dim">${t(CONT[k][0], CONT[k][1])}</span>${Object.keys(CC).filter(c => CC_CONT[c] === k).map(ctryBtn).join('')}</div>`).join('')}
     <span class="dim pp-soon">${t('Các châu và nước khác: sắp có', 'More continents and countries: coming soon')}</span></div>`);
   h.push(`<div class="pp-tabs">${Object.keys(GROUP).map(g => { const s = stat(mine().filter(i => i.gr === +g)); return `<button class="pp-tab${+g === S.group ? ' on' : ''}" data-g="${g}"><span class="ic">${GROUP[g][2]}</span><span class="tn">${esc(gName(+g))}</span><small>${s.n}/${s.t}</small></button>`; }).join('')}</div>`);
   h.push(`<div class="pp-filter"><div class="seg" id="ppShow"><button data-s="all" class="${S.show === 'all' ? 'on' : ''}">${t('Tất cả', 'All')}</button><button data-s="no" class="${S.show === 'no' ? 'on' : ''}">${t('Chưa mua', 'Not bought')}</button><button data-s="yes" class="${S.show === 'yes' ? 'on' : ''}">${t('Đã mua', 'Bought')}</button></div></div>`);
@@ -173,8 +177,10 @@ async function ensure() {
   await Promise.all([...[1, 2, 3, 4, 5].map(i => import(`./pass-jp${i}.js`)), ...[1, 2, 3, 4, 5].map(i => import(`./pass-kr${i}.js`)), ...[1, 2, 3, 4, 5].map(i => import(`./pass-cn${i}.js`))]);
   await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-vn${i}.js`)));
   await import('./pass-vn6.js');
+  await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-fr${i}.js`)));
+  await import('./pass-fr6.js');
   await import('./pass-cn6.js'); // chỉnh lại thẻ Trung Quốc: phải nạp sau khi cn1–5 đã đăng ký xong
-  ST = { jp: await import('./pass-story.js'), kr: await import('./pass-story-kr.js'), cn: await import('./pass-story-cn.js'), vn: await import('./pass-story-vn.js') };
+  ST = { jp: await import('./pass-story.js'), kr: await import('./pass-story-kr.js'), cn: await import('./pass-story-cn.js'), vn: await import('./pass-story-vn.js'), fr: await import('./pass-story-fr.js') };
   K = { items: kit.ITEMS, byId: Object.fromEntries(kit.ITEMS.map(i => [i.id, i])), render: kit.render, paint: kit.paint };
 }
 async function open() {
