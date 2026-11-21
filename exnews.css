@@ -655,3 +655,39 @@ body.vx-on #cueList { display: none; }
 .vxsyn[open] > summary { margin-bottom: 8px; }
 .vxsyn textarea { width: 100%; box-sizing: border-box; margin-bottom: 6px; }
 .vxverdict { border: var(--px, 3px) solid var(--ink); background: var(--panel2, var(--panel)); padding: 8px 12px; margin-bottom: 8px; display: grid; gap: 2px; }
+
+/* ===== Passport ===== */
+.passroot { display: flex; flex-direction: column; gap: 12px; }
+.pp-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pp-coins { background: var(--panel); border: var(--px, 3px) solid var(--ink); padding: 4px 14px; font-family: var(--pf); font-size: 24px; color: var(--hl, #ffd84d); }
+.pp-new { color: #7be08a; font-family: var(--pf); }
+.pp-how { background: var(--panel); border: 3px dashed var(--line); padding: 10px 12px; display: grid; gap: 4px; }
+.pp-cont { display: flex; align-items: center; gap: 12px; background: var(--panel); border: var(--px, 3px) solid var(--ink); padding: 10px 14px; flex-wrap: wrap; }
+.pp-cont .gt { font-size: 18px; }
+.pp-cont2 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pp-ctry { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 4px solid var(--hl, #ffd84d); padding: 6px 12px; }
+.pp-ctry canvas { width: 48px; height: 36px; border: 3px solid var(--ink); image-rendering: pixelated; background: #fff; }
+.pp-soon { font-size: 14px; }
+.pp-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.pp-tab { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; padding: 8px 6px; line-height: 1.2; }
+.pp-tab .ic { font-size: 22px; } .pp-tab .tn { font-size: 15px; } .pp-tab.on { background: var(--accent, #c98a1a); }
+.pp-filter { display: flex; }
+.pp-grp, .pp-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pp-grp { background: var(--panel); border: var(--px, 3px) solid var(--ink); padding: 8px 12px; font-size: 19px; font-family: var(--pf); }
+.pp-sub { margin-top: 6px; padding-bottom: 3px; border-bottom: 3px dashed var(--line); font-family: var(--pf); font-size: 19px; color: var(--hl, #ffd84d); }
+.pp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: 8px; }
+.pp-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; text-align: center; min-width: 0; background: var(--panel); }
+.pp-card .cv { image-rendering: pixelated; background: #1f1850; border: 2px solid var(--ink); }
+.pp-card .nm { font-size: 14px; line-height: 1.2; word-break: break-word; }
+.pp-card .pr { font-family: var(--pf); font-size: 16px; color: var(--hl, #ffd84d); }
+.pp-card.own { border-color: #4a9a55; } .pp-card.own .pr { color: #7be08a; }
+#passDlg .pdbd, #passStory .psbd { display: grid; gap: 10px; justify-items: start; }
+.pdart { align-self: center; justify-self: center; background: #1f1850; border: 3px solid var(--ink); padding: 8px; }
+.pdart canvas { image-rendering: pixelated; display: block; }
+#pdNote { margin: 0; line-height: 1.6; } #pdNote.lock { color: var(--dim); font-style: italic; }
+.pdtag { color: #7be08a; }
+#psBody p { margin: 0 0 12px; line-height: 1.75; }
+.pp-how[hidden] { display: none; }
+.pp-how .ppr { display: flex; justify-content: space-between; gap: 10px; padding: 1px 0; font-size: 15px; }
+.pp-sub { color: var(--text); }
+.pp-sub small, .pp-grp small { color: var(--dim); }

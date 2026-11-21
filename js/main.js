@@ -24,6 +24,7 @@ import * as music from './music.js';
 import * as lbl from './lbl.js';
 import * as focusmode from './focusmode.js';
 import * as videx from './videx.js';
+import * as passport from './passport.js';
 import * as trash from './trash.js';
 import * as lookup from './lookup.js';
 import * as vocab from './vocab.js';
@@ -52,7 +53,8 @@ function show(view) {
   if (!backing && prev && prev !== view) { trail.push(prev); if (trail.length > 40) trail.shift(); }
   document.body.dataset.view = view;
   $$('.view').forEach(s => s.classList.toggle('active', s.id === 'v' + cap(view)));
-  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === (view === 'doc' ? 'library' : view)));
+  const hl = view === 'doc' ? 'library' : view === 'player' ? (prev === 'passport' ? 'passport' : 'library') : view; // Học tiếp từ Passport thì giữ sáng Passport, còn lại coi video mở từ Thư viện
+  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === hl));
   bus.emit('show', view);
   scrollTo(0, 0);
   refreshBack();
@@ -175,7 +177,7 @@ loadPrefs();
 syncSfx();
 bus.on('store', c => { if (c === 'prefs' || c === '*') { loadPrefs(); bus.emit('prefs'); } });
 renderLangs();
-player.init(); side.init(); library.init(); notes.init(); quests.init(); alignui.init(); dictation.init(); speak.init(); shadowrec.init(); review.init(); backup.init(); subedit.init(); subpaste.init(); segments.init(); trash.init(); lookup.init(); vocab.init(); find.init(); shortcuts.init(); offline.init(); readaloud.init(); world.init(); cueedit.init(); music.init(); focusmode.init(); videx.init(); lbl.init();
+player.init(); side.init(); library.init(); notes.init(); quests.init(); alignui.init(); dictation.init(); speak.init(); shadowrec.init(); review.init(); backup.init(); subedit.init(); subpaste.init(); segments.init(); trash.init(); lookup.init(); vocab.init(); find.init(); shortcuts.init(); offline.init(); readaloud.init(); world.init(); cueedit.init(); music.init(); focusmode.init(); videx.init(); passport.init(); lbl.init();
 show('library');
 initFirebase();
 loadSimplifier(); // sẵn sàng đổi phồn thể → giản thể (chỉ ~100 KB)

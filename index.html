@@ -51,7 +51,7 @@
 <div id="bkBar" class="subhint topbar" hidden></div>
 
 <nav id="nav">
-  <button data-view="player"><i>🎧</i><span>Học</span></button>
+  <button data-view="passport"><i>🛂</i><span>Passport</span></button>
   <button data-view="library" class="on"><i>📚</i><span>Thư viện</span></button>
   <button data-view="review"><i>📒</i><span>Ôn tập</span><em id="rvDue"></em></button>
   <button data-view="world" title="Thế giới của tôi"><i>🌍</i><span>Thế giới</span></button>
@@ -63,6 +63,9 @@
 <main id="views">
 
   <!-- ===== Học ===== -->
+  <!-- ===== Passport ===== -->
+  <section id="vPassport" class="view"><div class="wrap"><div id="passRoot" class="passroot"></div></div></section>
+
   <section id="vPlayer" class="view">
     <div class="grid landscape" id="pgrid">
       <div id="left">
@@ -454,6 +457,21 @@
     <div class="row"><button class="btn" id="lgReload">↻ Tải lại video</button><a class="btn" id="lgSrc" target="_blank" rel="noopener" hidden>↗ Mở video trên trang gốc</a></div>
     <small class="dim">App không lưu mật khẩu hay thông tin đăng nhập của bạn: việc đăng nhập diễn ra hoàn toàn trên YouTube / TikTok trong trình duyệt. Nếu vẫn báo “video riêng tư”, trình duyệt có thể đang chặn cookie của bên thứ ba (Safari, Firefox chế độ nghiêm ngặt, Chrome ẩn danh), hoặc video không cho nhúng: hãy dùng “Mở video trên trang gốc”.</small>
   </div>
+</dialog>
+
+<dialog id="passDlg">
+  <div class="hd"><span class="grow gt" id="pdTitle"></span><button class="btn" id="pdClose">✕</button></div>
+  <div class="bd pdbd">
+    <div id="pdArt" class="pdart"></div>
+    <small class="dim" id="pdSub"></small><small class="pdtag" id="pdTag"></small>
+    <p id="pdNote"></p><small class="dim" id="pdEn"></small>
+    <div class="dim" id="pdBal"></div>
+    <div class="row"><button class="btn primary" id="pdBuy">Mua</button></div>
+  </div>
+</dialog>
+<dialog id="passStory" class="wide">
+  <div class="hd"><span class="grow gt" id="psTitle"></span><button class="btn" id="psClose">✕</button></div>
+  <div class="bd psbd"><small class="dim" id="psKind"></small><div id="psBody"></div></div>
 </dialog>
 
 <dialog id="uiDlg">
