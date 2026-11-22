@@ -5,11 +5,12 @@ setCC('sh');
 const G = 1, TH = 'Nền Passport', FR = 'Khung thẻ', TT = 'Danh hiệu', FX = 'Hiệu ứng mua';
 const hex = n => '#' + [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
 const mix = (a, b, t) => hex((((a >> 16) * (1 - t) + (b >> 16) * t) << 16) | ((((a >> 8) & 255) * (1 - t) + ((b >> 8) & 255) * t) << 8) | ((a & 255) * (1 - t) + (b & 255) * t));
-const grad = (d, a, b) => { for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) d.put(x, y, mix(a, b, y / 15)); };
-const theme = (id, val, vi, en, note, a, b, dots, price) => add(G, TH, id, vi, en, note, d => { grad(d, a, b); for (const [x, y, c] of dots) d.put(x, y, c);  }, { deco: 'theme', val, price, shop: true, scene: true });
-const frame = (id, val, vi, en, note, draw, price) => add(G, FR, id, vi, en, note, d => { d.bg('#2b2250'); draw(d); d.r(5, 5, 6, 6, '#1b1440'); d.p('#6b6f96', 7, 7, 8, 8); }, { deco: 'frame', val, price, shop: true, scene: true });
-const title = (id, val, vi, en, note, price) => add(G, TT, id, vi, en, note, d => { d.bg('#2b2250'); d.r(2, 5, 12, 6, '#ffd84d'); d.r(2, 5, 12, 1, '#fff3b0'); d.r(2, 10, 12, 1, '#c9a227'); d.tri(0, 6, 3, 4, '#ffd84d'); d.tri(13, 6, 3, 4, '#ffd84d'); d.p('#2b1d3a', 4, 7, 6, 7, 8, 7, 10, 7, 5, 8, 9, 8, 11, 8); d.p('#e8452c', 8, 3, 7, 4, 9, 4); }, { deco: 'title', val: [vi, en], price, shop: true, scene: true });
-const fx = (id, val, vi, en, note, draw, price) => add(G, FX, id, vi, en, note, d => { d.bg('#2b2250'); draw(d); }, { deco: 'fx', val, price, shop: true, scene: true });
+export const grad = (d, a, b) => { for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) d.put(x, y, mix(a, b, y / 15)); };
+export const theme = (id, val, vi, en, note, a, b, dots, price) => add(G, TH, id, vi, en, note, d => { grad(d, a, b); for (const [x, y, c] of dots) d.put(x, y, c);  }, { deco: 'theme', val, price, shop: true, scene: true });
+export const frame = (id, val, vi, en, note, draw, price) => add(G, FR, id, vi, en, note, d => { d.bg('#2b2250'); draw(d); d.r(5, 5, 6, 6, '#1b1440'); d.p('#6b6f96', 7, 7, 8, 8); }, { deco: 'frame', val, price, shop: true, scene: true });
+const RIB = ['#ffd84d', '#ff8fc8', '#8fd3ff', '#b8e08a', '#ff9f43', '#c9a8ff']; let ribN = 0;
+export const title = (id, val, vi, en, note, price) => { const col = RIB[ribN++ % RIB.length]; return add(G, TT, id, vi, en, note, d => { d.bg('#2b2250'); d.r(2, 5, 12, 6, col); d.r(2, 5, 12, 1, '#ffffff88'.slice(0, 7)); d.r(2, 10, 12, 1, '#00000055'.slice(0, 7)); d.tri(0, 6, 3, 4, col); d.tri(13, 6, 3, 4, col); d.p('#2b1d3a', 4, 7, 6, 7, 8, 7, 10, 7, 5, 8, 9, 8, 11, 8); d.p('#e8452c', 8, 3, 7, 4, 9, 4); }, { deco: 'title', val: [vi, en], price, shop: true, scene: true }); };
+export const fx = (id, val, vi, en, note, draw, price) => add(G, FX, id, vi, en, note, d => { d.bg('#2b2250'); draw(d); }, { deco: 'fx', val, price, shop: true, scene: true });
 
 // ----- Nền Passport (8) -----
 theme('sh-th-star', 'star', 'Bầu trời sao', 'Starry night', 'Nền xanh đêm lấp lánh sao.', 0x0b1040, 0x2a1a6a, [[2, 2, '#ffffff'], [7, 4, '#ffd84d'], [12, 2, '#ffffff'], [4, 9, '#ffffff'], [10, 8, '#8fd3ff'], [13, 12, '#ffffff']], 280);
@@ -49,4 +50,6 @@ fx('sh-fx-stars', 'stars', 'Mưa sao', 'Star shower', 'Những ngôi sao nhỏ r
 fx('sh-fx-hearts', 'hearts', 'Mưa trái tim', 'Hearts', 'Tim hồng bay lên khắp nơi.', d => { for (const [x, y] of [[4, 4], [11, 6], [7, 11]]) { d.p('#ff5a8a', x - 1, y - 1, x + 1, y - 1, x - 1, y, x, y, x + 1, y, x, y + 1); } }, 160);
 fx('sh-fx-coins', 'coins', 'Mưa xu vàng', 'Coin rain', 'Xu vàng rơi leng keng.', d => { for (const [x, y] of [[4, 3], [10, 5], [6, 9], [12, 12], [3, 12]]) { d.p('#ffd84d', x, y, x + 1, y, x, y + 1, x + 1, y + 1); d.p('#c9a227', x + 1, y + 1); } }, 160);
 fx('sh-fx-fireworks', 'fireworks', 'Pháo hoa', 'Fireworks', 'Bùng nổ rực rỡ khi mua.', d => { for (const [x, y, c] of [[5, 5, '#e8452c'], [11, 9, '#4a7be0']]) { d.p(c, x, y, x - 2, y, x + 2, y, x, y - 2, x, y + 2, x - 1, y - 1, x + 1, y - 1, x - 1, y + 1, x + 1, y + 1); } }, 200);
+
+
 

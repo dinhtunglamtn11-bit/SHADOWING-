@@ -366,7 +366,7 @@ function draw() {
 const SHOP_SUBS = ['Mũ và tóc', 'Mặt', 'Eo và đuôi', 'Giày dép', 'Trang phục vui', 'Cầm tay', 'Thú cưng', 'Nền Passport', 'Khung thẻ', 'Danh hiệu', 'Hiệu ứng mua'];
 const SHOP_EN = { 'Mũ và tóc': 'Hats and hair', 'Mặt': 'Face', 'Eo và đuôi': 'Waist and tails', 'Giày dép': 'Footwear', 'Trang phục vui': 'Fun outfits', 'Cầm tay': 'Held items', 'Thú cưng': 'Pets', 'Nền Passport': 'Passport themes', 'Khung thẻ': 'Card frames', 'Danh hiệu': 'Titles', 'Hiệu ứng mua': 'Purchase effects' };
 const SHOP_ICON = { 'Mũ và tóc': '🎩', 'Mặt': '🕶️', 'Eo và đuôi': '🎀', 'Giày dép': '👟', 'Trang phục vui': '🦸', 'Cầm tay': '🎈', 'Thú cưng': '🐾', 'Nền Passport': '🎨', 'Khung thẻ': '🖼️', 'Danh hiệu': '🏷️', 'Hiệu ứng mua': '🎆' };
-const FXE = { confetti: ['🎉', '🎊', '✨'], stars: ['⭐', '🌟', '✨'], hearts: ['💖', '💗', '💕'], coins: ['🪙', '💰'], fireworks: ['🎆', '🎇', '✨'] };
+const FXE = { confetti: ['🎉', '🎊', '✨'], stars: ['⭐', '🌟', '✨'], hearts: ['💖', '💗', '💕'], coins: ['🪙', '💰'], fireworks: ['🎆', '🎇', '✨'], petals: ['🌸', '💮', '🌺'], snow: ['❄️', '⛄', '✨'], bubbles: ['🫧', '💧', '✨'], rocket: ['🚀', '🌟', '💫'] };
 const decoOf = kind => { const id = P.deco?.[kind]; return id && K?.byId[id] && own(id) ? K.byId[id] : null; };
 const isUsed = it => (it.deco ? P.deco?.[it.deco] === it.id : Object.values(P.eq || {}).includes(it.id));
 function applyDeco() { if (!root) return; root.dataset.th = decoOf('theme')?.val || ''; root.dataset.fr = decoOf('frame')?.val || ''; }
@@ -444,7 +444,7 @@ const missing = () => P.own.some(id => !LOADED.has(ccOf(id)));
 function loadCC(cc) { // chỉ nạp thẻ + câu chuyện của nước cần xem (mỗi nước ~6 file), không nạp tất cả nước
   if (LOADED.has(cc)) return Promise.resolve();
   if (!LOADING.has(cc)) LOADING.set(cc, (async () => {
-    if (cc === 'sh') await Promise.all([1, 2, 3, 4].map(i => import(`./pass-sh${i}.js`))); // cửa hàng trang trí: không có câu chuyện
+    if (cc === 'sh') await Promise.all([1, 2, 3, 4, 5, 6, 7].map(i => import(`./pass-sh${i}.js`))); // cửa hàng trang trí: không có câu chuyện
     else {
       await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-${cc}${i}.js`)));
       if (cc !== 'jp' && cc !== 'kr') await import(`./pass-${cc}6.js`); // chỉnh lại / bỏ nền thẻ, phải nạp sau khi 1–5 đã đăng ký
@@ -529,6 +529,7 @@ export async function items() { await ensure(); return K; }
 export const ownedIds = () => P.own.slice();
 export const getEq = () => ({ ...(P.eq || {}) });
 export function setEq(eq) { P.eq = { ...eq }; P.eqT = Date.now(); checkStamps(); save(); bus.emit('lame'); }
+
 
 
 

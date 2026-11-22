@@ -714,6 +714,17 @@ body.vx-on #cueList { display: none; }
 #passRoot[data-th="galaxy"] { background: radial-gradient(circle at 25% 20%, #ff8fc8 0 1px, transparent 2px) 0 0 / 80px 80px, radial-gradient(circle at 75% 70%, #8fd3ff 0 1px, transparent 2px) 0 0 / 110px 110px, linear-gradient(#2a0a4a, #000010); }
 #passRoot[data-th="mint"] { background: linear-gradient(#2fa58f, #0e3a4a); }
 #passRoot[data-th="desert"] { background: repeating-linear-gradient(170deg, rgba(255, 233, 168, .08) 0 10px, transparent 10px 22px), linear-gradient(#c9873a, #5a2a1a); }
+#passRoot[data-th="sakura"] { background: radial-gradient(circle at 20% 20%, rgba(255, 213, 232, .5) 0 3px, transparent 4px) 0 0 / 70px 70px, radial-gradient(circle at 65% 70%, rgba(255, 213, 232, .4) 0 2px, transparent 3px) 0 0 / 100px 100px, linear-gradient(#d96a9a, #5a2a5a); }
+#passRoot[data-th="city"] { background: linear-gradient(0deg, rgba(255, 216, 77, .12) 0 12%, transparent 12%), repeating-linear-gradient(90deg, rgba(10, 10, 42, .9) 0 22px, transparent 22px 34px), linear-gradient(#3a1a6a, #0a0a2a); }
+#passRoot[data-th="snow"] { background: radial-gradient(circle at 30% 30%, #fff 0 1.5px, transparent 2.5px) 0 0 / 60px 60px, radial-gradient(circle at 70% 60%, #fff 0 1px, transparent 2px) 0 0 / 90px 90px, linear-gradient(#6a9ad6, #1a2a5a); }
+#passRoot[data-th="lava"] { background: radial-gradient(circle at 25% 90%, rgba(255, 159, 67, .55), transparent 40%), radial-gradient(circle at 75% 95%, rgba(232, 69, 44, .5), transparent 40%), linear-gradient(#8a1a0a, #1a0a0a); }
+#passRoot[data-th="sky"] { background: radial-gradient(ellipse at 25% 20%, rgba(255, 255, 255, .7) 0 8%, transparent 9%), radial-gradient(ellipse at 70% 40%, rgba(255, 255, 255, .6) 0 7%, transparent 8%), linear-gradient(#4a9be8, #1f4a9a); }
+#passRoot[data-th="grass"] { background: repeating-conic-gradient(rgba(255, 255, 255, .07) 0 25%, transparent 0 50%) 0 0 / 28px 28px, linear-gradient(#5fb85a, #1f5a2a); }
+#passRoot[data-fr="pixel"] .pp-card.own { border-color: #2b2b3a; border-style: dashed; box-shadow: 0 0 0 3px #fff; }
+#passRoot[data-fr="star"] .pp-card.own { border-color: #4a2a9a; box-shadow: 0 0 0 2px #ffd84d, 0 0 10px #ffd84d66; }
+#passRoot[data-fr="leaf"] .pp-card.own { border-color: #2f7d3a; box-shadow: inset 0 0 0 3px #b8e08a66; }
+#passRoot[data-fr="chain"] .pp-card.own { border-color: #9aa4c4; border-style: dashed; border-width: 5px; }
+#passRoot[data-fr="candy"] .pp-card.own { border-color: transparent; border-image: repeating-linear-gradient(45deg, #e8452c 0 8px, #fff 8px 16px) 1; }
 /* khung thẻ đã mua (đồ cửa hàng) */
 #passRoot[data-fr="gold"] .pp-card.own { border-color: #ffd84d; box-shadow: 0 0 0 2px #c9a227, 0 0 10px #ffd84d88; }
 #passRoot[data-fr="rainbow"] .pp-card.own { border-color: transparent; border-image: linear-gradient(135deg, #e8452c, #ffd84d, #5fb85a, #4a7be0, #7a3fc0) 1; }
