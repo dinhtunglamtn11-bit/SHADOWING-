@@ -40,7 +40,7 @@ function body(eq) {
   const g = blank(MW, MH), out = eq.outfit && OUT_KEY[eq.outfit] ? OUTM[OUT_KEY[eq.outfit]] : TEE;
   mStamp(g, out.map, 10, out.pal, out.patch);
   if (eq.waist && O[eq.waist]) mStamp(g, O[eq.waist].rows, O[eq.waist].y0, O[eq.waist].pal, null);
-  if (eq.feet === 'geta') mStamp(g, O.geta.rows, O.geta.y0, O.geta.pal, null);
+  if (eq.feet && O[eq.feet]) mStamp(g, O[eq.feet].rows, O[eq.feet].y0, O[eq.feet].pal, null); // mọi đôi giày/dép (không chỉ guốc geta)
   mStamp(g, M_HEAD, 0, MP, null);
   if (eq.face && O[eq.face]) mStamp(g, O[eq.face].rows, O[eq.face].y0, { ...O[eq.face].pal }, null);
   if (eq.head && O[eq.head]) mStamp(g, O[eq.head].rows, O[eq.head].y0, { ...MP, ...O[eq.head].pal }, null);
