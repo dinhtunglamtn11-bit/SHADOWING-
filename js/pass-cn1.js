@@ -66,7 +66,7 @@ add(G, C, 'cn-xian', 'Tây An (Thiểm Tây)', 'Xi\'an (Shaanxi)', 'Cố đô nh
 // ----- Hiện tượng đặc biệt -----
 add(G, E, 'cn-yellowriver', 'Hoàng Hà', 'Yellow River', 'Dòng sông "mẹ" của dân tộc, màu vàng đục vì mang hàng tỷ tấn phù sa hoàng thổ mỗi năm. Nhiều đoạn lòng sông cao hơn ruộng đồng hai bên, gọi là "sông treo".',
   d => { d.bg('Y'); d.r(0, 0, 16, 5, 'u'); d.r(0, 5, 16, 2, 'O'); d.l(0, 9, 5, 7, 'y'); d.l(5, 7, 9, 11, 'y'); d.l(9, 11, 15, 8, 'y'); d.l(0, 11, 5, 9, 'o'); d.l(5, 9, 9, 13, 'o'); d.l(9, 13, 15, 10, 'o'); d.l(0, 13, 5, 11, 'n'); d.l(5, 11, 9, 15, 'n'); d.l(9, 15, 15, 12, 'n'); }, SC);
-add(G, E, 'cn-yangtze', 'Trường Giang', 'Yangtze River', 'Sông dài nhất châu Á (khoảng 6.300 km), chảy từ cao nguyên ra biển Đông, nuôi sống một phần lớn dân số Trung Quốc.',
+add(G, E, 'cn-yangtze', 'Trường Giang', 'Yangtze River', 'Sông dài nhất châu Á (khoảng 6.300 km), chảy từ cao nguyên ra biển Hoa Đông, nuôi sống một phần lớn dân số Trung Quốc.',
   d => { d.bg('c'); d.tri(0, 2, 8, 6, 'a'); d.tri(8, 4, 8, 5, 'A'); d.r(0, 8, 16, 8, 'g'); d.l(2, 8, 5, 11, 'C'); d.l(5, 11, 10, 13, 'C'); d.l(10, 13, 14, 15, 'C'); d.l(3, 8, 6, 11, 'b'); d.l(6, 11, 11, 13, 'b'); d.l(11, 13, 15, 15, 'b'); d.p('w', 12, 3); }, SC);
 add(G, E, 'cn-huangshan', 'Hoàng Sơn', 'Huangshan (Yellow Mountains)', 'Ngọn núi với biển mây, thông cổ mọc trên đá dựng đứng, hay xuất hiện trong tranh thủy mặc; được UNESCO công nhận năm 1990.',
   d => { d.bg('l'); d.r(0, 9, 16, 7, 'w'); d.tri(1, 3, 6, 10, 'A'); d.tri(8, 1, 7, 12, 'K'); d.r(0, 10, 16, 2, 'w'); d.e(3, 11, 3, 1, 'e'); d.e(12, 11.5, 3, 1, 'e'); d.l(4, 7, 4, 4, 'N'); d.e(4, 4, 2, 1, 'G'); d.p('G', 3, 3, 5, 3, 13, 5); }, SC);
