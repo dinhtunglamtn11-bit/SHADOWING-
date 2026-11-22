@@ -63,11 +63,13 @@ function half(g) {
   return r;
 }
 // eq: { outfit, head, face, waist, feet, hold, pet } là mã thẻ; items: bảng mã → thẻ. Trả về lưới màu.
-export function lameGrid(eq, items) {
+// pose (tùy chọn): { pet, hold } là độ lệch dọc (hàng) của thú đi cùng / vật cầm, để làm động tác nhún nhảy
+export function lameGrid(eq, items, pose) {
   const b = body(eq), pet = eq.pet && items[eq.pet] ? half(render(items[eq.pet])) : null, hold = eq.hold && items[eq.hold] ? half(render(items[eq.hold])) : null;
   const padL = pet ? 10 : 0, padR = hold ? 10 : 0, W = padL + MW + padR, g = blank(W, ROWS);
   for (let y = 0; y < ROWS; y++) for (let x = 0; x < MW; x++) g[y][padL + x] = b[y][x];
-  if (pet) for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) if (pet[y][x]) g[ROWS - 10 + y][x] = pet[y][x];
-  if (hold) for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) if (hold[y][x]) g[ROWS - 14 + y][padL + MW - 1 + x] = hold[y][x];
+  const pdy = pose?.pet || 0, hdy = pose?.hold || 0;
+  if (pet) for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) if (pet[y][x] && g[ROWS - 10 + y + pdy]) g[ROWS - 10 + y + pdy][x] = pet[y][x];
+  if (hold) for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) if (hold[y][x] && g[ROWS - 14 + y + hdy]) g[ROWS - 14 + y + hdy][padL + MW - 1 + x] = hold[y][x];
   return g;
 }

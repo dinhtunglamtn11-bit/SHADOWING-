@@ -123,12 +123,14 @@ function covLine() {
 }
 // ---------- đồng bộ giữa các máy (qua kho dữ liệu của app, tài liệu prefs/pylab) ----------
 // Gộp, không ghi đè: ⭐ và tiến độ lấy hợp của các máy; số lần sai lấy mức cao hơn; lượt đang dở lấy bản mới hơn (chỉ khi mở Luyện âm).
-let pushT = 0;
-function pushSoon() { clearTimeout(pushT); pushT = setTimeout(pushNow, 2500); }
+let pushT = 0, pdirty = false;
+function pushSoon() { pdirty = true; clearTimeout(pushT); pushT = setTimeout(pushNow, 2500); }
 function pushNow() {
+  pdirty = false;
   let prog = null; try { prog = JSON.parse(localStorage.getItem(PKEY) || 'null'); } catch { /* bỏ qua */ }
   store.put('prefs', 'pylab', { cov, stats, prog });
 }
+bus.on('flush', () => { clearTimeout(pushT); if (pdirty) pushNow(); }); // trước khi sao lưu
 function pullRemote(adoptProg) {
   const r = store.get('prefs', 'pylab'); if (!r) return;
   let ch = false;

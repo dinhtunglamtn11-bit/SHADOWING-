@@ -847,3 +847,70 @@ body.vx-on #cueList { display: none; }
 
 /* Luyện âm · mục Bộ thủ: chữ bộ thủ to, dễ nhìn nét */
 .plcard .plhz.radhz{font-size:84px;line-height:1.15;text-align:center;margin:8px 0}
+
+/* Passport: dấu hạng, bản đồ thế giới, hộ chiếu */
+.pp-wtabs { display: flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; }
+.pp-wt { font: inherit; color: var(--text); background: var(--panel); border: 3px solid var(--line); padding: 5px 14px; cursor: pointer; }
+.pp-wt.on { background: var(--hl, #ffd84d); color: #2b1d3a; border-color: var(--ink, #2b1d3a); font-weight: 700; }
+.pp-stamp { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; flex: 0 0 auto; border-radius: 50%; border: 4px double var(--line); font-size: 22px; line-height: 1; transform: rotate(-9deg); background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .15); }
+.pp-stamp.sm { width: 28px; height: 28px; font-size: 14px; border-width: 3px; margin-left: auto; }
+.pp-stamp.t0 { border-style: dashed; opacity: .5; }
+.pp-stamp.t1 { border-color: #cd7f32; background: rgba(205, 127, 50, .18); }
+.pp-stamp.t2 { border-color: #c9d1e2; background: rgba(201, 209, 226, .2); }
+.pp-stamp.t3 { border-color: #ffd84d; background: rgba(255, 216, 77, .2); }
+.pp-stamp.t4 { border-color: #5be0ff; background: rgba(91, 224, 255, .22); box-shadow: 0 0 10px rgba(91, 224, 255, .8); animation: ppStampGlow 2s ease-in-out infinite; }
+@keyframes ppStampGlow { 50% { box-shadow: 0 0 18px rgba(91, 224, 255, 1); } }
+.pp-ctry { position: relative; }
+.pp-rank { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin: 8px 0; background: var(--panel); border: 4px solid var(--line); }
+.pp-rank > .grow { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pp-rb { display: block; height: 10px; background: rgba(0, 0, 0, .3); border: 2px solid var(--line); }
+.pp-rb b { display: block; height: 100%; background: linear-gradient(90deg, #cd7f32, #ffd84d, #5be0ff); }
+.pp-mapsum { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 8px; }
+.pp-map { position: relative; width: 100%; aspect-ratio: 288 / 114; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #1c2a78, #0d1240 75%); border: 4px solid var(--line); }
+.pp-mapcv { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.pp-maploading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.pp-pin { position: absolute; transform: translate(-50%, -50%); width: 16px; height: 16px; padding: 0; border-radius: 50%; border: 3px solid #fff; background: #d9c8ef; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 0 rgba(0, 0, 0, .4); animation: ppPinPulse 2.4s ease-in-out infinite; }
+.pp-pin::after { content: ''; position: absolute; inset: -9px; }
+.pp-pin i { font-style: normal; font-size: 9px; line-height: 1; }
+.pp-pin.t1 { background: #cd7f32; } .pp-pin.t2 { background: #c9d1e2; } .pp-pin.t3 { background: #ffd84d; }
+.pp-pin.t1, .pp-pin.t2, .pp-pin.t3 { animation: none; }
+.pp-pin.t4 { background: #5be0ff; border-color: #fff; width: 20px; height: 20px; animation: ppPinGlow 1.4s ease-in-out infinite; }
+.pp-pin:hover, .pp-pin:focus-visible { transform: translate(-50%, -50%) scale(1.35); z-index: 2; }
+@keyframes ppPinPulse { 50% { box-shadow: 0 0 0 6px rgba(217, 200, 239, .35); } }
+@keyframes ppPinGlow { 0%, 100% { box-shadow: 0 0 6px 2px rgba(91, 224, 255, .9), 0 0 0 0 rgba(91, 224, 255, .6); } 50% { box-shadow: 0 0 14px 5px rgba(91, 224, 255, 1), 0 0 0 9px rgba(91, 224, 255, 0); } }
+:root[data-motion=off] .pp-pin, :root[data-motion=off] .pp-stamp { animation: none; }
+.pp-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0; font-size: 13px; }
+.pp-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.pp-legend .lg { width: 14px; height: 14px; border: 2px solid #fff; border-radius: 50%; background: #d9c8ef; }
+.pp-legend .lg.t1 { background: #cd7f32; } .pp-legend .lg.t2 { background: #c9d1e2; } .pp-legend .lg.t3 { background: #ffd84d; } .pp-legend .lg.t4 { background: #5be0ff; }
+.pp-pg { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.pp-pc { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px; cursor: pointer; font: inherit; color: var(--text); background: var(--panel); border: 4px solid var(--line); }
+.pp-pc:hover { border-color: var(--hl, #ffd84d); }
+.pp-pc.t4 { border-color: #5be0ff; box-shadow: 0 0 10px rgba(91, 224, 255, .5); }
+.pp-pc canvas { width: 64px; height: 48px; image-rendering: pixelated; }
+.pp-lad { display: flex; gap: 3px; }
+.pp-lad i { font-style: normal; font-size: 18px; filter: grayscale(1); opacity: .3; }
+.pp-lad i.on { filter: none; opacity: 1; }
+
+/* Lame: cử động và biểu cảm */
+#lameEdge { transform-origin: 50% 100%; }
+#lameEdge.fx-hop { animation: lmHop .9s ease-out 1; }
+#lameEdge.fx-shake { animation: lmShake .6s ease-in-out 1; }
+#lameEdge.fx-wave { animation: lmWave .9s ease-in-out 1; }
+#lameEdge.fx-pop { animation: lmPop .5s ease-out 1; }
+#lameEdge.fx-spin { animation: lmSpin 1s ease-in-out 1; }
+#lameEdge.fx-cheer { animation: lmCheer 1.2s ease-in-out 1; }
+#lameEdge.fx-sleep { animation: lmSleep 3.2s ease-in-out infinite; }
+:root[data-motion=off] #lameEdge[class] { animation: none; }
+@keyframes lmHop { 0%, 100% { transform: translateY(0); } 20% { transform: translateY(-24px); } 40% { transform: translateY(0); } 60% { transform: translateY(-12px); } 80% { transform: translateY(0); } }
+@keyframes lmShake { 0%, 100% { transform: translateX(0); } 15% { transform: translateX(-6px); } 35% { transform: translateX(6px); } 55% { transform: translateX(-5px); } 75% { transform: translateX(4px); } }
+@keyframes lmWave { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-9deg); } 40% { transform: rotate(8deg); } 60% { transform: rotate(-7deg); } 80% { transform: rotate(5deg); } }
+@keyframes lmPop { 0% { transform: scale(1); } 40% { transform: scale(1.22, .9); } 70% { transform: scale(.94, 1.1); } 100% { transform: scale(1); } }
+@keyframes lmSpin { 0% { transform: translateY(0) rotate(0); } 35% { transform: translateY(-26px) rotate(180deg); } 70% { transform: translateY(-26px) rotate(360deg); } 100% { transform: translateY(0) rotate(360deg); } }
+@keyframes lmCheer { 0%, 100% { transform: translateY(0) rotate(0); } 15% { transform: translateY(-20px) rotate(-7deg); } 30% { transform: translateY(0) rotate(0); } 45% { transform: translateY(-20px) rotate(7deg); } 60% { transform: translateY(0) rotate(0); } 75% { transform: translateY(-12px); } }
+@keyframes lmSleep { 0%, 100% { transform: rotate(-3deg) translateY(0); } 50% { transform: rotate(3deg) translateY(2px); } }
+.lameBubble { position: fixed; z-index: 41; pointer-events: none; padding: 4px 9px; font-size: 15px; font-weight: 700; color: #2b1d3a; background: #fff; border: 3px solid #2b1d3a; box-shadow: 0 3px 0 rgba(0, 0, 0, .3); white-space: nowrap; animation: lmBubble 2.2s ease-out forwards; }
+.lameBubble::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -5px; width: 8px; height: 8px; background: #fff; border-right: 3px solid #2b1d3a; border-bottom: 3px solid #2b1d3a; transform: rotate(45deg); }
+@keyframes lmBubble { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.8); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; transform: translate(-50%, -4px); } 100% { opacity: 0; transform: translate(-50%, -10px); } }
+:root[data-motion=off] .lameBubble { animation: none; opacity: 1; }
+:root[data-motion=off] .lameBubble { transform: translateX(-50%); }

@@ -1253,4 +1253,8 @@ export default {
   "Thủy tinh (mới)": "Glass (new)",
   "Nhỏ": "Small",
   "Lớn": "Large",
-}
+  "⬇ Chỉ tiến độ (nhẹ)": "⬇ Progress only (light)",
+  "Chỉ lịch sử học, xu và thẻ Passport, thói quen, Luyện âm, thẻ ôn, câu sai: file nhỏ, hợp để chuyển máy": "Only study history, coins and Passport cards, habits, Pronunciation lab, review cards and mistakes: a small file, good for moving to another device",
+  "Chỉ tiến độ": "Progress only",
+  " gồm lịch sử học, xu và thẻ Passport, đồ đã mua, thói quen, Luyện âm (gồm Bộ thủ), thẻ ôn và câu sai, nhưng không có phụ đề, ghi chú, bộ bài tập. Cả hai loại file đều khôi phục được từ nút bên cạnh.": " includes study history, coins and Passport cards, purchased items, habits, Pronunciation lab (with Radicals), review cards and mistakes, but no subtitles, notes or exercise sets. Both kinds of file can be restored with the button next to it.",
+  "Đã tạo file sao lưu tiến độ": "Progress backup file created",}

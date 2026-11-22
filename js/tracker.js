@@ -1,7 +1,7 @@
 // Ghi lại thời gian và hoạt động học, tính theo giờ Việt Nam.
 // Mỗi máy ghi vào tài liệu riêng (ngày_máy) nên hai máy học cùng lúc không đè dữ liệu nhau.
 import * as store from './store.js';
-import { vnDate, vnHour, deviceId } from './util.js';
+import { vnDate, vnHour, deviceId, bus } from './util.js';
 
 const sources = [];
 let pend = {};
@@ -36,8 +36,8 @@ export const speak = () => { ensure().k++; flush(); };
 export const hw = () => { ensure().x++; flush(); };                  // viết xong 1 chữ
 export const card = () => { ensure().c++; flush(); };               // ôn 1 thẻ
 export const world = () => { ensure().n++; flush(); };               // đọc xong 1 bài ở Thế giới của tôi
-export const test = pct => { const p = ensure(); p.t++; if (pct >= 80) p.tp++; flush(); }; // nộp 1 bài kiểm tra (tp = đạt từ 80%)
-export const quiz = ok => { const p = ensure(); p.q++; if (ok) p.qc++; flush(); }; // làm 1 câu bài tập
+export const test = pct => { const p = ensure(); p.t++; if (pct >= 80) p.tp++; flush(); bus.emit('lamefx', pct >= 80 ? 'cheer' : 'bad'); }; // nộp 1 bài kiểm tra (tp = đạt từ 80%)
+export const quiz = ok => { const p = ensure(); p.q++; if (ok) p.qc++; flush(); bus.emit('lamefx', ok ? 'ok' : 'bad'); }; // làm 1 câu bài tập
 
 export function flush() {
   const p = pend;

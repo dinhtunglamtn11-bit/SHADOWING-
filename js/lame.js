@@ -4,6 +4,7 @@ import { $, bus } from './util.js';
 import { uiLang } from './i18n.js';
 import { getUi } from './settings.js';
 import * as passport from './passport.js';
+import * as fx from './lamefx.js';
 
 const t = (vi, en) => (uiLang === 'vi' ? vi : en);
 const LABEL = { outfit: ['Trang phục', 'Outfit'], head: ['Đồ đội đầu / kiểu tóc', 'Headwear / hairstyle'], face: ['Mặt nạ', 'Mask'], waist: ['Đai', 'Belt'], feet: ['Giày dép', 'Footwear'], hold: ['Cầm trên tay', 'Held item'], pet: ['Đi cùng', 'Companion'] };
@@ -23,8 +24,9 @@ async function refresh() {
   edge.hidden = !visible();
   if (edge.hidden) return;
   if (busy) return; busy = true;
-  try { await load(); const eq = passport.getEq(), g = L.lameGrid(eq, items), s = +(getUi().lameSz) || 3; paintGrid(edge, g, s); edge.title = 'Lame'; } finally { busy = false; }
+  try { await load(); const eq = passport.getEq(), g = fx.compose(L, eq, items), s = +(getUi().lameSz) || 3; paintGrid(edge, g, s); edge.title = 'Lame'; } finally { busy = false; }
 }
+function paintNow() { if (!L || !items || !edge || edge.hidden) return; paintGrid(edge, fx.compose(L, passport.getEq(), items), +(getUi().lameSz) || 3); } // vẽ lại ngay (nét mặt, dáng nhún), không cần nạp lại
 async function drawPreview() {
   const cv = $('#lamePrev'); if (!cv) return;
   await load(); const eq = passport.getEq(); paintGrid(cv, L.lameGrid(eq, items), 5);
@@ -49,8 +51,9 @@ async function redrawAll() { await Promise.all([refresh(), drawPreview().catch((
 
 export function init() {
   edge = document.createElement('canvas'); edge.id = 'lameEdge'; edge.hidden = true; edge.setAttribute('role', 'button'); edge.setAttribute('aria-label', 'Lame');
-  edge.addEventListener('click', () => bus.emit('nav', 'passport'));
+  edge.addEventListener('click', () => { fx.play('greet'); setTimeout(() => bus.emit('nav', 'passport'), 550); }); // chào một cái rồi mới sang Passport
   document.body.append(edge);
+  fx.init({ edge, repaint: paintNow, eq: () => passport.getEq(), items: () => items });
   bus.on('show', () => refresh());
   bus.on('lame', () => redrawAll());
   bus.on('settingsOpen', () => { drawPreview().catch(() => {}); drawSlots().catch(() => {}); });

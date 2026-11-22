@@ -1,5 +1,5 @@
 // Sao lưu và khôi phục dữ liệu (phụ đề, thẻ, bài tập, tiến độ…). File video/PDF/âm thanh không nằm trong bản sao lưu.
-import { $, toast, fmtMB, vnDate, loadSimplifier } from './util.js';
+import { $, toast, fmtMB, vnDate, loadSimplifier, bus } from './util.js';
 import * as store from './store.js';
 import { prefs, savePrefs, zhText } from './prefs.js';
 import * as cards from './cards.js';
@@ -68,12 +68,35 @@ export function getBk() {
 }
 export function setBk(patch) { try { localStorage.setItem('bk', JSON.stringify({ ...getBk(), ...patch })); } catch { /* bỏ qua */ } }
 
-export function exportBackup() {
-  const d = store.dump();
-  download(`shadowing-backup-${vnDate()}.json`, JSON.stringify({ app: 'shadowing', version: 1, exported: new Date().toISOString(), data: d }), 'application/json');
+// Cài đặt riêng của máy (chỉ nằm trong trình duyệt, không có trong kho đồng bộ): đi kèm file sao lưu, khi khôi phục chỉ điền vào chỗ còn trống
+const LOCAL_KEYS = ['ui', 'lang', 'studyNew', 'voices', 'muteAll', 'lookup', 'hw:list:zh', 'readvi', 'tapread', 'achSeen'];
+// Bản "tiến độ" nhẹ: chỉ lịch sử học, xu / thẻ Passport / thói quen / Luyện âm (nằm trong prefs), thẻ ôn và câu sai. Không có phụ đề, ghi chú, bộ bài tập.
+const LIGHT = ['days', 'prefs', 'cards', 'mistakes'];
+// Ba tài liệu tiến độ này tự gộp theo từng phần (thẻ đã mua lấy hợp, xu và mức hoàn thành lấy số lớn hơn…), nên khi khôi phục luôn nhận bản trong file.
+// Nếu không, máy mới (đã tự tạo sẵn tài liệu rỗng với giờ mới hơn file) sẽ bỏ qua bản sao lưu và mất hết tiến độ.
+const MERGED = { prefs: ['passport', 'habits', 'pylab'] };
+function snapshot(light) {
+  bus.emit('flush'); // các tính năng ghi dở (Passport, thói quen, Luyện âm) đẩy nốt dữ liệu vào kho trước khi chụp
+  const all = store.dump(), data = light ? Object.fromEntries(LIGHT.map(c => [c, all[c]])) : all, local = {};
+  for (const k of LOCAL_KEYS) { try { const v = localStorage.getItem(k); if (v != null) local[k] = v; } catch { /* bỏ qua */ } }
+  return { app: 'shadowing', version: 2, kind: light ? 'progress' : 'full', exported: new Date().toISOString(), data, local };
+}
+export function exportBackup(light) {
+  light = light === true;
+  download(`shadowing-${light ? 'tiendo' : 'backup'}-${vnDate()}.json`, JSON.stringify(snapshot(light)), 'application/json');
   setBk({ last: Date.now(), snooze: 0 });
   $('#bkBar').hidden = true;
-  toast('Đã tạo file sao lưu');
+  toast(light ? 'Đã tạo file sao lưu tiến độ' : 'Đã tạo file sao lưu');
+}
+// Mô tả ngắn nội dung một bản sao lưu: tiến độ Passport, số mục
+function describe(data) {
+  const pp = (data.prefs || []).find(p => p.id === 'passport'), cards = (data.cards || []).filter(c => !c.deleted).length;
+  const parts = [];
+  if (pp) parts.push(`Passport: ${(pp.own || []).length} thẻ`);
+  if ((data.days || []).length) parts.push(`${data.days.length} ngày học`);
+  if (cards) parts.push(`${cards} thẻ ôn`);
+  const rest = Object.entries(data).filter(([c]) => !['days', 'prefs', 'cards', 'mistakes'].includes(c)).map(([c, l]) => [c, l.filter(d => !d.deleted).length]).filter(([, n]) => n).map(([c, n]) => `${c}: ${n}`);
+  return parts.concat(rest).join(' · ') || 'trống';
 }
 
 function hasData() { return store.list('items').length + store.list('cards').length + store.list('sets').length + store.list('articles').length > 0; }
@@ -102,14 +125,15 @@ export function init() {
   };
   $('#btnData').onclick = async () => {
     $('#simpOnly').checked = !!prefs.simpOnly;
-    const d = store.dump();
-    $('#dataInfo').textContent = 'Trong máy này: ' + summary(d);
+    const d = store.dump(), pp = store.get('prefs', 'passport');
+    $('#dataInfo').textContent = 'Trong máy này: ' + summary(d) + (pp ? ` · Passport: ${(pp.own || []).length} thẻ` : '');
     const u = await store.usage();
     $('#dataUsage').textContent = u ? `Bộ nhớ app đang dùng ${fmtMB(u.used)} (gồm video/PDF/âm thanh đã lưu trong máy này).` : '';
     $('#dataDlg').showModal();
   };
   $('#dataClose').onclick = () => $('#dataDlg').close();
-  $('#dataExport').onclick = exportBackup;
+  $('#dataExport').onclick = () => exportBackup(false);
+  $('#dataExportLight').onclick = () => exportBackup(true);
   checkReminder();
   setInterval(checkReminder, 6 * 3600e3);
   $('#dataImport').onclick = () => {
@@ -119,9 +143,13 @@ export function init() {
       try {
         const j = JSON.parse(await f.text());
         if (j.app !== 'shadowing' || !j.data) throw new Error('không phải file sao lưu của app này');
-        let n = 0, skip = 0;
-        for (const [c, list] of Object.entries(j.data)) for (const d of list) { if (store.restore(c, d.id, d)) n++; else skip++; }
-        toast(`Đã khôi phục ${n} mục${skip ? ` (bỏ qua ${skip} mục đã có bản mới hơn)` : ''}`, 5000);
+        const when = j.exported ? new Date(j.exported).toLocaleString('vi-VN') : 'không rõ ngày';
+        if (!confirm(`File sao lưu ${j.kind === 'progress' ? '(chỉ tiến độ) ' : ''}tạo lúc ${when}:\n${describe(j.data)}\n\nKhôi phục vào máy này? (Chỉ ghi đè những mục mới hơn bản đang có.)`)) return;
+        let n = 0, skip = 0, setn = 0;
+        for (const [c, list] of Object.entries(j.data)) for (const d of list) { const force = (MERGED[c] || []).includes(d.id); if (store.restore(c, d.id, force ? { ...d, u: Date.now() } : d)) n++; else skip++; }
+        for (const [k, v] of Object.entries(j.local || {})) { try { if (LOCAL_KEYS.includes(k) && localStorage.getItem(k) == null) { localStorage.setItem(k, v); setn++; } } catch { /* bỏ qua */ } }
+        toast(`Đã khôi phục ${n} mục${skip ? ` (bỏ qua ${skip} mục đã có bản mới hơn)` : ''}${setn ? `, ${setn} cài đặt (đang tải lại…)` : ''}`, 5000);
+        if (setn) setTimeout(() => location.reload(), 1800);
         $('#dataInfo').textContent = 'Trong máy này: ' + summary(store.dump());
       } catch (e) { toast('Không đọc được file: ' + e.message, 5000); }
     };
