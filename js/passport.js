@@ -8,21 +8,23 @@ import * as A from './achieve.js';
 import { prefs } from './prefs.js';
 import * as sfx from './sfx.js';
 import { uiLang } from './i18n.js';
+import { WORLD } from './pass-world.js';
 
 let K = null, ST = null; // K: kho thẻ (nạp khi mở lần đầu), ST: câu chuyện
 const KEY = 'passport:v1', WELCOME = 100;
 const TEST_COINS = 3000; // XU THỬ NGHIỆM: cộng thẳng vào số xu để thử mua. Khi thử xong, đổi thành 0 (xu đã mua vẫn giữ, chỉ không cộng thêm nữa).
 let P = load(), root = null, active = false, pushT = 0;
-const S = { group: 1, show: 'all', cc: 'jp' };
-const CC = { jp: ['Nhật Bản', 'Japan'], kr: ['Hàn Quốc', 'South Korea'], cn: ['Trung Quốc', 'China'], vn: ['Việt Nam', 'Vietnam'], fr: ['Pháp', 'France'] };
-const CONT = { as: ['Châu Á', 'Asia'], eu: ['Châu Âu', 'Europe'] }; // thứ tự hiển thị các châu
-const CC_CONT = { jp: 'as', kr: 'as', cn: 'as', vn: 'as', fr: 'eu' };
+const S = { group: 1, cc: 'jp', cont: 'as', reg: 'ea', habOpen: false, he: '', hn: '', hc: '10' };
+// CC / CC_CONT / CC_REG lấy từ pass-world.js: chỉ các nước đã có thẻ (có mã) mới vào đây
+const CC = {}, CC_CONT = {}, CC_REG = {};
+for (const ct of WORLD) for (const rg of ct.regions) for (const e of rg.c) { const [vi, en, code] = e.split('|'); if (code) { CC[code] = [vi, en]; CC_CONT[code] = ct.k; CC_REG[code] = rg.k; } }
+const firstIn = rk => Object.keys(CC).find(c => CC_REG[c] === rk); // nước đầu tiên đã có thẻ trong một khu vực
 const kk = (cc, x) => (cc === 'jp' ? x : cc + ':' + x); // khóa câu chuyện: Nhật giữ khóa cũ, nước khác thêm tiền tố
 const mine = () => K.items.filter(i => i.cc === S.cc);
 const t = (vi, en) => (uiLang === 'vi' ? vi : en);
 const SUBEN = { 'Địa danh': 'Landmarks', 'Mùa và thiên nhiên': 'Seasons and nature', 'Vùng miền': 'Regions', 'Hiện tượng đặc biệt': 'Natural phenomena', 'Trang phục': 'Clothing', 'Phụ kiện': 'Accessories', 'Nhà ở và đồ dùng': 'Home and household', 'Thói quen và phép tắc': 'Habits and etiquette', 'Món ăn': 'Dishes', 'Đồ uống và trà đạo': 'Drinks and tea ceremony', 'Món theo mùa và dịp lễ': 'Seasonal and festive food', 'Quy tắc bàn ăn': 'Table manners', 'Lễ hội và ngày lễ': 'Festivals and holidays', 'Nhạc cụ': 'Instruments', 'Nghệ thuật biểu diễn': 'Performing arts', 'Nghệ thuật truyền thống khác': 'Other traditional arts', 'Văn hóa hiện đại': 'Modern culture', 'Động vật': 'Animals', 'Linh vật': 'Mascots and spirits', 'Tín ngưỡng': 'Beliefs', 'Nhân vật và lịch sử': 'History and figures', 'Người nổi tiếng': 'Famous people' };
 const subName = s => t(s, SUBEN[s] || s);
-const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', 'Trả lời đúng': 'Correct answers', 'Đọc, viết, nghe, nói': 'Reading, writing, listening, speaking', 'Nhiệm vụ ngày': 'Daily quests', 'Đạt mục tiêu ngày': 'Daily goal reached' };
+const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', 'Trả lời đúng': 'Correct answers', 'Đọc, viết, nghe, nói': 'Reading, writing, listening, speaking', 'Nhiệm vụ ngày': 'Daily quests', 'Đạt mục tiêu ngày': 'Daily goal reached', 'Thói quen': 'Habits' };
 
 // ---------- lưu / đồng bộ ----------
 function load() {
@@ -31,6 +33,7 @@ function load() {
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* bỏ qua */ } clearTimeout(pushT); pushT = setTimeout(() => store.put('prefs', 'passport', { ...P }), 2000); }
 function pull() { // gộp với bản từ máy khác: thẻ đã mua lấy hợp, xu cao nhất lấy số lớn hơn
+  if (hpull() && active && K) draw();
   const r = store.get('prefs', 'passport'); if (!r) return;
   const own = new Set([...P.own, ...(r.own || [])]), seen = new Set([...P.seen, ...(r.seen || [])]);
   const since = [P.since, r.since].filter(Boolean).sort()[0] || '';
@@ -47,14 +50,15 @@ function dayParts(date, d) {
   const m = Math.floor((d.sec || 0) / 60), act = (d.r || 0) + (d.w || 0) + (d.d || 0) + (d.k || 0) + (d.x || 0) + (d.n || 0);
   const ds = A.dailyFor(date), done = ds.filter(q => A.isDone(q, d)).length, goal = (prefs.goalMin || 15) * 60;
   return [
-    ['Thời gian học', Math.min(60, m * 2)], ['Ôn thẻ', Math.min(25, Math.floor((d.c || 0) / 2))], ['Trả lời đúng', Math.min(25, d.qc || 0)],
-    ['Đọc, viết, nghe, nói', Math.min(20, act * 2)], ['Nhiệm vụ ngày', done * 8 + (ds.length && done === ds.length ? 20 : 0)], ['Đạt mục tiêu ngày', (d.sec || 0) >= goal ? 15 : 0],
+    ['Thời gian học', m * 2], ['Ôn thẻ', Math.floor((d.c || 0) / 2)], ['Trả lời đúng', d.qc || 0], // không có trần mỗi ngày
+    ['Đọc, viết, nghe, nói', act * 2], ['Nhiệm vụ ngày', done * 8 + (ds.length && done === ds.length ? 20 : 0)], ['Đạt mục tiêu ngày', (d.sec || 0) >= goal ? 15 : 0],
   ];
 }
 function earned() {
   if (!P.since) return 0;
   const m = tracker.byDate(), today = vnDate();
   let sum = WELCOME + TEST_COINS;
+  for (const d of Object.keys(HB.days)) if (d <= today) sum += habitCoins(d);
   for (const [d, x] of m) if (d >= P.since && d <= today) for (const [, v] of dayParts(d, x)) sum += v;
   for (let s = A.weekStart(P.since); s <= today; s = addDays(s, 7)) { const e = addDays(s, 6); sum += A.weeklyFor(s).filter(q => A.isDone(q, A.aggregate(m, s, e < today ? e : today))).length * 30; }
   for (let s = A.monthStart(P.since); s <= today; s = addDays(A.monthEnd(s), 1)) { const e = A.monthEnd(s); sum += A.monthlyFor(s).filter(q => A.isDone(q, A.aggregate(m, s, e < today ? e : today))).length * 100; }
@@ -62,7 +66,42 @@ function earned() {
 }
 const spent = () => P.own.reduce((n, id) => n + (K?.byId[id] ? priceOf(K.byId[id]) : 0), 0);
 function balance() { const e = Math.max(P.hw, earned()); if (e > P.hw) { P.hw = e; save(); } return Math.max(0, e - spent()); } // xu kiếm được không bao giờ giảm lại (đổi mục tiêu ngày không làm mất xu)
-function todayParts() { const d = tracker.byDate().get(vnDate()) || A.blankDay(vnDate()); return dayParts(vnDate(), d); }
+function todayParts() { const d = tracker.byDate().get(vnDate()) || A.blankDay(vnDate()); return [...dayParts(vnDate(), d), ['Thói quen', habitCoins(vnDate())]]; }
+
+// ---------- thói quen hằng ngày (daily habit): tự thêm, tự đặt xu thưởng, tick mỗi ngày ----------
+const HKEY = 'habits:v1';
+function hload() {
+  try { const o = JSON.parse(localStorage.getItem(HKEY) || 'null'); if (o) return { list: o.list || [], days: o.days || {}, t: o.t || 0 }; } catch { /* bỏ qua */ }
+  return { list: [], days: {}, t: 0 };
+}
+let HB = hload(), habPushT = 0;
+const habList = () => HB.list.filter(x => !x.del);
+const habDone = (date, id) => (HB.days[date] || []).includes(id);
+function habitCoins(date) { return (HB.days[date] || []).reduce((n, id) => n + (+(HB.list.find(x => x.id === id)?.coins) || 0), 0); } // thói quen đã xóa vẫn giữ xu đã nhận
+function hsave() {
+  HB.t = Date.now(); try { localStorage.setItem(HKEY, JSON.stringify(HB)); } catch { /* bỏ qua */ }
+  clearTimeout(habPushT); habPushT = setTimeout(() => store.put('prefs', 'habits', { list: HB.list, t: HB.t, ...Object.fromEntries(Object.entries(HB.days).map(([d, a]) => ['d_' + d, a])) }), 2000);
+}
+function hpull() { // gộp với máy khác: danh sách thói quen theo từng mục mới nhất, lịch tick lấy bản mới hơn
+  const r = store.get('prefs', 'habits'); if (!r || !(r.t > HB.t)) return false;
+  const byId = new Map(HB.list.map(x => [x.id, x]));
+  for (const x of r.list || []) { const y = byId.get(x.id); if (!y || (x.t || 0) > (y.t || 0)) byId.set(x.id, x); }
+  const days = {}; for (const k of Object.keys(r)) if (k.startsWith('d_') && Array.isArray(r[k]) && r[k].length) days[k.slice(2)] = r[k];
+  HB = { list: [...byId.values()], days, t: r.t }; try { localStorage.setItem(HKEY, JSON.stringify(HB)); } catch { /* bỏ qua */ }
+  return true;
+}
+function habToggle(id) {
+  const d = vnDate(), a = new Set(HB.days[d] || []); if (a.has(id)) a.delete(id); else { a.add(id); sfx.play('reward'); }
+  if (a.size) HB.days[d] = [...a]; else delete HB.days[d]; hsave(); draw();
+}
+function habSave() {
+  const name = (S.hn || '').trim(), coins = Math.max(0, Math.min(9999, Math.round(+S.hc || 0)));
+  if (!name) { toast(t('Hãy nhập tên thói quen.', 'Enter a habit name.')); return; }
+  if (S.he) { const x = HB.list.find(y => y.id === S.he); if (x) Object.assign(x, { name, coins, t: Date.now() }); }
+  else HB.list.push({ id: 'h' + Date.now().toString(36), name, coins, t: Date.now() });
+  S.he = ''; S.hn = ''; S.hc = '10'; hsave(); draw();
+}
+function habDel(id) { const x = HB.list.find(y => y.id === id); if (!x || !confirm(t(`Xóa thói quen "${x.name}"? Xu đã nhận vẫn được giữ.`, `Delete the habit "${x.name}"? Coins already earned are kept.`))) return; x.del = true; x.t = Date.now(); hsave(); draw(); }
 
 // ---------- vẽ ----------
 const gray = g => g.map(row => row.map(c => { if (!c) return null; const n = parseInt(c.slice(1), 16), r = n >> 16, gg = (n >> 8) & 255, b = n & 255, y = Math.round(0.3 * r + 0.59 * gg + 0.11 * b), v = Math.max(28, Math.round(y * 0.62)); return '#' + [v, v, v].map(x => x.toString(16).padStart(2, '0')).join(''); }));
@@ -84,6 +123,17 @@ const lastVideo = () => store.list('items').filter(i => i.type !== 'note' && (+i
 function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
   const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 64, 48);
   if (cc === 'jp') { c.fillStyle = '#e8452c'; c.beginPath(); c.arc(32, 24, 14, 0, 7); c.fill(); return; }
+  if (cc === 'us') { // cờ Mỹ: 13 sọc đỏ trắng, ô xanh với các ngôi sao
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 64, 48);
+    for (let i = 0; i < 7; i++) { c.fillStyle = '#b22234'; c.fillRect(0, i * 7, 64, 3.6); }
+    c.fillStyle = '#3c3b6e'; c.fillRect(0, 0, 28, 25);
+    c.fillStyle = '#fff'; for (let y = 0; y < 4; y++) for (let x = 0; x < 5; x++) c.fillRect(3 + x * 5, 3 + y * 5, 2, 2);
+    return;
+  }
+  if (cc === 'eg') { // cờ Ai Cập: đỏ, trắng, đen và đại bàng vàng ở giữa
+    c.fillStyle = '#ce1126'; c.fillRect(0, 0, 64, 16); c.fillStyle = '#fff'; c.fillRect(0, 16, 64, 16); c.fillStyle = '#000'; c.fillRect(0, 32, 64, 16);
+    c.fillStyle = '#c09300'; c.fillRect(29, 18, 6, 11); c.fillRect(24, 20, 5, 4); c.fillRect(35, 20, 5, 4); c.fillRect(26, 25, 12, 3); c.fillRect(30, 15, 4, 4); return;
+  }
   if (cc === 'fr') { c.fillStyle = '#0055a4'; c.fillRect(0, 0, 22, 48); c.fillStyle = '#fff'; c.fillRect(22, 0, 21, 48); c.fillStyle = '#ef4135'; c.fillRect(43, 0, 21, 48); return; }
   if (cc === 'vn') {
     c.fillStyle = '#da251d'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#ffff00'; c.beginPath();
@@ -113,17 +163,32 @@ function draw() {
   h.push(`<div class="pp-top"><div class="pp-coins">🪙 <b>${bal}</b></div>${fresh > 0 && P.last ? `<span class="pp-new">+${fresh} ${t('xu mới', 'new coins')}</span>` : ''}
     <span class="grow"></span><button class="btn" id="ppHow">❓ ${t('Cách kiếm xu', 'How to earn coins')}</button></div>`);
   h.push(`<div class="pp-how" id="ppHowBox" ${openHow ? '' : 'hidden'}><b>${t(`Hôm nay đã kiếm được ${todayTot} xu`, `Earned today: ${todayTot} coins`)}</b>${today.map(([k, n]) => `<div class="ppr"><span>${esc(t(k, EARN[k] || k))}</span><b>+${n}</b></div>`).join('')}
-    <div class="dim">${t('Xu tính từ việc học thật: phút học, thẻ ôn, câu trả lời đúng, nhiệm vụ ngày (+8 mỗi nhiệm vụ, +20 khi xong hết), đạt mục tiêu ngày (+15), nhiệm vụ tuần (+30) và nhiệm vụ tháng (+100). Mỗi loại có mức tối đa mỗi ngày.', 'Coins come from real study: study minutes, card reviews, correct answers, daily quests (+8 each, +20 when all are done), reaching the daily goal (+15), weekly quests (+30) and monthly quests (+100). Each kind has a daily limit.')}</div></div>`);
+    <div class="dim">${t('Xu tính từ việc học thật: phút học, thẻ ôn, câu trả lời đúng, nhiệm vụ ngày (+8 mỗi nhiệm vụ, +20 khi xong hết), đạt mục tiêu ngày (+15), nhiệm vụ tuần (+30), nhiệm vụ tháng (+100) và thói quen do bạn tự đặt. Không có mức tối đa.', 'Coins come from real study: study minutes, card reviews, correct answers, daily quests (+8 each, +20 when all are done), reaching the daily goal (+15), weekly quests (+30), monthly quests (+100) and your own habits. There is no cap.')}</div></div>`);
+  const hl = habList(), hDone = hl.filter(x => habDone(vnDate(), x.id)).length, hToday = habitCoins(vnDate());
+  h.push(`<div class="pp-hab"><button class="pp-hh" data-hab="toggle"><b>✅ ${t('Thói quen hằng ngày', 'Daily habits')}</b><small>${hDone}/${hl.length}</small><span class="grow"></span><small>+${hToday} 🪙</small><span>${S.habOpen ? '▾' : '▸'}</span></button>
+    <div class="pp-hbody" ${S.habOpen ? '' : 'hidden'}>${hl.map(x => `<div class="pp-hr${habDone(vnDate(), x.id) ? ' done' : ''}"><button class="pp-hc" data-hc="${x.id}" aria-label="${t('Đánh dấu hoàn thành', 'Mark done')}">${habDone(vnDate(), x.id) ? '☑' : '☐'}</button><span class="gt grow">${esc(x.name)}</span><b>+${+x.coins || 0} 🪙</b><button class="pp-hi" data-he="${x.id}" aria-label="${t('Sửa', 'Edit')}">✏️</button><button class="pp-hi" data-hd="${x.id}" aria-label="${t('Xóa', 'Delete')}">✕</button></div>`).join('') || `<div class="dim">${t('Chưa có thói quen nào. Thêm thói quen của bạn bên dưới, mỗi lần tick xong sẽ nhận xu bạn đặt.', 'No habits yet. Add your own below; each time you tick one you earn the coins you set.')}</div>`}
+      <div class="pp-hf"><input id="habName" class="gt" maxlength="60" placeholder="${t('Tên thói quen (vd: Uống đủ nước)', 'Habit name (e.g. Drink water)')}" value="${esc(S.hn)}"><input id="habCoins" type="number" min="0" max="9999" inputmode="numeric" value="${esc(S.hc)}" aria-label="${t('Xu thưởng', 'Coin reward')}"><span class="dim">🪙</span>
+        <button class="btn primary" data-hab="save">${S.he ? t('Lưu', 'Save') : t('Thêm', 'Add')}</button>${S.he ? `<button class="btn" data-hab="cancel">${t('Hủy', 'Cancel')}</button>` : ''}</div></div></div>`);
   const ctryBtn = c => { const a = stat(K.items.filter(i => i.cc === c)); return `<button class="pp-ctry${c === S.cc ? ' on' : ''}" data-cc="${c}"><canvas class="ppFlag" data-cc="${c}" width="64" height="48"></canvas><span><b>${CC[c][uiLang === 'vi' ? 0 : 1]}</b><span class="dim">${a.n}/${a.t}${a.n === a.t ? ' ⭐' : ''}</span></span></button>`; };
-  h.push(`<div class="pp-cont2">${Object.keys(CONT).map(k => `<div class="pp-cg"><span class="dim">${t(CONT[k][0], CONT[k][1])}</span>${Object.keys(CC).filter(c => CC_CONT[c] === k).map(ctryBtn).join('')}</div>`).join('')}
-    <span class="dim pp-soon">${t('Các châu và nước khác: sắp có', 'More continents and countries: coming soon')}</span></div>`);
+  const contStat = k => stat(K.items.filter(i => CC_CONT[i.cc] === k)), curCont = WORLD.find(x => x.k === S.cont) || WORLD[0];
+  const curReg = curCont.regions.find(r => r.k === S.reg) || curCont.regions[0] || null;
+  const nameOf = e => { const [vi, en] = e.split('|'); return uiLang === 'vi' ? vi : en; };
+  const countStat = ct => { const a = contStat(ct.k); return a.t ? `${a.n}/${a.t}${a.n === a.t ? ' ⭐' : ''}` : '—'; };
+  const regHave = rg => rg.c.filter(e => e.split('|')[2]).length;
+  const offBtn = e => `<div class="pp-ctry off"><span class="ppNoFlag"></span><span><b>${esc(nameOf(e))}</b><span class="dim">${t('Sắp có', 'Coming soon')}</span></span></div>`;
+  h.push(`<div class="pp-cont2"><div class="pp-ct">${WORLD.map(ct => `<button class="pp-cb${ct.k === curCont.k ? ' on' : ''}" data-ct="${ct.k}"><b>${t(ct.vi, ct.en)}</b><span class="dim">${countStat(ct)}</span></button>`).join('')}</div>
+    ${curReg ? `<div class="pp-rg">${curCont.regions.map(rg => `<button class="pp-rb${rg.k === curReg.k ? ' on' : ''}" data-rg="${rg.k}">${t(rg.vi, rg.en)}<small>${regHave(rg)}/${rg.c.length}</small></button>`).join('')}</div>
+    <div class="pp-cl">${curReg.c.map(e => { const code = e.split('|')[2]; return code ? ctryBtn(code) : offBtn(e); }).join('')}</div>` : `<div class="pp-cl"><span class="dim">${t(curCont.note ? curCont.note[0] : '', curCont.note ? curCont.note[1] : '')}</span></div>`}</div>`);
+  if (!curReg || CC_REG[S.cc] !== curReg.k) { // khu vực chưa có nước nào hoặc chưa chọn nước: không hiện thẻ
+    h.push(`<div class="pp-empty dim">${t('Khu vực này chưa có nước nào có thẻ. Hãy chọn một khu vực khác có nước hiện cờ.', 'No country in this region has cards yet. Pick another region that shows a flag.')}</div>`);
+    root.innerHTML = h.join(''); $$('.ppFlag', root).forEach(cv => drawFlag(cv, cv.dataset.cc)); return;
+  }
   h.push(`<div class="pp-tabs">${Object.keys(GROUP).map(g => { const s = stat(mine().filter(i => i.gr === +g)); return `<button class="pp-tab${+g === S.group ? ' on' : ''}" data-g="${g}"><span class="ic">${GROUP[g][2]}</span><span class="tn">${esc(gName(+g))}</span><small>${s.n}/${s.t}</small></button>`; }).join('')}</div>`);
-  h.push(`<div class="pp-filter"><div class="seg" id="ppShow"><button data-s="all" class="${S.show === 'all' ? 'on' : ''}">${t('Tất cả', 'All')}</button><button data-s="no" class="${S.show === 'no' ? 'on' : ''}">${t('Chưa mua', 'Not bought')}</button><button data-s="yes" class="${S.show === 'yes' ? 'on' : ''}">${t('Đã mua', 'Bought')}</button></div></div>`);
   const items = mine().filter(i => i.gr === S.group), gs = stat(items), gDone = gs.n === gs.t;
   h.push(`<div class="pp-grp"><b>${esc(gName(S.group))}</b><small>${gs.n}/${gs.t}</small><span class="grow"></span>
     <button class="btn${gDone ? ' primary' : ''}" data-story="${kk(S.cc, 'g' + S.group)}" ${gDone ? '' : 'disabled'}>${gDone ? '📜 ' + t('Câu chuyện của mục này', 'Story of this section') : '🔒 ' + t(`Mua đủ ${gs.t} thẻ để mở câu chuyện`, `Buy all ${gs.t} cards to unlock the story`)}</button></div>`);
   for (const sub of subsOf(S.group)) {
-    const list = items.filter(i => i.sub === sub), s = stat(list), done = s.n === s.t, shown = list.filter(i => S.show === 'all' || (S.show === 'yes') === own(i.id));
+    const list = items.filter(i => i.sub === sub), s = stat(list), done = s.n === s.t, shown = list;
     h.push(`<div class="pp-sub"><b>${esc(subName(sub))}</b><small>${s.n}/${s.t}</small><span class="grow"></span><button class="btn${done ? ' primary' : ''}" data-story="${esc(kk(S.cc, 's:' + sub))}" ${done ? '' : 'disabled'}>${done ? '📜 ' + t('Câu chuyện', 'Story') : `🔒 ${s.n}/${s.t}`}</button></div>`);
     h.push(`<div class="pp-grid">${shown.map(i => `<button class="pp-card${own(i.id) ? ' own' : ''}" data-id="${i.id}"><span class="cv"></span><span class="nm gt">${esc(name(i))}</span><span class="pr">${own(i.id) ? '✓' : '🪙 ' + priceOf(i)}</span></button>`).join('') || `<div class="dim">${t('Không có thẻ nào.', 'No cards.')}</div>`}</div>`);
   }
@@ -179,8 +244,12 @@ async function ensure() {
   await import('./pass-vn6.js');
   await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-fr${i}.js`)));
   await import('./pass-fr6.js');
+  await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-eg${i}.js`)));
+  await import('./pass-eg6.js');
+  await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-us${i}.js`)));
+  await import('./pass-us6.js');
   await import('./pass-cn6.js'); // chỉnh lại thẻ Trung Quốc: phải nạp sau khi cn1–5 đã đăng ký xong
-  ST = { jp: await import('./pass-story.js'), kr: await import('./pass-story-kr.js'), cn: await import('./pass-story-cn.js'), vn: await import('./pass-story-vn.js'), fr: await import('./pass-story-fr.js') };
+  ST = { jp: await import('./pass-story.js'), kr: await import('./pass-story-kr.js'), cn: await import('./pass-story-cn.js'), vn: await import('./pass-story-vn.js'), fr: await import('./pass-story-fr.js'), eg: await import('./pass-story-eg.js'), us: await import('./pass-story-us.js') };
   K = { items: kit.ITEMS, byId: Object.fromEntries(kit.ITEMS.map(i => [i.id, i])), render: kit.render, paint: kit.paint };
 }
 async function open() {
@@ -201,12 +270,26 @@ export function init() {
     if (!active || !root || !root.contains(e.target)) return;
     const b = e.target.closest('button'); if (!b) return;
     if (b.id === 'ppHow') { $('#ppHowBox').hidden = !$('#ppHowBox').hidden; return; }
-    if (b.dataset.cc) { S.cc = b.dataset.cc; S.group = 1; draw(); return; }
+    if (b.dataset.ct) { // chọn châu: sang khu vực đầu tiên có nước đã làm (nếu không có thì khu vực đầu tiên)
+      const ct = WORLD.find(x => x.k === b.dataset.ct), rg = ct.regions.find(r => firstIn(r.k)) || ct.regions[0];
+      S.cont = ct.k; S.reg = rg ? rg.k : ''; const c = rg && firstIn(rg.k); if (c && CC_REG[S.cc] !== rg.k) { S.cc = c; S.group = 1; } draw(); return;
+    }
+    if (b.dataset.rg) { // chọn khu vực: nếu đang xem nước ở khu vực khác thì chuyển sang nước đầu tiên của khu vực này
+      S.reg = b.dataset.rg; const c = firstIn(S.reg); if (c && CC_REG[S.cc] !== S.reg) { S.cc = c; S.group = 1; } draw(); return;
+    }
+    if (b.dataset.cc) { S.cc = b.dataset.cc; S.cont = CC_CONT[S.cc]; S.reg = CC_REG[S.cc]; S.group = 1; draw(); return; }
     if (b.dataset.g) { S.group = +b.dataset.g; draw(); return; }
-    if (b.closest('#ppShow')) { S.show = b.dataset.s; draw(); return; }
+    if (b.dataset.hab === 'toggle') { S.habOpen = !S.habOpen; draw(); return; }
+    if (b.dataset.hab === 'save') { habSave(); return; }
+    if (b.dataset.hab === 'cancel') { S.he = ''; S.hn = ''; S.hc = '10'; draw(); return; }
+    if (b.dataset.hc) { habToggle(b.dataset.hc); return; }
+    if (b.dataset.he) { const x = HB.list.find(y => y.id === b.dataset.he); if (x) { S.he = x.id; S.hn = x.name; S.hc = String(x.coins ?? 0); draw(); $('#habName')?.focus(); } return; }
+    if (b.dataset.hd) { habDel(b.dataset.hd); return; }
     if (b.dataset.story) { openStory(b.dataset.story); return; }
     if (b.classList.contains('pp-card')) openCard(b.dataset.id);
   });
+  document.addEventListener('input', e => { if (e.target.id === 'habName') S.hn = e.target.value; else if (e.target.id === 'habCoins') S.hc = e.target.value; }); // giữ chữ đang gõ khi trang vẽ lại
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.target.id === 'habName' || e.target.id === 'habCoins')) { e.preventDefault(); habSave(); } });
   $('#pdClose')?.addEventListener('click', () => $('#passDlg').close());
   $('#psClose')?.addEventListener('click', () => $('#passStory').close());
   for (const id of ['passDlg', 'passStory']) $('#' + id)?.addEventListener('click', e => { if (e.target.id === id) e.target.close(); });
