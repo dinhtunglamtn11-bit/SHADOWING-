@@ -14,7 +14,8 @@ import('./pass-count.js').then(m => { COUNT = m.COUNT; if (active && K) draw(); 
 
 let K = null, ST = null; // K: kho thẻ (nạp khi mở lần đầu), ST: câu chuyện
 const KEY = 'passport:v1', WELCOME = 100;
-const TEST_COINS = 3000; // XU THỬ NGHIỆM: cộng thẳng vào số xu để thử mua. Khi thử xong, đổi thành 0 (xu đã mua vẫn giữ, chỉ không cộng thêm nữa).
+const HWV = 2;
+const TEST_COINS = 300; // XU THỬ NGHIỆM: cộng thẳng vào số xu để thử mua. Khi thử xong, đổi thành 0 (xu đã mua vẫn giữ, chỉ không cộng thêm nữa).
 let P = load(), root = null, active = false, pushT = 0;
 const S = { group: 1, cc: 'jp', cont: 'as', reg: 'ea', lv: 'world', habOpen: true, he: '', hn: '', hc: '10' };
 // CC / CC_CONT / CC_REG lấy từ pass-world.js: chỉ các nước đã có thẻ (có mã) mới vào đây
@@ -26,12 +27,13 @@ const mine = () => K.items.filter(i => i.cc === S.cc);
 const t = (vi, en) => (uiLang === 'vi' ? vi : en);
 const SUBEN = { 'Địa danh': 'Landmarks', 'Mùa và thiên nhiên': 'Seasons and nature', 'Vùng miền': 'Regions', 'Hiện tượng đặc biệt': 'Natural phenomena', 'Trang phục': 'Clothing', 'Phụ kiện': 'Accessories', 'Nhà ở và đồ dùng': 'Home and household', 'Thói quen và phép tắc': 'Habits and etiquette', 'Món ăn': 'Dishes', 'Đồ uống và trà đạo': 'Drinks and tea ceremony', 'Món theo mùa và dịp lễ': 'Seasonal and festive food', 'Quy tắc bàn ăn': 'Table manners', 'Lễ hội và ngày lễ': 'Festivals and holidays', 'Nhạc cụ': 'Instruments', 'Nghệ thuật biểu diễn': 'Performing arts', 'Nghệ thuật truyền thống khác': 'Other traditional arts', 'Văn hóa hiện đại': 'Modern culture', 'Động vật': 'Animals', 'Linh vật': 'Mascots and spirits', 'Tín ngưỡng': 'Beliefs', 'Nhân vật và lịch sử': 'History and figures', 'Người nổi tiếng': 'Famous people' };
 const subName = s => t(s, SUBEN[s] || s);
-const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', 'Trả lời đúng': 'Correct answers', 'Đọc, viết, nghe, nói': 'Reading, writing, listening, speaking', 'Nhiệm vụ ngày': 'Daily quests', 'Đạt mục tiêu ngày': 'Daily goal reached', 'Thói quen': 'Habits' };
+const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', 'Trả lời đúng': 'Correct answers', 'Đọc, viết, nghe, nói': 'Reading, writing, listening, speaking', 'Nhiệm vụ ngày': 'Daily quests', 'Đạt mục tiêu ngày': 'Daily goal reached', 'Thói quen': 'Habits', 'Thưởng chuỗi ngày': 'Streak bonus' };
 
 // ---------- lưu / đồng bộ ----------
 function load() {
-  try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) return { own: o.own || [], since: o.since || '', hw: o.hw || 0, seen: o.seen || [], last: o.last || 0, eq: o.eq || {}, eqT: o.eqT || 0 }; } catch { /* bỏ qua */ }
-  return { own: [], since: '', hw: 0, seen: [], last: 0, eq: {}, eqT: 0 };
+  // hwv 2: lần đổi xu thử nghiệm 3000 → 300, đặt lại mức xu cao nhất một lần (xu thử cũ bị thu hồi)
+  try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) { const mig = !(o.hwv >= HWV); return { own: o.own || [], since: o.since || '', hw: mig ? 0 : o.hw || 0, hwv: HWV, seen: o.seen || [], last: mig ? 0 : o.last || 0, eq: o.eq || {}, eqT: o.eqT || 0, paid: o.paid || {}, extra: o.extra || 0, chestD: o.chestD || '', qz: o.qz || { d: '', n: 0 }, wk: o.wk || null, stamps: o.stamps || [] }; } } catch { /* bỏ qua */ }
+  return { own: [], since: '', hw: 0, hwv: HWV, seen: [], last: 0, eq: {}, eqT: 0, paid: {}, extra: 0, chestD: '', qz: { d: '', n: 0 }, wk: null, stamps: [] };
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* bỏ qua */ } clearTimeout(pushT); pushT = setTimeout(() => store.put('prefs', 'passport', { ...P }), 2000); }
 function pull() { // gộp với bản từ máy khác: thẻ đã mua lấy hợp, xu cao nhất lấy số lớn hơn
@@ -39,9 +41,16 @@ function pull() { // gộp với bản từ máy khác: thẻ đã mua lấy h�
   const r = store.get('prefs', 'passport'); if (!r) return;
   const own = new Set([...P.own, ...(r.own || [])]), seen = new Set([...P.seen, ...(r.seen || [])]);
   const since = [P.since, r.since].filter(Boolean).sort()[0] || '';
-  const ch = own.size !== P.own.length || seen.size !== P.seen.length || since !== P.since || (r.hw || 0) > P.hw || (r.eqT || 0) > (P.eqT || 0);
+  let hw = P.hw, hwv = P.hwv || 0; // bản xu mới hơn (hwv lớn hơn) thắng; cùng bản thì lấy xu cao hơn
+  if ((r.hwv || 0) > hwv) { hw = r.hw || 0; hwv = r.hwv; } else if ((r.hwv || 0) === hwv) hw = Math.max(hw, r.hw || 0);
+  const paid = { ...(r.paid || {}), ...(P.paid || {}) };
+  const extra = Math.max(P.extra || 0, r.extra || 0), chestD = [P.chestD || '', r.chestD || ''].sort().pop(), stamps = [...new Set([...(P.stamps || []), ...(r.stamps || [])])];
+  const qz = (r.qz?.d || '') > (P.qz?.d || '') || ((r.qz?.d || '') === (P.qz?.d || '') && (r.qz?.n || 0) > (P.qz?.n || 0)) ? r.qz : (P.qz || { d: '', n: 0 });
+  let wk = P.wk; if (r.wk && (!wk || r.wk.k > wk.k)) wk = r.wk; else if (r.wk && wk && r.wk.k === wk.k) wk = { ...wk, n: Math.max(wk.n || 0, r.wk.n || 0), claimed: !!(wk.claimed || r.wk.claimed) };
+  const more = extra !== (P.extra || 0) || chestD !== (P.chestD || '') || stamps.length !== (P.stamps || []).length || JSON.stringify(qz) !== JSON.stringify(P.qz) || JSON.stringify(wk) !== JSON.stringify(P.wk);
+  const ch = more || own.size !== P.own.length || seen.size !== P.seen.length || since !== P.since || hw !== P.hw || hwv !== (P.hwv || 0) || Object.keys(paid).length !== Object.keys(P.paid || {}).length || (r.eqT || 0) > (P.eqT || 0);
   const eqNew = (r.eqT || 0) > (P.eqT || 0);
-  P = { own: [...own], seen: [...seen], since, hw: Math.max(P.hw, r.hw || 0), last: Math.max(P.last, r.last || 0), eq: eqNew ? (r.eq || {}) : (P.eq || {}), eqT: Math.max(P.eqT || 0, r.eqT || 0) };
+  P = { own: [...own], seen: [...seen], since, hw, hwv, paid, extra, chestD, qz, wk, stamps, last: Math.max(P.last, r.last || 0), eq: eqNew ? (r.eq || {}) : (P.eq || {}), eqT: Math.max(P.eqT || 0, r.eqT || 0) };
   if (K && missing()) ensure(S.cc).then(() => { bus.emit('lame'); if (active) draw(); }); // thẻ mới mua ở máy khác thuộc nước chưa nạp
   if (eqNew) bus.emit('lame');
   if (ch) { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* bỏ qua */ } if (active && K) draw(); }
@@ -60,16 +69,29 @@ function dayParts(date, d) {
 function earned() {
   if (!P.since) return 0;
   const m = tracker.byDate(), today = vnDate();
-  let sum = WELCOME + TEST_COINS;
+  let sum = WELCOME + TEST_COINS + (P.extra || 0); // extra: xu từ rương, đố vui, thử thách tuần, tem
   for (const d of Object.keys(HB.days)) if (d <= today) sum += habitCoins(d);
-  for (const [d, x] of m) if (d >= P.since && d <= today) for (const [, v] of dayParts(d, x)) sum += v;
+  for (const [d, x] of m) if (d >= P.since && d <= today) { const b = dayParts(d, x).reduce((n, [, v]) => n + v, 0); sum += b + streakBonus(m, d, b); }
   for (let s = A.weekStart(P.since); s <= today; s = addDays(s, 7)) { const e = addDays(s, 6); sum += A.weeklyFor(s).filter(q => A.isDone(q, A.aggregate(m, s, e < today ? e : today))).length * 30; }
   for (let s = A.monthStart(P.since); s <= today; s = addDays(A.monthEnd(s), 1)) { const e = A.monthEnd(s); sum += A.monthlyFor(s).filter(q => A.isDone(q, A.aggregate(m, s, e < today ? e : today))).length * 100; }
   return sum;
 }
-const spent = () => P.own.reduce((n, id) => n + (K?.byId[id] ? priceOf(K.byId[id]) : 0), 0);
+const spent = () => P.own.reduce((n, id) => n + (P.paid?.[id] ?? (K?.byId[id] ? priceOf(K.byId[id]) : 0)), 0); // giá đã trả lúc mua (có thể được giảm)
+// thưởng chuỗi ngày học: mỗi ngày học liên tiếp trước đó +10% xu của ngày, tối đa +50%
+const studied = d => !!d && (d.sec || 0) >= 60;
+function streakDays(m, date) { let n = 0; for (let d = addDays(date, -1); n < 5; d = addDays(d, -1)) { if (studied(m.get(d))) n++; else break; } return n; }
+const streakPct = (m, date) => 10 * streakDays(m, date);
+const streakBonus = (m, date, base) => (studied(m.get(date)) ? Math.floor(base * streakPct(m, date) / 100) : 0);
+// giảm giá: thẻ cuối còn lại của một mục nhỏ được giảm một nửa
+function curPrice(it) {
+  const base = priceOf(it), sub = K ? K.items.filter(i => i.cc === it.cc && i.sub === it.sub) : [];
+  return sub.length > 1 && sub.filter(i => !own(i.id)).length === 1 && !own(it.id) ? Math.round(base / 2) : base;
+}
 function balance() { const e = Math.max(P.hw, earned()); if (e > P.hw) { P.hw = e; save(); } return Math.max(0, e - spent()); } // xu kiếm được không bao giờ giảm lại (đổi mục tiêu ngày không làm mất xu)
-function todayParts() { const d = tracker.byDate().get(vnDate()) || A.blankDay(vnDate()); return [...dayParts(vnDate(), d), ['Thói quen', habitCoins(vnDate())]]; }
+function todayParts() {
+  const m = tracker.byDate(), d = m.get(vnDate()) || A.blankDay(vnDate()), parts = dayParts(vnDate(), d), base = parts.reduce((n, [, v]) => n + v, 0);
+  return [...parts, ['Thưởng chuỗi ngày', streakBonus(m, vnDate(), base)], ['Thói quen', habitCoins(vnDate())]];
+}
 
 // ---------- thói quen hằng ngày (daily habit): tự thêm, tự đặt xu thưởng, tick mỗi ngày ----------
 const HKEY = 'habits:v1';
@@ -107,6 +129,74 @@ function habSave() {
 }
 function habDel(id) { const x = HB.list.find(y => y.id === id); if (!x || !confirm(t(`Xóa thói quen "${x.name}"? Xu đã nhận vẫn được giữ.`, `Delete the habit "${x.name}"? Coins already earned are kept.`))) return; x.del = true; x.t = Date.now(); hsave(); habRedraw(); }
 
+// ---------- cơ chế vui: rương ngày, đố vui văn hóa, thử thách tuần, tem bộ đồ ----------
+const QZ_MAX = 3, WK_GOAL = 5; // đố vui tối đa 3 lượt/ngày; thử thách tuần: mua 5 thẻ của nước được chọn
+const goalDone = () => { const d = tracker.byDate().get(vnDate()); return !!d && (d.sec || 0) >= (prefs.goalMin || 15) * 60; };
+const chestReady = () => goalDone() && P.chestD !== vnDate();
+const shuffle = a => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
+function giveFree(list) { const c = list[Math.floor(Math.random() * list.length)]; if (!c) return null; P.own.push(c.id); (P.paid ||= {})[c.id] = 0; return c; }
+function openChest() { // rương mỗi ngày sau khi đạt mục tiêu: xu ngẫu nhiên, thỉnh thoảng tặng một thẻ
+  if (!chestReady()) return;
+  P.chestD = vnDate(); const r = Math.random(), free = K.items.filter(i => !own(i.id)); let msg;
+  if (r < 0.15 && free.length) { const c = giveFree(free); msg = t(`🎁 Rương tặng thẻ: ${name(c)}!`, `🎁 The chest gave a card: ${name(c)}!`); }
+  else { const n = r < 0.6 ? 10 + Math.floor(Math.random() * 21) : r < 0.9 ? 30 + Math.floor(Math.random() * 21) : 50 + Math.floor(Math.random() * 21); P.extra = (P.extra || 0) + n; msg = t(`🎁 Rương tặng ${n} xu!`, `🎁 The chest gave ${n} coins!`); }
+  save(); sfx.play('reward'); toast(msg, 3500); draw();
+}
+function weekNow() { // nước của thử thách tuần chọn cố định theo tuần nên mọi máy đều giống nhau
+  const ws = A.weekStart(vnDate()), ccs = Object.keys(CC);
+  if (!P.wk || P.wk.k !== ws) P.wk = { k: ws, cc: ccs[Math.floor(Date.parse(ws) / 6048e5) % ccs.length], n: 0, claimed: false };
+  return P.wk;
+}
+async function claimWeek() {
+  const w = weekNow(); if (w.claimed || w.n < WK_GOAL) return;
+  w.claimed = true; P.extra = (P.extra || 0) + 60;
+  await loadCC(w.cc).catch(() => {});
+  const c = giveFree(K.items.filter(i => i.cc === w.cc && !own(i.id)));
+  save(); sfx.play('reward'); toast(c ? t(`🎯 Hoàn thành! +60 xu và thẻ ${name(c)}`, `🎯 Done! +60 coins and the card ${name(c)}`) : t('🎯 Hoàn thành! +60 xu', '🎯 Done! +60 coins'), 4000); draw();
+}
+function checkStamps() { // mặc đủ ≥3 món của cùng một nước thì được tem + 30 xu (một lần mỗi nước)
+  if (!K) return; const cnt = {};
+  for (const id of Object.values(P.eq || {})) { const c = K.byId[id]?.cc; if (c) cnt[c] = (cnt[c] || 0) + 1; }
+  for (const [c, n] of Object.entries(cnt)) if (n >= 3 && CC[c] && !(P.stamps || []).includes(c)) { (P.stamps ||= []).push(c); P.extra = (P.extra || 0) + 30; toast(t(`🛂 Tem mới: ${CC[c][0]}! +30 xu`, `🛂 New stamp: ${CC[c][1]}! +30 coins`), 4000); }
+}
+function buildQuiz() {
+  const pool = K.items.filter(i => own(i.id) && i.note); if (pool.length < 3) return null;
+  return shuffle(pool).slice(0, 3).map(it => {
+    const word = it.vi.split(' (')[0], q = word.length > 2 ? it.note.split(word).join('…') : it.note;
+    const others = shuffle(K.items.filter(i => i.id !== it.id && i.vi !== it.vi)).slice(0, 3);
+    return { q, ans: it.id, opts: shuffle([it, ...others]).map(i => i.id) };
+  });
+}
+const quizToday = () => (P.qz?.d === vnDate() ? P.qz.n : 0);
+function startQuiz() {
+  if (quizToday() >= QZ_MAX) { toast(t('Hôm nay đã hết lượt đố vui, mai chơi tiếp nhé.', 'No quiz rounds left today.')); return; }
+  const qs = buildQuiz(); if (!qs) { toast(t('Cần mua ít nhất 3 thẻ để chơi đố vui.', 'Buy at least 3 cards to play the quiz.')); return; }
+  S.quiz = { qs, i: 0, right: 0, pick: null }; draw();
+}
+function quizAnswer(k) { const z = S.quiz; if (!z || z.pick !== null) return; z.pick = k; if (z.qs[z.i].opts[k] === z.qs[z.i].ans) { z.right++; sfx.play('unlock'); } draw(); }
+function quizNext() {
+  const z = S.quiz; if (!z || z.pick === null) return; z.pick = null; z.i++;
+  if (z.i >= z.qs.length) { z.done = true; z.coins = z.right * 5 + (z.right === z.qs.length ? 10 : 0); P.qz = { d: vnDate(), n: quizToday() + 1 }; if (z.coins) { P.extra = (P.extra || 0) + z.coins; sfx.play('reward'); } save(); }
+  draw();
+}
+function quizHtml() {
+  const z = S.quiz;
+  if (z.done) return `<div class="pp-quiz"><b>${t('Kết quả', 'Result')}: ${z.right}/${z.qs.length}</b><div>${z.coins ? `+${z.coins} 🪙` : t('Lần sau sẽ tốt hơn!', 'Better luck next time!')}</div><button class="btn primary" data-fun="qclose">${t('Xong', 'Done')}</button></div>`;
+  const q = z.qs[z.i];
+  return `<div class="pp-quiz"><small class="dim">🧠 ${t('Đố vui văn hóa', 'Culture quiz')} · ${z.i + 1}/${z.qs.length}</small><p class="gt">${esc(q.q)}</p><div class="pp-qopts">${q.opts.map((id, k) => { const st = z.pick === null ? '' : id === q.ans ? ' ok' : k === z.pick ? ' bad' : ''; return `<button class="pp-qo${st}" data-fun="qa" data-k="${k}" ${z.pick !== null ? 'disabled' : ''}>${esc(name(K.byId[id]))}</button>`; }).join('')}</div>
+    <div class="row">${z.pick !== null ? `<button class="btn primary" data-fun="qnext">${z.i + 1 >= z.qs.length ? t('Xem kết quả', 'See result') : t('Tiếp →', 'Next →')}</button>` : ''}<button class="btn" data-fun="qclose">${t('Thoát', 'Quit')}</button></div></div>`;
+}
+function funHtml() {
+  const w = weekNow(), cn = CC[w.cc][uiLang === 'vi' ? 0 : 1], left = QZ_MAX - quizToday(), st = P.stamps || [];
+  const chest = chestReady() ? `<button class="btn primary" data-fun="chest">${t('Mở rương', 'Open')}</button>` : `<small class="dim">${P.chestD === vnDate() ? t('Đã mở hôm nay ✓', 'Opened today ✓') : t('Đạt mục tiêu ngày để mở', 'Reach today’s goal to open')}</small>`;
+  const wk = w.claimed ? `<small class="dim">${t('Đã nhận thưởng ✓', 'Reward claimed ✓')}</small>` : w.n >= WK_GOAL ? `<button class="btn primary" data-fun="claimwk">${t('Nhận thưởng', 'Claim')}</button>` : `<small class="dim">${w.n}/${WK_GOAL}</small>`;
+  return `<div class="pp-fun">
+    <div class="pp-fc"><b>🎁 ${t('Rương mỗi ngày', 'Daily chest')}</b><span class="dim">${t('Xu ngẫu nhiên, đôi khi tặng thẻ', 'Random coins, sometimes a card')}</span>${chest}</div>
+    <div class="pp-fc"><b>🧠 ${t('Đố vui văn hóa', 'Culture quiz')}</b><span class="dim">${t('3 câu về thẻ bạn đã mua, +5 xu mỗi câu đúng (+10 nếu đúng cả 3)', '3 questions on cards you own, +5 per correct (+10 for 3/3)')}</span>${left > 0 ? `<button class="btn" data-fun="quiz">${t('Chơi', 'Play')} (${left})</button>` : `<small class="dim">${t('Hết lượt hôm nay', 'Done for today')}</small>`}</div>
+    <div class="pp-fc"><b>🎯 ${t('Thử thách tuần', 'Weekly challenge')}: ${esc(cn)}</b><span class="dim">${t(`Mua ${WK_GOAL} thẻ của ${cn} trong tuần: +60 xu và 1 thẻ miễn phí`, `Buy ${WK_GOAL} ${cn} cards this week: +60 coins and a free card`)}</span>${wk}</div>
+    <div class="pp-fc"><b>🛂 ${t('Tem hộ chiếu', 'Passport stamps')}</b><span class="dim">${t('Cho Lame mặc đủ 3 món của cùng một nước để được tem (+30 xu)', 'Dress Lame in 3 items from one country to earn its stamp (+30 coins)')}</span>${st.length ? `<span class="pp-stamps">${st.map(c => `<canvas class="ppFlag" data-cc="${c}" width="64" height="48" title="${esc(CC[c][uiLang === 'vi' ? 0 : 1])}"></canvas>`).join('')}</span>` : `<small class="dim">${t('Chưa có tem', 'No stamps yet')}</small>`}</div>
+  </div>`;
+}
 // ---------- vẽ ----------
 const gray = g => g.map(row => row.map(c => { if (!c) return null; const n = parseInt(c.slice(1), 16), r = n >> 16, gg = (n >> 8) & 255, b = n & 255, y = Math.round(0.3 * r + 0.59 * gg + 0.11 * b), v = Math.max(28, Math.round(y * 0.62)); return '#' + [v, v, v].map(x => x.toString(16).padStart(2, '0')).join(''); }));
 const cache = new Map();
@@ -208,10 +298,10 @@ function draw() {
   const bal = balance(), today = todayParts(), todayTot = today.reduce((n, p) => n + p[1], 0), fresh = bal - (P.last || 0);
   const all = stat(mine()), openHow = $('#ppHowBox', root) && !$('#ppHowBox', root).hidden;
   const h = [];
-  h.push(`<div class="pp-top"><div class="pp-coins">🪙 <b>${bal}</b></div>${fresh > 0 && P.last ? `<span class="pp-new">+${fresh} ${t('xu mới', 'new coins')}</span>` : ''}
+  h.push(`<div class="pp-top"><div class="pp-coins">🪙 <b>${bal}</b></div>${streakPct(tracker.byDate(), vnDate()) ? `<span class="pp-new">🔥 ${t('Chuỗi', 'Streak')} +${streakPct(tracker.byDate(), vnDate())}%</span>` : ''}${fresh > 0 && P.last ? `<span class="pp-new">+${fresh} ${t('xu mới', 'new coins')}</span>` : ''}
     <span class="grow"></span><button class="btn" id="ppHow">❓ ${t('Cách kiếm xu', 'How to earn coins')}</button></div>`);
   h.push(`<div class="pp-how" id="ppHowBox" ${openHow ? '' : 'hidden'}><b>${t(`Hôm nay đã kiếm được ${todayTot} xu`, `Earned today: ${todayTot} coins`)}</b>${today.map(([k, n]) => `<div class="ppr"><span>${esc(t(k, EARN[k] || k))}</span><b>+${n}</b></div>`).join('')}
-    <div class="dim">${t('Xu tính từ việc học thật: phút học, thẻ ôn, câu trả lời đúng, nhiệm vụ ngày (+8 mỗi nhiệm vụ, +20 khi xong hết), đạt mục tiêu ngày (+15), nhiệm vụ tuần (+30), nhiệm vụ tháng (+100) và thói quen do bạn tự đặt. Không có mức tối đa.', 'Coins come from real study: study minutes, card reviews, correct answers, daily quests (+8 each, +20 when all are done), reaching the daily goal (+15), weekly quests (+30), monthly quests (+100) and your own habits. There is no cap.')}</div></div>`);
+    <div class="dim">${t('Xu tính từ việc học thật: phút học, thẻ ôn, câu trả lời đúng, nhiệm vụ ngày (+8 mỗi nhiệm vụ, +20 khi xong hết), đạt mục tiêu ngày (+15), nhiệm vụ tuần (+30), nhiệm vụ tháng (+100) và thói quen do bạn tự đặt. Không có mức tối đa. Học liên tiếp nhiều ngày được thưởng thêm 10% xu mỗi ngày liên tiếp (tối đa +50%), và thẻ cuối còn lại của một mục nhỏ được giảm nửa giá. Thêm xu từ rương mỗi ngày, đố vui văn hóa, thử thách tuần và tem hộ chiếu.', 'Coins come from real study: study minutes, card reviews, correct answers, daily quests (+8 each, +20 when all are done), reaching the daily goal (+15), weekly quests (+30), monthly quests (+100) and your own habits. There is no cap. Studying on consecutive days adds 10% per day in a row (up to +50%), and the last remaining card of a sub-section is half price. More coins come from the daily chest, culture quiz, weekly challenge and passport stamps.')}</div></div>`);
   const ctryBtn = c => { const a = { n: cown(c), t: ctot(c) }; return `<button class="pp-ctry${c === S.cc ? ' on' : ''}" data-cc="${c}"><canvas class="ppFlag" data-cc="${c}" width="64" height="48"></canvas><span><b>${CC[c][uiLang === 'vi' ? 0 : 1]}</b><span class="dim">${a.n}/${a.t}${a.n === a.t ? ' ⭐' : ''}</span></span></button>`; };
   const contStat = k => { let n = 0, tt = 0; for (const c of Object.keys(CC)) if (CC_CONT[c] === k) { n += cown(c); tt += ctot(c); } return { n, t: tt }; };
   const regStat = rg => { let n = 0, tt = 0; for (const e of rg.c) { const code = e.split('|')[2]; if (code) { n += cown(code); tt += ctot(code); } } return { n, t: tt }; };
@@ -227,6 +317,8 @@ function draw() {
   if (lv === 'reg' || lv === 'ctry') crumbs.push(['reg', t(curReg.vi, curReg.en)]);
   if (lv === 'ctry') crumbs.push(['ctry', CC[S.cc][uiLang === 'vi' ? 0 : 1]]);
   h.push(`<div class="pp-crumb">${crumbs.map(([k, n], i) => (i === crumbs.length - 1 ? `<b>${esc(n)}</b>` : `<button data-nav="${k}">${esc(n)}</button><span class="dim">›</span>`)).join('')}</div>`);
+  if (lv === 'world' && S.quiz) { h.push(quizHtml()); root.innerHTML = h.join(''); return; }
+  if (lv === 'world') h.push(funHtml());
   if (lv !== 'ctry') {
     if (lv === 'world') h.push(`<div class="pp-world">${WORLD.map(ct => `<button class="pp-wc" data-ct="${ct.k}"><canvas class="ppCont" data-k="${ct.k}" width="64" height="48"></canvas><b>${t(ct.vi, ct.en)}</b><small class="dim">${countStat(ct)}</small></button>`).join('')}</div>`);
     else if (lv === 'cont') h.push(curCont.regions.length ? `<div class="pp-reglist">${curCont.regions.map(rg => { const a = regStat(rg); return `<button class="pp-rc" data-rg="${rg.k}"><b>${t(rg.vi, rg.en)}</b><small class="dim">${regHave(rg)}/${rg.c.length} ${t('nước có thẻ', 'countries with cards')}${a.t ? ` · ${a.n}/${a.t}` : ''}</small></button>`; }).join('')}</div>` : `<div class="pp-empty dim">${t(curCont.note ? curCont.note[0] : '', curCont.note ? curCont.note[1] : '')}</div>`);
@@ -240,7 +332,7 @@ function draw() {
   for (const sub of subsOf(S.group)) {
     const list = items.filter(i => i.sub === sub), s = stat(list), done = s.n === s.t, shown = list;
     h.push(`<div class="pp-sub"><b>${esc(subName(sub))}</b><small>${s.n}/${s.t}</small><span class="grow"></span><button class="btn${done ? ' primary' : ''}" data-story="${esc(kk(S.cc, 's:' + sub))}" ${done ? '' : 'disabled'}>${done ? '📜 ' + t('Câu chuyện', 'Story') : `🔒 ${s.n}/${s.t}`}</button></div>`);
-    h.push(`<div class="pp-grid">${shown.map(i => `<button class="pp-card${own(i.id) ? ' own' : ''}" data-id="${i.id}"><span class="cv"></span><span class="nm gt">${esc(name(i))}</span><span class="pr">${own(i.id) ? '✓' : '🪙 ' + priceOf(i)}</span></button>`).join('') || `<div class="dim">${t('Không có thẻ nào.', 'No cards.')}</div>`}</div>`);
+    h.push(`<div class="pp-grid">${shown.map(i => `<button class="pp-card${own(i.id) ? ' own' : ''}" data-id="${i.id}"><span class="cv"></span><span class="nm gt">${esc(name(i))}</span><span class="pr">${own(i.id) ? '✓' : '🪙 ' + curPrice(i)}</span></button>`).join('') || `<div class="dim">${t('Không có thẻ nào.', 'No cards.')}</div>`}</div>`);
   }
   root.innerHTML = h.join('');
   $$('.ppFlag', root).forEach(cv => drawFlag(cv, cv.dataset.cc));
@@ -251,19 +343,19 @@ function draw() {
 
 // ---------- hộp thoại ----------
 function openCard(id) {
-  const it = K.byId[id], o = own(id), bal = balance(), dlg = $('#passDlg'), price = priceOf(it);
+  const it = K.byId[id], o = own(id), bal = balance(), dlg = $('#passDlg'), price = curPrice(it);
   $('#pdTitle').textContent = name(it); $('#pdSub').textContent = `${gName(it.gr)} · ${subName(it.sub)}`;
   const holder = $('#pdArt'); holder.innerHTML = ''; const cv = sprite(it, o); cv.style.width = cv.width * 2 + 'px'; cv.style.height = cv.height * 2 + 'px'; holder.append(cv);
   $('#pdNote').className = 'gt' + (o ? '' : ' lock'); $('#pdNote').textContent = o ? it.note : t('🔒 Mua thẻ này để đọc nguồn gốc của nó.', '🔒 Buy this card to read its origin.');
   $('#pdEn').textContent = o && uiLang !== 'vi' ? 'English text: coming soon' : '';
   $('#pdTag').textContent = it.use ? { wear: t('👕 Mặc được', '👕 Wearable'), hold: t('✋ Cầm được', '✋ Holdable'), pet: t('🐾 Đi cùng', '🐾 Companion') }[it.use] : '';
-  const b = $('#pdBuy'); b.hidden = o; b.disabled = bal < price; b.textContent = t(`Mua · 🪙 ${price}`, `Buy · 🪙 ${price}`);
+  const b = $('#pdBuy'); b.hidden = o; b.disabled = bal < price; const off = price < priceOf(it) ? t(' · giảm nửa giá (thẻ cuối của mục)', ' · half price (last card of the group)') : ''; b.textContent = t(`Mua · 🪙 ${price}${off}`, `Buy · 🪙 ${price}${off}`);
   $('#pdBal').textContent = o ? t('✓ Bạn đã có thẻ này', '✓ You own this card') : t(`Bạn có 🪙 ${bal}${bal < price ? ` · còn thiếu ${price - bal} xu` : ''}`, `You have 🪙 ${bal}${bal < price ? ` · ${price - bal} more coins needed` : ''}`);
   b.onclick = () => buy(id); dlg.showModal();
 }
 function buy(id) {
-  const it = K.byId[id]; if (own(id) || balance() < priceOf(it)) return;
-  P.own.push(id); save(); sfx.play('unlock'); $('#passDlg').close(); toast(t(`Đã mua: ${name(it)} ✓`, `Bought: ${name(it)} ✓`), 2200);
+  const it = K.byId[id]; const price = curPrice(it); if (own(id) || balance() < price) return;
+  if (price !== priceOf(it)) (P.paid ||= {})[id] = price; P.own.push(id); { const w = weekNow(); if (!w.claimed && it.cc === w.cc) w.n++; } save(); sfx.play('unlock'); $('#passDlg').close(); toast(t(`Đã mua: ${name(it)} ✓`, `Bought: ${name(it)} ✓`), 2200);
   const sub = K.items.filter(i => i.cc === it.cc && i.sub === it.sub), grp = K.items.filter(i => i.cc === it.cc && i.gr === it.gr);
   const done = [sub.every(i => own(i.id)) && kk(it.cc, 's:' + it.sub), grp.every(i => own(i.id)) && kk(it.cc, 'g' + it.gr)].filter(Boolean).filter(k => !P.seen.includes(k));
   draw();
@@ -328,6 +420,7 @@ export function init() {
     if (!active || !root || !root.contains(e.target)) return;
     const b = e.target.closest('button'); if (!b) return;
     if (b.id === 'ppHow') { $('#ppHowBox').hidden = !$('#ppHowBox').hidden; return; }
+    if (b.dataset.fun) { const f = b.dataset.fun; if (f === 'chest') openChest(); else if (f === 'quiz') startQuiz(); else if (f === 'claimwk') claimWeek(); else if (f === 'qa') quizAnswer(+b.dataset.k); else if (f === 'qnext') quizNext(); else if (f === 'qclose') { S.quiz = null; draw(); } return; }
     if (b.dataset.ct) { // chọn châu: sang khu vực đầu tiên có nước đã làm (nếu không có thì khu vực đầu tiên)
       const ct = WORLD.find(x => x.k === b.dataset.ct), rg = ct.regions.find(r => firstIn(r.k)) || ct.regions[0];
       S.cont = ct.k; S.reg = ''; S.lv = 'cont'; draw(); window.scrollTo(0, 0); return;
@@ -361,7 +454,11 @@ export function init() {
 export async function items() { await ensure(); return K; }
 export const ownedIds = () => P.own.slice();
 export const getEq = () => ({ ...(P.eq || {}) });
-export function setEq(eq) { P.eq = { ...eq }; P.eqT = Date.now(); save(); bus.emit('lame'); }
+export function setEq(eq) { P.eq = { ...eq }; P.eqT = Date.now(); checkStamps(); save(); bus.emit('lame'); }
+
+
+
+
 
 
 
