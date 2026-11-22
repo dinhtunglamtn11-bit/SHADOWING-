@@ -9,7 +9,8 @@ import { prefs } from './prefs.js';
 import * as sfx from './sfx.js';
 import { uiLang } from './i18n.js';
 import { WORLD } from './pass-world.js';
-import { COUNT } from './pass-count.js';
+let COUNT = {}; // số thẻ từng nước (nạp riêng để thiếu file này không làm hỏng cả app)
+import('./pass-count.js').then(m => { COUNT = m.COUNT; if (active && K) draw(); }).catch(() => { /* bỏ qua: số thẻ sẽ được đếm khi nạp nước đó */ });
 
 let K = null, ST = null; // K: kho thẻ (nạp khi mở lần đầu), ST: câu chuyện
 const KEY = 'passport:v1', WELCOME = 100;
