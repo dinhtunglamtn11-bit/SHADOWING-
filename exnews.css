@@ -844,3 +844,6 @@ body.vx-on #cueList { display: none; }
 .pp-ctry:not(.on) { border-color: var(--line); opacity: .85; }
 /* chừa chỗ dưới cùng để cuộn nội dung lên khỏi nhân vật Lame ở rìa màn hình */
 :root:not([data-lame=off]) body:not([data-view=player]):not([data-view=doc]) .view { padding-bottom: 96px; }
+
+/* Luyện âm · mục Bộ thủ: chữ bộ thủ to, dễ nhìn nét */
+.plcard .plhz.radhz{font-size:84px;line-height:1.15;text-align:center;margin:8px 0}

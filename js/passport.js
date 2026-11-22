@@ -265,6 +265,16 @@ function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
     c.fillStyle = '#ffcc00'; c.beginPath(); for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.4 : 6; c.lineTo(21 + Math.cos(a) * r, 14 + Math.sin(a) * r); } c.closePath(); c.fill();
     return;
   }
+  if (cc === 'ly') { // cờ Libya: đỏ, đen (rộng gấp đôi), xanh lá; trăng lưỡi liềm và sao trắng ở giữa
+    c.fillStyle = '#e70013'; c.fillRect(0, 0, 64, 12); c.fillStyle = '#000'; c.fillRect(0, 12, 64, 24); c.fillStyle = '#239e46'; c.fillRect(0, 36, 64, 12);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(30, 24, 8, 0, 7); c.fill(); c.fillStyle = '#000'; c.beginPath(); c.arc(33, 24, 7, 0, 7); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2 : 5; c.lineTo(38 + Math.cos(a) * r, 24 + Math.sin(a) * r); } c.closePath(); c.fill();
+    return;
+  }
+  if (cc === 'ch') { // cờ Thụy Sĩ: nền đỏ, chữ thập trắng
+    c.fillStyle = '#d52b1e'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#fff'; c.fillRect(27, 10, 10, 28); c.fillRect(18, 19, 28, 10);
+    return;
+  }
   if (cc === 'in') { // cờ Ấn Độ: cam, trắng, xanh lá và bánh xe Ashoka Chakra
     c.fillStyle = '#ff9933'; c.fillRect(0, 0, 64, 16); c.fillStyle = '#fff'; c.fillRect(0, 16, 64, 16); c.fillStyle = '#138808'; c.fillRect(0, 32, 64, 16);
     c.strokeStyle = '#000080'; c.lineWidth = 2; c.beginPath(); c.arc(32, 24, 6, 0, 7); c.stroke();

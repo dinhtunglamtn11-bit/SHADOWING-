@@ -9,6 +9,7 @@ import * as store from './store.js';
 import { E, M, H } from './pylab-data.js';
 import { M2, H2 } from './pylab-data2.js';
 import { M3, H3 } from './pylab-data3.js';
+import { RADS } from './pylab-rad.js';
 
 // ---------- tách âm tiết: thanh mẫu · vận mẫu · thanh điệu ----------
 const INITIALS = ['zh', 'ch', 'sh', 'b', 'p', 'm', 'f', 'd', 't', 'n', 'l', 'g', 'k', 'h', 'j', 'q', 'x', 'r', 'z', 'c', 's'];
@@ -52,6 +53,11 @@ const ITEMS = [
   ...H2.map(([hz, py]) => ({ id: 'h' + hz, lv: 3, set: 2, hz, sy: py.split(' ') })),
   ...H3.map(([hz, py]) => ({ id: 'h' + hz, lv: 3, set: 3, hz, sy: py.split(' ') })),
 ];
+const ALL = [...ITEMS, ...RADS]; // thêm 214 bộ thủ (mục Bộ thủ)
+const findIt = id => ALL.find(it => it.id === id) || null;
+const RG = { all: ['Tất cả 214 bộ', null], a: ['1–2 nét', [1, 2]], b: ['3 nét', [3]], c: ['4 nét', [4]], d: ['5 nét', [5]], e: ['6 nét', [6]], f: ['7 nét', [7]], g: ['8–10 nét', [8, 9, 10]], h: ['11–17 nét', [11, 12, 13, 14, 15, 16, 17]] };
+const RSUB = { card: ['🃏 Thẻ học', 'Xem bộ thủ, nhớ nghĩa rồi lật thẻ tự chấm'], pick: ['🔀 Chọn nghĩa', 'Chọn Hán Việt và nghĩa đúng'], type: ['⌨ Gõ pinyin', 'Gõ pinyin kèm số thanh điệu'] };
+const inRG = (r, g) => g === 'all' || RG[g][1].includes(r.st);
 const initOf = s => split(s).i;
 const GROUPS = { all: ['Tất cả', null], kh: ['k · h', ['k', 'h']], zcs: ['z · c · s', ['z', 'c', 's']], zhr: ['zh · ch · sh · r', ['zh', 'ch', 'sh', 'r']], jqx: ['j · q · x', ['j', 'q', 'x']], oth: ['Khác', 'other'] };
 const FOCUS = new Set(['k', 'h', 'z', 'c', 's', 'zh', 'ch', 'sh', 'r', 'j', 'q', 'x']);
@@ -73,21 +79,21 @@ const weak = id => { const s = stats[id]; return !!s && s[1] > s[0]; };
 // ---------- trạng thái ----------
 let box = null, backCb = null;
 const AKEY = 'pylab:auto';
-const S = { fopen: null, auto: false, mode: 'type', lv: 0, set: 0, grp: 'all', bag: [], cur: null, done: false, showHz: null, n: 0, ok: 0, disc: null, rec: null, recUrl: '', recBusy: false };
+const S = { rsub: 'card', rg: 'all', flip: false, fopen: null, auto: false, mode: 'type', lv: 0, set: 0, grp: 'all', bag: [], cur: null, done: false, showHz: null, n: 0, ok: 0, disc: null, rec: null, recUrl: '', recBusy: false };
 // ---------- lưu tiến trình: thoát ra rồi vào lại học tiếp đúng chỗ dở; đổi bộ lọc / chế độ thì làm lại từ đầu ----------
 const PKEY = 'pylab:prog';
-const saveProg = () => { try { localStorage.setItem(PKEY, JSON.stringify({ mode: S.mode, lv: S.lv, set: S.set, grp: S.grp, bag: S.bag, cur: S.cur?.id ?? null, done: S.done, n: S.n, ok: S.ok, pt: Date.now() })); } catch { /* bỏ qua */ } pushSoon(); };
+const saveProg = () => { try { localStorage.setItem(PKEY, JSON.stringify({ rsub: S.rsub, rg: S.rg, mode: S.mode, lv: S.lv, set: S.set, grp: S.grp, bag: S.bag, cur: S.cur?.id ?? null, done: S.done, n: S.n, ok: S.ok, pt: Date.now() })); } catch { /* bỏ qua */ } pushSoon(); };
 function loadProg() { // trả về true nếu khôi phục được một lượt đang dở
   try {
     const p = JSON.parse(localStorage.getItem(PKEY) || 'null');
-    if (!p || !ITEMS.some(it => it.id === p.cur)) return false;
-    const ok = k => ['type', 'disc', 'speak'].includes(k);
+    if (!p || !ALL.some(it => it.id === p.cur)) return false;
+    const ok = k => ['type', 'disc', 'speak', 'rad'].includes(k);
     if (!ok(p.mode) || !GROUPS[p.grp]) return false;
-    S.mode = p.mode; S.lv = +p.lv || 0; S.set = +p.set || 0; S.grp = p.grp;
-    const have = new Set(ITEMS.map(it => it.id));
+    S.mode = p.mode; S.rsub = RSUB[p.rsub] ? p.rsub : 'card'; S.rg = RG[p.rg] ? p.rg : 'all'; S.flip = false; S.lv = +p.lv || 0; S.set = +p.set || 0; S.grp = p.grp;
+    const have = new Set(ALL.map(it => it.id));
     S.bag = (p.bag || []).filter(id => have.has(id));
     S.n = +p.n || 0; S.ok = +p.ok || 0;
-    S.cur = ITEMS.find(it => it.id === p.cur); S.showHz = null; S.disc = S.mode === 'disc' ? makeDisc(S.cur) : null;
+    S.cur = findIt(p.cur); S.showHz = null; S.disc = S.mode === 'disc' ? makeDisc(S.cur) : S.mode === 'rad' && S.rsub === 'pick' ? makeRadPick(S.cur) : null;
     S.done = false;
     if (p.done) { S.cur = null; return 'next'; } // câu cuối đã trả lời xong: sang câu kế
     return true;
@@ -98,7 +104,7 @@ const CKEY = 'pylab:cov';
 const cov = (() => { try { return JSON.parse(localStorage.getItem(CKEY) || '{}'); } catch { return {}; } })();
 const saveCov = () => { try { localStorage.setItem(CKEY, JSON.stringify(cov)); } catch { /* bỏ qua */ } pushSoon(); };
 const hid = id => { let h = 5381; for (let i = 0; i < id.length; i++) h = ((h * 33) ^ id.charCodeAt(i)) >>> 0; return h.toString(36); };
-const covKey = () => [S.mode, S.set, S.lv, S.grp].join('|');
+const covKey = () => (S.mode === 'rad' ? ['rad', S.rsub, S.rg] : [S.mode, S.set, S.lv, S.grp]).join('|');
 function covInfo() {
   const c = cov[covKey()], got = new Set(c?.d || []), pool = modeItems();
   return { have: pool.reduce((n, it) => n + (got.has(hid(it.id)) ? 1 : 0), 0), total: pool.length, star: !!c?.t, c };
@@ -144,7 +150,7 @@ function pullRemote(adoptProg) {
 }
 bus.on('store', c => { if (c === 'prefs' || c === '*') { pullRemote(false); if (box) refreshHead(); } });
 const inSet = it => S.set === 0 || it.set === S.set; // Bộ 1 / Bộ 2 / cả hai
-const modeItems = () => ITEMS.filter(it => inSet(it) && (S.lv === 0 || it.lv === S.lv) && inGroup(it, S.grp) && (S.mode !== 'disc' || it.lv === 2 || (it.lv === 1 && split(it.sy[0]).i))); // phân biệt: bỏ chữ không có thanh mẫu, bỏ câu dài
+const modeItems = () => S.mode === 'rad' ? RADS.filter(r => inRG(r, S.rg)) : ITEMS.filter(it => inSet(it) && (S.lv === 0 || it.lv === S.lv) && inGroup(it, S.grp) && (S.mode !== 'disc' || it.lv === 2 || (it.lv === 1 && split(it.sy[0]).i))); // phân biệt: bỏ chữ không có thanh mẫu, bỏ câu dài
 function next() {
   stopRec(true);
   if (!S.bag.length) {
@@ -154,11 +160,12 @@ function next() {
     S.bag = ids;
   }
   const id = S.bag.shift();
-  S.cur = ITEMS.find(it => it.id === id) || null; S.done = false; S.showHz = null; S.disc = null;
+  S.cur = findIt(id); S.done = false; S.showHz = null; S.disc = null; S.flip = false; S.res = null;
   if (S.cur && S.mode === 'disc') S.disc = makeDisc(S.cur);
+  if (S.cur && S.mode === 'rad' && S.rsub === 'pick') S.disc = makeRadPick(S.cur);
   saveProg();
   draw();
-  if (S.auto && S.cur && S.mode !== 'speak') setTimeout(() => play(), 150); // mặc định KHÔNG tự đọc: chỉ phát khi bấm “Nghe”
+  if (S.auto && S.cur && S.mode !== 'speak' && S.mode !== 'rad') setTimeout(() => play(), 150); // mặc định KHÔNG tự đọc: chỉ phát khi bấm “Nghe”
 }
 const bcp = 'zh-CN';
 function play(slow = false) {
@@ -283,6 +290,7 @@ const SETTIP = { 0: 'Cả ba bộ', 1: 'Bộ 1: 200 dễ + 500 trung bình + 300
 const lvName = l => (l === 0 ? 'Mọi mức' : LV[l]);
 // Thanh bộ lọc gọn: ba nút có mũi tên ▼, bấm nút nào thì xổ ra lựa chọn của nút đó (mở một nút thì nút kia tự đóng)
 function filterOptions() {
+  if (S.mode === 'rad') return S.fopen === 'rg' ? `<div class="chips plopt" id="plRg">${Object.entries(RG).map(([k, [n]]) => `<button class="chip ${S.rg === k ? 'on' : ''}" data-rg="${k}">${n} <small>${RADS.filter(r => inRG(r, k)).length}</small></button>`).join('')}</div>` : '';
   const cnt = poolCounts();
   if (S.fopen === 'set') return `<div class="chips plopt" id="plSet">${[0, 1, 2, 3].map(s => `<button class="chip ${S.set === s ? 'on' : ''}" data-s="${s}" title="${SETTIP[s]}">${SETNAME[s]} <small>${ITEMS.filter(it => s === 0 || it.set === s).length}</small></button>`).join('')}</div>`;
   if (S.fopen === 'lv') return `<div class="chips plopt" id="plLv">${[0, 1, 2, 3].filter(l => S.mode !== 'disc' || l < 3).map(l => `<button class="chip ${S.lv === l ? 'on' : ''}" data-l="${l}">${lvName(l)} <small>${ITEMS.filter(it => inSet(it) && (l === 0 || it.lv === l)).length}</small></button>`).join('')}</div>`;
@@ -294,8 +302,9 @@ function head() {
   const fb = (k, label, val) => `<button class="btn plf ${o === k ? 'on' : ''}" data-f="${k}"><span class="dim">${label}</span> <b>${val}</b> <span class="ar">${o === k ? '▲' : '▼'}</span></button>`;
   return `<div class="plhead">
     <div class="row plbar"><button class="btn" id="plBack">← Thư viện</button><b class="grow">🔊 Luyện âm</b></div>
-    <div class="seg" id="plMode"><button data-m="type" class="${S.mode === 'type' ? 'on' : ''}" title="Nghe rồi gõ pinyin">🎧 Nghe &amp; gõ</button><button data-m="disc" class="${S.mode === 'disc' ? 'on' : ''}" title="Nghe rồi chọn đáp án để phân biệt âm gần giống">🔀 Phân biệt</button><button data-m="speak" class="${S.mode === 'speak' ? 'on' : ''}" title="Đọc theo mẫu, ghi âm và so sánh">🎙 Đọc &amp; nói</button></div>
-    <div class="row plfilters">${fb('set', 'Bộ:', SETNAME[S.set])}${fb('lv', 'Mức:', lvName(S.lv))}${fb('grp', 'Thanh mẫu:', GROUPS[S.grp][0])}</div>
+    <div class="seg" id="plMode"><button data-m="type" class="${S.mode === 'type' ? 'on' : ''}" title="Nghe rồi gõ pinyin">🎧 Nghe &amp; gõ</button><button data-m="disc" class="${S.mode === 'disc' ? 'on' : ''}" title="Nghe rồi chọn đáp án để phân biệt âm gần giống">🔀 Phân biệt</button><button data-m="speak" class="${S.mode === 'speak' ? 'on' : ''}" title="Đọc theo mẫu, ghi âm và so sánh">🎙 Đọc &amp; nói</button><button data-m="rad" class="${S.mode === 'rad' ? 'on' : ''}" title="Học 214 bộ thủ: nét, pinyin, Hán Việt, ý nghĩa">🧩 Bộ thủ</button></div>
+    ${S.mode === 'rad' ? `<div class="seg" id="plRs">${Object.entries(RSUB).map(([k, [n, tip]]) => `<button data-r="${k}" class="${S.rsub === k ? 'on' : ''}" title="${tip}">${n}</button>`).join('')}</div>
+    <div class="row plfilters">${fb('rg', 'Số nét:', RG[S.rg][0])}</div>` : `<div class="row plfilters">${fb('set', 'Bộ:', SETNAME[S.set])}${fb('lv', 'Mức:', lvName(S.lv))}${fb('grp', 'Thanh mẫu:', GROUPS[S.grp][0])}</div>`}
     ${filterOptions()}
     ${covLine()}
     <div class="dim plstat">Phiên này: ${S.n} câu${S.n ? ` · đúng ${S.ok} (${Math.round(100 * S.ok / S.n)}%)` : ''} · ${nWeak ? `${nWeak} mục hay sai (sẽ gặp nhiều hơn)` : 'chưa có mục hay sai'}</div>
@@ -359,11 +368,49 @@ function drawSpeak() {
     <div class="dim">Bấm “Ghi âm”, đọc theo, bấm lại để dừng rồi nghe lại và so sánh với mẫu. Bản ghi chỉ nằm trong máy và mất khi sang câu khác.</div>
     <div class="row c"><span class="dim">Tự đánh giá:</span><button class="btn" data-self="1">✅ Đọc tốt</button><button class="btn" data-self="0">❌ Cần luyện thêm</button><button class="btn" id="plNext">Tiếp ▶</button></div>`;
 }
+// ---------- mục Bộ thủ ----------
+const radPy = r => r.py.join(' / ');
+function makeRadPick(it) {
+  const near = RADS.filter(r => r.id !== it.id && r.vi !== it.vi && Math.abs(r.st - it.st) <= 1), far = RADS.filter(r => r.id !== it.id && r.vi !== it.vi);
+  const pool = shuffle([...near]).slice(0, 3); for (const r of shuffle([...far])) { if (pool.length >= 3) break; if (!pool.includes(r)) pool.push(r); }
+  return { ans: it.id, opts: shuffle([it, ...pool]).map(r => ({ v: r.id, label: `${r.hv} · ${r.vi}` })) };
+}
+function gradeRad(it, text) {
+  const t = String(text || '').trim().toLowerCase().replace(/u:|v/g, 'ü'), m = /^([a-zü]+)([0-5])?$/.exec(t);
+  if (!m) return { ok: false, base: false };
+  const base = it.rd.some(r => r.b === m[1]), ok = it.rd.some(r => r.b === m[1] && r.t === (m[2] ? +m[2] : 0));
+  return { ok, base };
+}
+function radInfo(it) {
+  return `<div class="plans"><div class="plhz" lang="zh">${esc(it.hz)}</div><div class="plpy">${esc(radPy(it))}</div>
+    <div><b>${esc(it.hv)}</b> · ${esc(it.vi)}</div>${it.note ? `<div class="dim">${esc(it.note)}</div>` : ''}</div>`;
+}
+function drawRad() {
+  const it = S.cur, lab = `<div class="qlabel">Bộ thứ ${it.n}/214 · ${it.st} nét</div>`, big = `<div class="plhz big radhz" lang="zh">${esc(it.hz)}</div>`;
+  const snd = `<button class="btn" id="plPlay" title="Giọng máy có thể đọc lạ với một số bộ">🔊 Nghe</button>`;
+  if (S.rsub === 'card') {
+    if (!S.flip) return `${lab}${big}<div class="row c">${snd}<button class="btn primary" id="radShow">👁 Xem đáp án</button></div><div class="dim">Nhớ lại pinyin, âm Hán Việt và ý nghĩa của bộ này rồi lật thẻ để tự chấm.</div>`;
+    return `${lab}${radInfo(it)}<div class="row c">${snd}<button class="btn" data-rself="1">✅ Nhớ rồi</button><button class="btn" data-rself="0">❌ Chưa nhớ</button></div>`;
+  }
+  if (S.rsub === 'pick') {
+    const d = S.disc, opts = d.opts.map((o, k) => {
+      const cls = S.done ? (o.v === d.ans ? 'right' : S.pick === o.v ? 'wrong' : '') : '';
+      return `<button class="qopt ${cls}" data-v="${esc(o.v)}" ${S.done ? 'disabled' : ''}><i>${k + 1}</i><span>${esc(o.label)}</span></button>`;
+    }).join('');
+    const fb = S.done ? `<div class="qfb ${S.pick === d.ans ? 'ok' : 'bad'}">${S.pick === d.ans ? '✅ Đúng!' : '❌ Chưa đúng'}</div>${radInfo(it)}<div class="row"><button class="btn primary" id="plNext">Tiếp ▶</button></div>` : '';
+    return `${lab}${big}<div class="row c">${snd}</div><div class="qopts">${opts}</div>${fb}`;
+  }
+  const fb = S.done ? `<div class="qfb ${S.res.ok ? 'ok' : 'bad'}">${S.res.ok ? '✅ Đúng!' : S.res.base ? '❌ Đúng âm nhưng sai thanh điệu' : '❌ Chưa đúng'}</div>${radInfo(it)}<div class="row"><button class="btn primary" id="plNext">Tiếp ▶</button></div>` : '';
+  return `${lab}${big}<div class="row c">${snd}</div>
+    <div class="row"><input id="plIn" type="text" lang="en" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="pinyin + số thanh (vd: shui3)" ${S.done ? 'disabled' : ''}>
+    <button class="btn" id="plU" tabindex="-1" title="Chèn chữ ü">ü</button><button class="btn primary" id="plGo" ${S.done ? 'hidden' : ''}>Trả lời</button></div>
+    <div class="dim">Gõ pinyin của bộ thủ kèm số thanh điệu (ví dụ: ren2, shan1). Có thể gõ v thay cho ü.</div>${fb}`;
+}
 function draw() {
   if (!box) return;
   const it = S.cur;
   if (!it) { box.innerHTML = head() + '<div class="empty">Không có mục nào khớp bộ lọc này. Hãy chọn nhóm khác.</div>'; bindHead(); return; }
-  box.innerHTML = `${head()}<div class="qcard plcard">${S.mode === 'type' ? drawType() : S.mode === 'disc' ? drawDisc() : drawSpeak()}</div>`;
+  box.innerHTML = `${head()}<div class="qcard plcard">${S.mode === 'type' ? drawType() : S.mode === 'disc' ? drawDisc() : S.mode === 'rad' ? drawRad() : drawSpeak()}</div>`;
   bindHead(); bindCard();
 }
 function bindHead() {
@@ -372,7 +419,14 @@ function bindHead() {
   $$('.plf', box).forEach(b => b.onclick = () => { S.fopen = S.fopen === b.dataset.f ? null : b.dataset.f; refreshHead(); });
   $$('#plLv [data-l]', box).forEach(b => b.onclick = () => { S.lv = +b.dataset.l; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
   $$('#plSet [data-s]', box).forEach(b => b.onclick = () => { S.set = +b.dataset.s; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
+  $$('#plRs [data-r]', box).forEach(b => b.onclick = () => { if (S.rsub === b.dataset.r) return; S.rsub = b.dataset.r; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
+  $$('#plRg [data-rg]', box).forEach(b => b.onclick = () => { S.rg = b.dataset.rg; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
   $$('#plGrp [data-g]', box).forEach(b => b.onclick = () => { S.grp = b.dataset.g; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
+}
+function answerRad() {
+  const v = $('#plIn', box).value;
+  if (!v.trim()) { toast('Hãy gõ đáp án'); return; }
+  S.res = gradeRad(S.cur, v); S.done = true; record(S.res.ok); draw();
 }
 function answerType() {
   const v = $('#plIn', box).value;
@@ -388,7 +442,18 @@ function bindCard() {
   });
   $('#plSlow', box)?.addEventListener('click', () => play(true));
   $('#plNext', box)?.addEventListener('click', next);
-  if (S.mode === 'type') {
+  if (S.mode === 'rad') {
+    $('#radShow', box)?.addEventListener('click', () => { S.flip = true; draw(); });
+    $$('[data-rself]', box).forEach(b => b.addEventListener('click', () => { const ok = b.dataset.rself === '1'; record(ok); toast(ok ? 'Tốt lắm! 👍' : 'Sẽ gặp lại bộ này nhiều hơn', 1200); next(); }));
+    $$('.qopt', box).forEach(b => b.addEventListener('click', () => { if (S.done) return; S.pick = b.dataset.v; S.done = true; record(S.pick === S.disc.ans); draw(); }));
+    if (S.rsub === 'type') {
+      $('#plGo', box)?.addEventListener('click', answerRad);
+      $('#plU', box)?.addEventListener('click', () => { const i = $('#plIn', box); i.setRangeText('ü', i.selectionStart, i.selectionEnd, 'end'); i.focus(); });
+      const inp = $('#plIn', box);
+      inp?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); answerRad(); } });
+      if (!S.done) autoFocus(inp);
+    }
+  } else if (S.mode === 'type') {
     $('#plHz', box)?.addEventListener('click', () => { S.showHz = !(S.showHz ?? (S.cur.lv === 3)); const v = $('#plIn', box)?.value; draw(); if ($('#plIn', box)) $('#plIn', box).value = v || ''; });
     $('#plGo', box)?.addEventListener('click', answerType);
     $('#plU', box)?.addEventListener('click', () => { const i = $('#plIn', box); i.setRangeText('ü', i.selectionStart, i.selectionEnd, 'end'); i.focus(); });
@@ -409,8 +474,9 @@ function bindCard() {
 // phím tắt: Enter sang câu tiếp khi đã trả lời; 1–4 chọn đáp án ở chế độ phân biệt
 document.addEventListener('keydown', e => {
   if (!box || !box.isConnected || box.closest('[hidden]') || e.target.matches?.('input,textarea,select')) return;
-  if (e.key === 'Enter' && S.done) { $('#plNext', box)?.click(); }
-  else if (S.mode === 'disc' && !S.done && /^[1-4]$/.test(e.key)) $$('.qopt', box)[+e.key - 1]?.click();
+  if (e.key === 'Enter' && S.mode === 'rad' && S.rsub === 'card') { $('#radShow', box)?.click(); }
+  else if (e.key === 'Enter' && S.done) { $('#plNext', box)?.click(); }
+  else if ((S.mode === 'disc' || (S.mode === 'rad' && S.rsub === 'pick')) && !S.done && /^[1-4]$/.test(e.key)) $$('.qopt', box)[+e.key - 1]?.click();
 });
 
 // ---------- vào / ra ----------

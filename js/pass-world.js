@@ -1,4 +1,4 @@
-﻿// Bản đồ các châu → khu vực → nước của Passport. Mỗi nước viết 'Tên Việt|Tên Anh' và thêm '|mã' nếu đã có thẻ (mã khớp setCC trong pass-xx*.js).
+// Bản đồ các châu → khu vực → nước của Passport. Mỗi nước viết 'Tên Việt|Tên Anh' và thêm '|mã' nếu đã có thẻ (mã khớp setCC trong pass-xx*.js).
 const L = s => s.split(';').map(x => x.trim()).filter(Boolean);
 const R = (k, vi, en, list) => ({ k, vi, en, c: L(list) });
 
@@ -11,14 +11,14 @@ export const WORLD = [
     R('ca', 'Trung Á', 'Central Asia', 'Kazakhstan|Kazakhstan; Uzbekistan|Uzbekistan; Turkmenistan|Turkmenistan; Kyrgyzstan|Kyrgyzstan; Tajikistan|Tajikistan'),
   ] },
   { k: 'af', vi: 'Châu Phi', en: 'Africa', regions: [
-    R('na', 'Bắc Phi', 'North Africa', 'Ai Cập|Egypt|eg; Libya|Libya; Tunisia|Tunisia; Algérie|Algeria; Maroc|Morocco; Sudan|Sudan'),
+    R('na', 'Bắc Phi', 'North Africa', 'Ai Cập|Egypt|eg; Libya|Libya|ly; Tunisia|Tunisia; Algérie|Algeria; Maroc|Morocco; Sudan|Sudan'),
     R('wf', 'Tây Phi', 'West Africa', 'Nigeria|Nigeria; Ghana|Ghana; Bờ Biển Ngà|Côte d\'Ivoire; Senegal|Senegal; Mali|Mali; Burkina Faso|Burkina Faso; Niger|Niger; Guinea|Guinea; Sierra Leone|Sierra Leone; Liberia|Liberia; Togo|Togo; Bénin|Benin; Mauritanie|Mauritania; Gambia|Gambia; Guinea-Bissau|Guinea-Bissau; Cabo Verde|Cabo Verde'),
     R('cf', 'Trung Phi', 'Central Africa', 'CHDC Congo|DR Congo; Cộng hòa Congo|Republic of the Congo; Cameroon|Cameroon; Cộng hòa Trung Phi|Central African Republic; Tchad|Chad; Gabon|Gabon; Guinea Xích Đạo|Equatorial Guinea; São Tomé và Príncipe|São Tomé and Príncipe'),
     R('ef', 'Đông Phi', 'East Africa', 'Ethiopia|Ethiopia; Kenya|Kenya; Tanzania|Tanzania; Uganda|Uganda; Rwanda|Rwanda; Burundi|Burundi; Nam Sudan|South Sudan; Somalia|Somalia; Djibouti|Djibouti; Eritrea|Eritrea; Madagascar|Madagascar; Mauritius|Mauritius; Seychelles|Seychelles; Comoros|Comoros'),
     R('sf', 'Nam Phi', 'Southern Africa', 'Nam Phi|South Africa; Botswana|Botswana; Namibia|Namibia; Zimbabwe|Zimbabwe; Zambia|Zambia; Mozambique|Mozambique; Angola|Angola; Malawi|Malawi; Lesotho|Lesotho; Eswatini|Eswatini'),
   ] },
   { k: 'eu', vi: 'Châu Âu', en: 'Europe', regions: [
-    R('we', 'Tây Âu & Bắc Âu', 'Western & Northern Europe', 'Pháp|France|fr; Đức|Germany; Anh|United Kingdom; Ireland|Ireland; Hà Lan|Netherlands; Bỉ|Belgium; Luxembourg|Luxembourg; Thụy Sĩ|Switzerland; Áo|Austria; Thụy Điển|Sweden; Na Uy|Norway; Phần Lan|Finland; Đan Mạch|Denmark; Iceland|Iceland'),
+    R('we', 'Tây Âu & Bắc Âu', 'Western & Northern Europe', 'Pháp|France|fr; Đức|Germany; Anh|United Kingdom; Ireland|Ireland; Hà Lan|Netherlands; Bỉ|Belgium; Luxembourg|Luxembourg; Thụy Sĩ|Switzerland|ch; Áo|Austria; Thụy Điển|Sweden; Na Uy|Norway; Phần Lan|Finland; Đan Mạch|Denmark; Iceland|Iceland'),
     R('se', 'Nam Âu', 'Southern Europe', 'Ý|Italy; Tây Ban Nha|Spain; Bồ Đào Nha|Portugal; Hy Lạp|Greece; Croatia|Croatia; Slovenia|Slovenia; Serbia|Serbia; Montenegro|Montenegro; Bosna và Hercegovina|Bosnia and Herzegovina; Bắc Macedonia|North Macedonia; Albania|Albania; Malta|Malta; San Marino|San Marino; Vatican|Vatican City; Andorra|Andorra'),
     R('ee', 'Đông Âu & Trung Âu', 'Eastern & Central Europe', 'Ba Lan|Poland; Cộng hòa Séc|Czech Republic; Slovakia|Slovakia; Hungary|Hungary; România|Romania; Bulgaria|Bulgaria; Ukraina|Ukraine; Belarus|Belarus; Moldova|Moldova; Nga (phần châu Âu)|Russia (European part); Estonia|Estonia; Latvia|Latvia; Litva|Lithuania'),
   ] },
