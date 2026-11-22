@@ -4,6 +4,7 @@ import * as tracker from './tracker.js';
 import { prefs, savePrefs } from './prefs.js';
 import { pix, badge } from './pixicons.js';
 import * as A from './achieve.js';
+import { habitHtml } from './passport.js';
 import { tr } from './i18n.js';
 import * as store from './store.js';
 import * as notes from './notes.js';
@@ -87,6 +88,7 @@ function todayTab(m, today) {
     </div>
     <div class="dim" style="margin:2px">Mỗi ngày có bộ nhiệm vụ khác nhau (nhiệm vụ thời gian luôn có).</div>
     <div class="quests">${ds.map(q => questCard(q, t)).join('')}</div>
+    ${habitHtml()}
     ${done === ds.length ? '<div class="allDone">🎉 Hoàn thành hết nhiệm vụ hôm nay!</div>' : `<div class="dim" style="margin:6px 2px">Còn ${ds.length - done} nhiệm vụ nữa.</div>`}
     <div class="row" style="margin:10px 0"><span class="dim">Hôm nay theo ngôn ngữ:</span>${langs}</div>
     <div class="row"><label class="dim">Mục tiêu mỗi ngày <input id="goalMin" type="number" min="1" max="600" value="${goalMin}" style="width:64px"> phút</label></div>`;
@@ -283,6 +285,7 @@ export function init() {
     if (e.target.id === 'goalMin') { prefs.goalMin = Math.max(1, Math.min(600, +e.target.value || 15)); savePrefs(); render(); }
   });
   bus.on('show', v => { active = v === 'quest'; if (active) render(); });
+  bus.on('habits', () => { if (active) render(); }); // tick / thêm / sửa thói quen
   bus.on('store', c => { if (c === 'days' || c === 'prefs' || c === '*') { updateBadge(); if (active) render(); } });
   setInterval(() => { if (document.hidden) return; updateBadge(); if (active && !document.activeElement?.matches('input')) render(); }, 15000);
   updateBadge();
