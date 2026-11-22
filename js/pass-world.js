@@ -6,7 +6,7 @@ export const WORLD = [
   { k: 'as', vi: 'Châu Á', en: 'Asia', regions: [
     R('sea', 'Đông Nam Á', 'Southeast Asia', 'Việt Nam|Vietnam|vn; Thái Lan|Thailand; Indonesia|Indonesia; Malaysia|Malaysia; Singapore|Singapore; Philippines|Philippines; Lào|Laos; Campuchia|Cambodia; Myanmar|Myanmar; Brunei|Brunei; Timor-Leste|Timor-Leste'),
     R('ea', 'Đông Á', 'East Asia', 'Trung Quốc|China|cn; Nhật Bản|Japan|jp; Hàn Quốc|South Korea|kr; Triều Tiên|North Korea; Mông Cổ|Mongolia'),
-    R('sa', 'Nam Á', 'South Asia', 'Ấn Độ|India; Pakistan|Pakistan; Bangladesh|Bangladesh; Sri Lanka|Sri Lanka; Nepal|Nepal; Bhutan|Bhutan; Maldives|Maldives; Afghanistan|Afghanistan'),
+    R('sa', 'Nam Á', 'South Asia', 'Ấn Độ|India|in; Pakistan|Pakistan; Bangladesh|Bangladesh; Sri Lanka|Sri Lanka; Nepal|Nepal; Bhutan|Bhutan; Maldives|Maldives; Afghanistan|Afghanistan'),
     R('wa', 'Tây Á (Trung Đông)', 'West Asia (Middle East)', 'Ả Rập Xê Út|Saudi Arabia; UAE|United Arab Emirates; Qatar|Qatar; Kuwait|Kuwait; Oman|Oman; Bahrain|Bahrain; Iraq|Iraq; Iran|Iran; Syria|Syria; Jordan|Jordan; Liban|Lebanon; Israel|Israel; Palestine|Palestine; Thổ Nhĩ Kỳ|Turkey; Síp|Cyprus; Gruzia|Georgia; Armenia|Armenia; Azerbaijan|Azerbaijan'),
     R('ca', 'Trung Á', 'Central Asia', 'Kazakhstan|Kazakhstan; Uzbekistan|Uzbekistan; Turkmenistan|Turkmenistan; Kyrgyzstan|Kyrgyzstan; Tajikistan|Tajikistan'),
   ] },
@@ -28,7 +28,7 @@ export const WORLD = [
     R('sam', 'Nam Mỹ', 'South America', 'Brasil|Brazil; Argentina|Argentina; Colombia|Colombia; Peru|Peru; Venezuela|Venezuela; Chile|Chile; Ecuador|Ecuador; Bolivia|Bolivia; Paraguay|Paraguay; Uruguay|Uruguay; Guyana|Guyana; Suriname|Suriname'),
   ] },
   { k: 'oc', vi: 'Châu Đại Dương', en: 'Oceania', regions: [
-    R('oce', 'Châu Đại Dương (Úc)', 'Oceania (Australia)', 'Úc|Australia; New Zealand|New Zealand; Papua New Guinea|Papua New Guinea; Fiji|Fiji; Quần đảo Solomon|Solomon Islands; Vanuatu|Vanuatu; Samoa|Samoa; Tonga|Tonga; Kiribati|Kiribati; Micronesia|Micronesia; Quần đảo Marshall|Marshall Islands; Palau|Palau; Nauru|Nauru; Tuvalu|Tuvalu'),
+    R('oce', 'Châu Đại Dương (Úc)', 'Oceania (Australia)', 'Úc|Australia; New Zealand|New Zealand|nz; Papua New Guinea|Papua New Guinea; Fiji|Fiji; Quần đảo Solomon|Solomon Islands; Vanuatu|Vanuatu; Samoa|Samoa; Tonga|Tonga; Kiribati|Kiribati; Micronesia|Micronesia; Quần đảo Marshall|Marshall Islands; Palau|Palau; Nauru|Nauru; Tuvalu|Tuvalu'),
   ] },
   { k: 'an', vi: 'Châu Nam Cực', en: 'Antarctica', note: ['Không có quốc gia độc lập hay dân cư sinh sống vĩnh viễn; chỉ có các trạm nghiên cứu khoa học quốc tế.', 'No independent countries or permanent residents; only international research stations.'], regions: [] },
 ];

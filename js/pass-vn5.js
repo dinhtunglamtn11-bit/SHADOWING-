@@ -64,7 +64,7 @@ add(G, E, 'vn-bacthuoc', 'Bắc thuộc (111 trước Công nguyên – 938)', '
   d => { d.bg('A'); d.r(0, 13, 16, 3, 'K'); d.e(4, 8, 1.6, 1.6, 's'); d.r(3, 10, 3, 5, 'r'); d.e(10, 8, 1.6, 1.6, 's'); d.r(9, 10, 3, 5, 'y'); d.l(7, 3, 7, 13, 'N'); d.r(7, 3, 4, 3, 'r'); d.p('y', 8, 4, 9, 4); d.p('k', 3, 7, 5, 7, 9, 7, 11, 7); }, SC);
 add(G, E, 'vn-bachdang', 'Chiến thắng Bạch Đằng (938)', 'Bach Dang victory (938)', 'Ngô Quyền đóng cọc ngầm trên sông, chấm dứt thời Bắc thuộc.',
   d => { d.bg('c'); d.r(0, 8, 16, 8, 'C'); d.r(0, 8, 16, 1, 'b'); for (const x of [3, 6, 9, 12]) { d.r(x, 9, 1, 5, 'N'); d.p('n', x, 9); } d.r(2, 5, 6, 3, 'N'); d.l(5, 5, 5, 1, 'k'); d.r(5, 1, 3, 2, 'r'); d.p('w', 1, 15, 10, 15, 14, 14); }, SC);
-add(G, E, 'vn-ly', 'Triều Lý (1009–1225)', 'Ly dynasty (1009–1225)', 'Lý Thái Tổ dời đô về Thăng Long năm 1010, xây Văn Miếu, mở trường học.',
+add(G, E, 'vn-ly', 'Triều Lý (1009–1225)', 'Ly dynasty (1009–1225)', 'Lý Thái Tổ dời đô về Thăng Long năm 1010; về sau triều Lý xây Văn Miếu (1070) và mở trường học cho con em quan lại.',
   d => { d.bg('c'); d.r(0, 13, 16, 3, 'g'); d.r(2, 8, 12, 5, 'r'); d.tri(0, 3, 16, 5, 'y'); d.r(7, 9, 2, 4, 'R'); d.p('y', 8, 2); d.e(3, 5, 1.2, 1.2, 'o'); d.e(13, 5, 1.2, 1.2, 'o'); d.l(5, 3, 11, 3, 'Y'); }, SC);
 add(G, E, 'vn-tran', 'Triều Trần (1225–1400)', 'Tran dynasty (1225–1400)', 'Ba lần đánh thắng quân Mông – Nguyên, với Trần Hưng Đạo là vị tướng nổi tiếng nhất.',
   d => { d.bg('c'); d.r(0, 11, 16, 5, 'C'); d.r(2, 9, 12, 3, 'N'); d.l(8, 9, 8, 1, 'k'); d.r(8, 1, 5, 4, 'r'); d.p('y', 10, 2); d.r(3, 6, 4, 3, 'e'); d.p('k', 4, 7); d.p('w', 1, 14, 6, 15, 12, 14); d.l(14, 3, 14, 11, 'a'); }, SC);

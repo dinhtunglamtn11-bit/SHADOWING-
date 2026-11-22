@@ -1,4 +1,4 @@
-// Passport: sưu tầm thẻ văn hóa các nước bằng xu kiếm được từ việc học. Chưa mua = hình đen trắng; mua rồi hiện màu và đọc được nguồn gốc;
+﻿// Passport: sưu tầm thẻ văn hóa các nước bằng xu kiếm được từ việc học. Chưa mua = hình đen trắng; mua rồi hiện màu và đọc được nguồn gốc;
 // mua đủ một mục nhỏ / mục lớn thì mở câu chuyện của mục đó. Xu = tổng xu kiếm được từ số liệu học (tài liệu "days", nên tự đồng bộ) trừ giá các thẻ đã mua.
 // Văn bản giao diện ở đây chọn theo ngôn ngữ app bằng t(việt, anh); tiếng Trung hiện bản tiếng Anh. Thẻ chỉ có tiếng Việt / tiếng Anh, không kèm tiếng của nước đó.
 import { $, $$, esc, toast, bus, vnDate, addDays } from './util.js';
@@ -9,6 +9,7 @@ import { prefs } from './prefs.js';
 import * as sfx from './sfx.js';
 import { uiLang } from './i18n.js';
 import { WORLD } from './pass-world.js';
+import { COUNT } from './pass-count.js';
 
 let K = null, ST = null; // K: kho thẻ (nạp khi mở lần đầu), ST: câu chuyện
 const KEY = 'passport:v1', WELCOME = 100;
@@ -40,6 +41,7 @@ function pull() { // gộp với bản từ máy khác: thẻ đã mua lấy h�
   const ch = own.size !== P.own.length || seen.size !== P.seen.length || since !== P.since || (r.hw || 0) > P.hw || (r.eqT || 0) > (P.eqT || 0);
   const eqNew = (r.eqT || 0) > (P.eqT || 0);
   P = { own: [...own], seen: [...seen], since, hw: Math.max(P.hw, r.hw || 0), last: Math.max(P.last, r.last || 0), eq: eqNew ? (r.eq || {}) : (P.eq || {}), eqT: Math.max(P.eqT || 0, r.eqT || 0) };
+  if (K && missing()) ensure(S.cc).then(() => { bus.emit('lame'); if (active) draw(); }); // thẻ mới mua ở máy khác thuộc nước chưa nạp
   if (eqNew) bus.emit('lame');
   if (ch) { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* bỏ qua */ } if (active && K) draw(); }
 }
@@ -123,6 +125,21 @@ const lastVideo = () => store.list('items').filter(i => i.type !== 'note' && (+i
 function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
   const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 64, 48);
   if (cc === 'jp') { c.fillStyle = '#e8452c'; c.beginPath(); c.arc(32, 24, 14, 0, 7); c.fill(); return; }
+  if (cc === 'in') { // cờ Ấn Độ: cam, trắng, xanh lá và bánh xe Ashoka Chakra
+    c.fillStyle = '#ff9933'; c.fillRect(0, 0, 64, 16); c.fillStyle = '#fff'; c.fillRect(0, 16, 64, 16); c.fillStyle = '#138808'; c.fillRect(0, 32, 64, 16);
+    c.strokeStyle = '#000080'; c.lineWidth = 2; c.beginPath(); c.arc(32, 24, 6, 0, 7); c.stroke();
+    c.lineWidth = 1; c.beginPath(); for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; c.moveTo(32, 24); c.lineTo(32 + Math.cos(a) * 6, 24 + Math.sin(a) * 6); } c.stroke();
+    return;
+  }
+  if (cc === 'nz') { // cờ New Zealand: nền xanh, góc Union Jack, bốn ngôi sao đỏ
+    c.fillStyle = '#00247d'; c.fillRect(0, 0, 64, 48);
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 30, 22); c.fillStyle = '#012169'; c.fillRect(1, 1, 28, 20);
+    c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(0, 0); c.lineTo(30, 22); c.moveTo(30, 0); c.lineTo(0, 22); c.stroke();
+    c.fillStyle = '#fff'; c.fillRect(12, 0, 6, 22); c.fillRect(0, 8, 30, 6);
+    c.fillStyle = '#cc142b'; c.fillRect(13, 0, 4, 22); c.fillRect(0, 9, 30, 4);
+    for (const [x, y] of [[46, 10], [40, 22], [52, 24], [46, 36]]) { c.fillStyle = '#fff'; c.fillRect(x - 3, y - 3, 6, 6); c.fillStyle = '#cc142b'; c.fillRect(x - 2, y - 2, 4, 4); }
+    return;
+  }
   if (cc === 'us') { // cờ Mỹ: 13 sọc đỏ trắng, ô xanh với các ngôi sao
     c.fillStyle = '#fff'; c.fillRect(0, 0, 64, 48);
     for (let i = 0; i < 7; i++) { c.fillStyle = '#b22234'; c.fillRect(0, i * 7, 64, 3.6); }
@@ -169,8 +186,8 @@ function draw() {
     <div class="pp-hbody" ${S.habOpen ? '' : 'hidden'}>${hl.map(x => `<div class="pp-hr${habDone(vnDate(), x.id) ? ' done' : ''}"><button class="pp-hc" data-hc="${x.id}" aria-label="${t('Đánh dấu hoàn thành', 'Mark done')}">${habDone(vnDate(), x.id) ? '☑' : '☐'}</button><span class="gt grow">${esc(x.name)}</span><b>+${+x.coins || 0} 🪙</b><button class="pp-hi" data-he="${x.id}" aria-label="${t('Sửa', 'Edit')}">✏️</button><button class="pp-hi" data-hd="${x.id}" aria-label="${t('Xóa', 'Delete')}">✕</button></div>`).join('') || `<div class="dim">${t('Chưa có thói quen nào. Thêm thói quen của bạn bên dưới, mỗi lần tick xong sẽ nhận xu bạn đặt.', 'No habits yet. Add your own below; each time you tick one you earn the coins you set.')}</div>`}
       <div class="pp-hf"><input id="habName" class="gt" maxlength="60" placeholder="${t('Tên thói quen (vd: Uống đủ nước)', 'Habit name (e.g. Drink water)')}" value="${esc(S.hn)}"><input id="habCoins" type="number" min="0" max="9999" inputmode="numeric" value="${esc(S.hc)}" aria-label="${t('Xu thưởng', 'Coin reward')}"><span class="dim">🪙</span>
         <button class="btn primary" data-hab="save">${S.he ? t('Lưu', 'Save') : t('Thêm', 'Add')}</button>${S.he ? `<button class="btn" data-hab="cancel">${t('Hủy', 'Cancel')}</button>` : ''}</div></div></div>`);
-  const ctryBtn = c => { const a = stat(K.items.filter(i => i.cc === c)); return `<button class="pp-ctry${c === S.cc ? ' on' : ''}" data-cc="${c}"><canvas class="ppFlag" data-cc="${c}" width="64" height="48"></canvas><span><b>${CC[c][uiLang === 'vi' ? 0 : 1]}</b><span class="dim">${a.n}/${a.t}${a.n === a.t ? ' ⭐' : ''}</span></span></button>`; };
-  const contStat = k => stat(K.items.filter(i => CC_CONT[i.cc] === k)), curCont = WORLD.find(x => x.k === S.cont) || WORLD[0];
+  const ctryBtn = c => { const a = { n: cown(c), t: ctot(c) }; return `<button class="pp-ctry${c === S.cc ? ' on' : ''}" data-cc="${c}"><canvas class="ppFlag" data-cc="${c}" width="64" height="48"></canvas><span><b>${CC[c][uiLang === 'vi' ? 0 : 1]}</b><span class="dim">${a.n}/${a.t}${a.n === a.t ? ' ⭐' : ''}</span></span></button>`; };
+  const contStat = k => { let n = 0, tt = 0; for (const c of Object.keys(CC)) if (CC_CONT[c] === k) { n += cown(c); tt += ctot(c); } return { n, t: tt }; }, curCont = WORLD.find(x => x.k === S.cont) || WORLD[0];
   const curReg = curCont.regions.find(r => r.k === S.reg) || curCont.regions[0] || null;
   const nameOf = e => { const [vi, en] = e.split('|'); return uiLang === 'vi' ? vi : en; };
   const countStat = ct => { const a = contStat(ct.k); return a.t ? `${a.n}/${a.t}${a.n === a.t ? ' ⭐' : ''}` : '—'; };
@@ -236,26 +253,34 @@ function renderContinue() {
 }
 
 // ---------- khởi tạo ----------
-async function ensure() {
-  if (K) return;
-  const kit = await import('./pass-kit.js');
-  await Promise.all([...[1, 2, 3, 4, 5].map(i => import(`./pass-jp${i}.js`)), ...[1, 2, 3, 4, 5].map(i => import(`./pass-kr${i}.js`)), ...[1, 2, 3, 4, 5].map(i => import(`./pass-cn${i}.js`))]);
-  await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-vn${i}.js`)));
-  await import('./pass-vn6.js');
-  await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-fr${i}.js`)));
-  await import('./pass-fr6.js');
-  await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-eg${i}.js`)));
-  await import('./pass-eg6.js');
-  await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-us${i}.js`)));
-  await import('./pass-us6.js');
-  await import('./pass-cn6.js'); // chỉnh lại thẻ Trung Quốc: phải nạp sau khi cn1–5 đã đăng ký xong
-  ST = { jp: await import('./pass-story.js'), kr: await import('./pass-story-kr.js'), cn: await import('./pass-story-cn.js'), vn: await import('./pass-story-vn.js'), fr: await import('./pass-story-fr.js'), eg: await import('./pass-story-eg.js'), us: await import('./pass-story-us.js') };
-  K = { items: kit.ITEMS, byId: Object.fromEntries(kit.ITEMS.map(i => [i.id, i])), render: kit.render, paint: kit.paint };
+const LOADED = new Set(), LOADING = new Map();
+let kitP = null, KT = null; // KT: kho thẻ dùng chung; K chỉ gán sau khi đã nạp xong lần đầu
+const ccOf = id => { const p = id.split('-')[0]; return p !== 'jp' && CC[p] ? p : 'jp'; }; // mã nước của một thẻ (thẻ Nhật không có tiền tố)
+const ctot = c => (LOADED.has(c) ? KT.items.filter(i => i.cc === c).length : COUNT[c] || 0);
+const cown = c => P.own.filter(id => ccOf(id) === c).length;
+const missing = () => P.own.some(id => !LOADED.has(ccOf(id)));
+function loadCC(cc) { // chỉ nạp thẻ + câu chuyện của nước cần xem (mỗi nước ~6 file), không nạp tất cả nước
+  if (LOADED.has(cc)) return Promise.resolve();
+  if (!LOADING.has(cc)) LOADING.set(cc, (async () => {
+    await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-${cc}${i}.js`)));
+    if (cc !== 'jp' && cc !== 'kr') await import(`./pass-${cc}6.js`); // chỉnh lại / bỏ nền thẻ, phải nạp sau khi 1–5 đã đăng ký
+    ST[cc] = await import(cc === 'jp' ? './pass-story.js' : `./pass-story-${cc}.js`);
+    for (const i of KT.items) if (i.cc === cc) KT.byId[i.id] = i;
+    LOADED.add(cc);
+  })().finally(() => LOADING.delete(cc)));
+  return LOADING.get(cc);
 }
+async function ensure(cc) { // nạp kho + các nước đã có thẻ mua (để tính xu, Lame) + nước đang xem
+  if (!kitP) kitP = import('./pass-kit.js').then(kit => { ST = {}; KT = { items: kit.ITEMS, byId: {}, render: kit.render, paint: kit.paint }; });
+  await kitP;
+  await Promise.all([...new Set([...P.own.map(ccOf), ...(cc ? [cc] : [])])].map(c => loadCC(c).catch(() => {})));
+  if (!K) K = KT;
+}
+const go = () => ensure(S.cc).then(draw); // đổi nước: nạp nước đó rồi vẽ
 async function open() {
   root = $('#passRoot'); if (!root) return;
   if (!P.since) { P.since = vnDate(); save(); }
-  await ensure(); pull(); if (active) draw();
+  await ensure(S.cc); pull(); if (active) draw();
 }
 export function init() {
   bus.on('show', v => { active = v === 'passport'; if (active) open(); if (v === 'review') renderContinue(); });
@@ -272,12 +297,12 @@ export function init() {
     if (b.id === 'ppHow') { $('#ppHowBox').hidden = !$('#ppHowBox').hidden; return; }
     if (b.dataset.ct) { // chọn châu: sang khu vực đầu tiên có nước đã làm (nếu không có thì khu vực đầu tiên)
       const ct = WORLD.find(x => x.k === b.dataset.ct), rg = ct.regions.find(r => firstIn(r.k)) || ct.regions[0];
-      S.cont = ct.k; S.reg = rg ? rg.k : ''; const c = rg && firstIn(rg.k); if (c && CC_REG[S.cc] !== rg.k) { S.cc = c; S.group = 1; } draw(); return;
+      S.cont = ct.k; S.reg = rg ? rg.k : ''; const c = rg && firstIn(rg.k); if (c && CC_REG[S.cc] !== rg.k) { S.cc = c; S.group = 1; } go(); return;
     }
     if (b.dataset.rg) { // chọn khu vực: nếu đang xem nước ở khu vực khác thì chuyển sang nước đầu tiên của khu vực này
-      S.reg = b.dataset.rg; const c = firstIn(S.reg); if (c && CC_REG[S.cc] !== S.reg) { S.cc = c; S.group = 1; } draw(); return;
+      S.reg = b.dataset.rg; const c = firstIn(S.reg); if (c && CC_REG[S.cc] !== S.reg) { S.cc = c; S.group = 1; } go(); return;
     }
-    if (b.dataset.cc) { S.cc = b.dataset.cc; S.cont = CC_CONT[S.cc]; S.reg = CC_REG[S.cc]; S.group = 1; draw(); return; }
+    if (b.dataset.cc) { S.cc = b.dataset.cc; S.cont = CC_CONT[S.cc]; S.reg = CC_REG[S.cc]; S.group = 1; go(); return; }
     if (b.dataset.g) { S.group = +b.dataset.g; draw(); return; }
     if (b.dataset.hab === 'toggle') { S.habOpen = !S.habOpen; draw(); return; }
     if (b.dataset.hab === 'save') { habSave(); return; }
