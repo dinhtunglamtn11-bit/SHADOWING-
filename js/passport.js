@@ -265,6 +265,15 @@ function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
     c.fillStyle = '#ffcc00'; c.beginPath(); for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.4 : 6; c.lineTo(21 + Math.cos(a) * r, 14 + Math.sin(a) * r); } c.closePath(); c.fill();
     return;
   }
+  if (cc === 'au') { // cờ Úc: nền xanh, góc Union Jack, sao Liên bang và chòm Nam Thập Tự
+    c.fillStyle = '#012169'; c.fillRect(0, 0, 64, 48);
+    c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(0, 0); c.lineTo(32, 24); c.moveTo(32, 0); c.lineTo(0, 24); c.stroke();
+    c.strokeStyle = '#c8102e'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, 0); c.lineTo(32, 24); c.moveTo(32, 0); c.lineTo(0, 24); c.stroke();
+    c.fillStyle = '#fff'; c.fillRect(13, 0, 6, 24); c.fillRect(0, 9, 32, 6); c.fillStyle = '#c8102e'; c.fillRect(14.5, 0, 3, 24); c.fillRect(0, 10.5, 32, 3);
+    const star = (x, y, r) => { c.beginPath(); for (let i = 0; i < 14; i++) { const a = i * Math.PI / 7 - Math.PI / 2, rr = i % 2 ? r * 0.55 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } c.closePath(); c.fill(); };
+    c.fillStyle = '#fff'; star(16, 36, 6); star(48, 8, 3); star(56, 20, 3); star(48, 34, 3); star(40, 20, 3); star(51, 24, 1.8);
+    return;
+  }
   if (cc === 'ly') { // cờ Libya: đỏ, đen (rộng gấp đôi), xanh lá; trăng lưỡi liềm và sao trắng ở giữa
     c.fillStyle = '#e70013'; c.fillRect(0, 0, 64, 12); c.fillStyle = '#000'; c.fillRect(0, 12, 64, 24); c.fillStyle = '#239e46'; c.fillRect(0, 36, 64, 12);
     c.fillStyle = '#fff'; c.beginPath(); c.arc(30, 24, 8, 0, 7); c.fill(); c.fillStyle = '#000'; c.beginPath(); c.arc(33, 24, 7, 0, 7); c.fill();

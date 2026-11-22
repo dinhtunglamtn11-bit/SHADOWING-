@@ -28,7 +28,7 @@ export const WORLD = [
     R('sam', 'Nam Mỹ', 'South America', 'Brasil|Brazil; Argentina|Argentina; Colombia|Colombia; Peru|Peru; Venezuela|Venezuela; Chile|Chile; Ecuador|Ecuador; Bolivia|Bolivia; Paraguay|Paraguay; Uruguay|Uruguay; Guyana|Guyana; Suriname|Suriname'),
   ] },
   { k: 'oc', vi: 'Châu Đại Dương', en: 'Oceania', regions: [
-    R('oce', 'Châu Đại Dương (Úc)', 'Oceania (Australia)', 'Úc|Australia; New Zealand|New Zealand|nz; Papua New Guinea|Papua New Guinea; Fiji|Fiji; Quần đảo Solomon|Solomon Islands; Vanuatu|Vanuatu; Samoa|Samoa; Tonga|Tonga; Kiribati|Kiribati; Micronesia|Micronesia; Quần đảo Marshall|Marshall Islands; Palau|Palau; Nauru|Nauru; Tuvalu|Tuvalu'),
+    R('oce', 'Châu Đại Dương (Úc)', 'Oceania (Australia)', 'Úc|Australia|au; New Zealand|New Zealand|nz; Papua New Guinea|Papua New Guinea; Fiji|Fiji; Quần đảo Solomon|Solomon Islands; Vanuatu|Vanuatu; Samoa|Samoa; Tonga|Tonga; Kiribati|Kiribati; Micronesia|Micronesia; Quần đảo Marshall|Marshall Islands; Palau|Palau; Nauru|Nauru; Tuvalu|Tuvalu'),
   ] },
   { k: 'an', vi: 'Châu Nam Cực', en: 'Antarctica', note: ['Không có quốc gia độc lập hay dân cư sinh sống vĩnh viễn; chỉ có các trạm nghiên cứu khoa học quốc tế.', 'No independent countries or permanent residents; only international research stations.'], regions: [] },
 ];
