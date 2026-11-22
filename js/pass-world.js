@@ -1,10 +1,10 @@
-// Bản đồ các châu → khu vực → nước của Passport. Mỗi nước viết 'Tên Việt|Tên Anh' và thêm '|mã' nếu đã có thẻ (mã khớp setCC trong pass-xx*.js).
+﻿// Bản đồ các châu → khu vực → nước của Passport. Mỗi nước viết 'Tên Việt|Tên Anh' và thêm '|mã' nếu đã có thẻ (mã khớp setCC trong pass-xx*.js).
 const L = s => s.split(';').map(x => x.trim()).filter(Boolean);
 const R = (k, vi, en, list) => ({ k, vi, en, c: L(list) });
 
 export const WORLD = [
   { k: 'as', vi: 'Châu Á', en: 'Asia', regions: [
-    R('sea', 'Đông Nam Á', 'Southeast Asia', 'Việt Nam|Vietnam|vn; Thái Lan|Thailand; Indonesia|Indonesia; Malaysia|Malaysia; Singapore|Singapore; Philippines|Philippines; Lào|Laos; Campuchia|Cambodia; Myanmar|Myanmar; Brunei|Brunei; Timor-Leste|Timor-Leste'),
+    R('sea', 'Đông Nam Á', 'Southeast Asia', 'Việt Nam|Vietnam|vn; Thái Lan|Thailand; Indonesia|Indonesia; Malaysia|Malaysia|my; Singapore|Singapore; Philippines|Philippines; Lào|Laos; Campuchia|Cambodia; Myanmar|Myanmar; Brunei|Brunei; Timor-Leste|Timor-Leste'),
     R('ea', 'Đông Á', 'East Asia', 'Trung Quốc|China|cn; Nhật Bản|Japan|jp; Hàn Quốc|South Korea|kr; Triều Tiên|North Korea; Mông Cổ|Mongolia'),
     R('sa', 'Nam Á', 'South Asia', 'Ấn Độ|India|in; Pakistan|Pakistan; Bangladesh|Bangladesh; Sri Lanka|Sri Lanka; Nepal|Nepal; Bhutan|Bhutan; Maldives|Maldives; Afghanistan|Afghanistan'),
     R('wa', 'Tây Á (Trung Đông)', 'West Asia (Middle East)', 'Ả Rập Xê Út|Saudi Arabia; UAE|United Arab Emirates; Qatar|Qatar; Kuwait|Kuwait; Oman|Oman; Bahrain|Bahrain; Iraq|Iraq; Iran|Iran; Syria|Syria; Jordan|Jordan; Liban|Lebanon; Israel|Israel; Palestine|Palestine; Thổ Nhĩ Kỳ|Turkey; Síp|Cyprus; Gruzia|Georgia; Armenia|Armenia; Azerbaijan|Azerbaijan'),
@@ -32,3 +32,4 @@ export const WORLD = [
   ] },
   { k: 'an', vi: 'Châu Nam Cực', en: 'Antarctica', note: ['Không có quốc gia độc lập hay dân cư sinh sống vĩnh viễn; chỉ có các trạm nghiên cứu khoa học quốc tế.', 'No independent countries or permanent residents; only international research stations.'], regions: [] },
 ];
+

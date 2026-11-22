@@ -246,6 +246,14 @@ export function habitHtml() {
 function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
   const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 64, 48);
   if (cc === 'jp') { c.fillStyle = '#e8452c'; c.beginPath(); c.arc(32, 24, 14, 0, 7); c.fill(); return; }
+  if (cc === 'my') { // cờ Malaysia: sọc đỏ trắng, ô xanh có trăng lưỡi liềm và sao vàng
+    for (let i = 0; i < 7; i++) { c.fillStyle = i % 2 ? '#fff' : '#cc0001'; c.fillRect(0, i * 7, 64, 7); }
+    c.fillStyle = '#010066'; c.fillRect(0, 0, 32, 28);
+    c.fillStyle = '#ffcc00'; c.beginPath(); c.arc(12, 14, 8, 0, 7); c.fill();
+    c.fillStyle = '#010066'; c.beginPath(); c.arc(15, 14, 7, 0, 7); c.fill();
+    c.fillStyle = '#ffcc00'; c.beginPath(); for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.4 : 6; c.lineTo(21 + Math.cos(a) * r, 14 + Math.sin(a) * r); } c.closePath(); c.fill();
+    return;
+  }
   if (cc === 'in') { // cờ Ấn Độ: cam, trắng, xanh lá và bánh xe Ashoka Chakra
     c.fillStyle = '#ff9933'; c.fillRect(0, 0, 64, 16); c.fillStyle = '#fff'; c.fillRect(0, 16, 64, 16); c.fillStyle = '#138808'; c.fillRect(0, 32, 64, 16);
     c.strokeStyle = '#000080'; c.lineWidth = 2; c.beginPath(); c.arc(32, 24, 6, 0, 7); c.stroke();
@@ -408,6 +416,18 @@ async function open() {
   await ensure(S.cc); pull(); if (active) draw();
 }
 export function init() {
+  if (!P.since) { P.since = vnDate(); save(); } // bắt đầu tính xu ngay từ lần mở app đầu tiên, không đợi mở tab Passport
+  // báo xu ngay khi học / làm nhiệm vụ / làm bài, không cần vào tab Passport mới thấy (Passport đang mở thì tự hiện "xu mới")
+  let lastE = null, pend = 0, lastT = 0;
+  bus.on('store', c => {
+    if (c !== 'days' && c !== '*') return;
+    const e = earned();
+    if (lastE === null) { lastE = e; return; }
+    const dlt = e - lastE; lastE = e;
+    if (dlt <= 0 || dlt > 300 || active || document.hidden) return; // dlt lớn = vừa đồng bộ từ máy khác, không báo
+    pend += dlt; const now = Date.now();
+    if (dlt >= 5 || now - lastT > 20000) { toast(t(`🪙 +${pend} xu`, `🪙 +${pend} coins`), 2200); if (dlt >= 5) sfx.play('reward'); pend = 0; lastT = now; }
+  });
   bus.on('worldpass', () => { P.extra = (P.extra || 0) + 10; save(); toast(t('📖 Bài đọc đạt từ 80% lần đầu: +10 xu', '📖 First 80%+ on an article: +10 coins'), 3000); if (active && K) draw(); });
   bus.on('show', v => { active = v === 'passport'; if (active) open(); if (v === 'review') renderContinue(); });
   bus.on('store', c => { if ((c === 'items' || c === '*') && document.body.dataset.view === 'review') renderContinue(); });
