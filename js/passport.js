@@ -32,8 +32,8 @@ const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', '
 // ---------- lưu / đồng bộ ----------
 function load() {
   // hwv 2: lần đổi xu thử nghiệm 3000 → 300, đặt lại mức xu cao nhất một lần (xu thử cũ bị thu hồi)
-  try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) { const mig = !(o.hwv >= HWV); return { own: o.own || [], since: o.since || '', hw: mig ? 0 : o.hw || 0, hwv: HWV, seen: o.seen || [], last: mig ? 0 : o.last || 0, eq: o.eq || {}, eqT: o.eqT || 0, paid: o.paid || {}, extra: o.extra || 0, chestD: o.chestD || '', qz: o.qz || { d: '', n: 0 }, wk: o.wk || null, stamps: o.stamps || [] }; } } catch { /* bỏ qua */ }
-  return { own: [], since: '', hw: 0, hwv: HWV, seen: [], last: 0, eq: {}, eqT: 0, paid: {}, extra: 0, chestD: '', qz: { d: '', n: 0 }, wk: null, stamps: [] };
+  try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) { const mig = !(o.hwv >= HWV); return { own: o.own || [], since: o.since || '', hw: mig ? 0 : o.hw || 0, hwv: HWV, seen: o.seen || [], last: mig ? 0 : o.last || 0, eq: o.eq || {}, eqT: o.eqT || 0, paid: o.paid || {}, extra: o.extra || 0, chestD: o.chestD || '', qz: o.qz || { d: '', n: 0 }, wk: o.wk || null, stamps: o.stamps || [], forgive: o.forgive || 0, fv: o.fv || 0 }; } } catch { /* bỏ qua */ }
+  return { own: [], since: '', hw: 0, hwv: HWV, seen: [], last: 0, eq: {}, eqT: 0, paid: {}, extra: 0, chestD: '', qz: { d: '', n: 0 }, wk: null, stamps: [], forgive: 0, fv: 1 };
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* bỏ qua */ } clearTimeout(pushT); pushT = setTimeout(() => store.put('prefs', 'passport', { ...P }), 2000); }
 function pull() { // gộp với bản từ máy khác: thẻ đã mua lấy hợp, xu cao nhất lấy số lớn hơn
@@ -47,10 +47,11 @@ function pull() { // gộp với bản từ máy khác: thẻ đã mua lấy h�
   const extra = Math.max(P.extra || 0, r.extra || 0), chestD = [P.chestD || '', r.chestD || ''].sort().pop(), stamps = [...new Set([...(P.stamps || []), ...(r.stamps || [])])];
   const qz = (r.qz?.d || '') > (P.qz?.d || '') || ((r.qz?.d || '') === (P.qz?.d || '') && (r.qz?.n || 0) > (P.qz?.n || 0)) ? r.qz : (P.qz || { d: '', n: 0 });
   let wk = P.wk; if (r.wk && (!wk || r.wk.k > wk.k)) wk = r.wk; else if (r.wk && wk && r.wk.k === wk.k) wk = { ...wk, n: Math.max(wk.n || 0, r.wk.n || 0), claimed: !!(wk.claimed || r.wk.claimed) };
-  const more = extra !== (P.extra || 0) || chestD !== (P.chestD || '') || stamps.length !== (P.stamps || []).length || JSON.stringify(qz) !== JSON.stringify(P.qz) || JSON.stringify(wk) !== JSON.stringify(P.wk);
+  const forgive = Math.max(P.forgive || 0, r.forgive || 0), fv = Math.max(P.fv || 0, r.fv || 0);
+  const more = forgive !== (P.forgive || 0) || fv !== (P.fv || 0) || extra !== (P.extra || 0) || chestD !== (P.chestD || '') || stamps.length !== (P.stamps || []).length || JSON.stringify(qz) !== JSON.stringify(P.qz) || JSON.stringify(wk) !== JSON.stringify(P.wk);
   const ch = more || own.size !== P.own.length || seen.size !== P.seen.length || since !== P.since || hw !== P.hw || hwv !== (P.hwv || 0) || Object.keys(paid).length !== Object.keys(P.paid || {}).length || (r.eqT || 0) > (P.eqT || 0);
   const eqNew = (r.eqT || 0) > (P.eqT || 0);
-  P = { own: [...own], seen: [...seen], since, hw, hwv, paid, extra, chestD, qz, wk, stamps, last: Math.max(P.last, r.last || 0), eq: eqNew ? (r.eq || {}) : (P.eq || {}), eqT: Math.max(P.eqT || 0, r.eqT || 0) };
+  P = { own: [...own], seen: [...seen], since, hw, hwv, paid, forgive, fv, extra, chestD, qz, wk, stamps, last: Math.max(P.last, r.last || 0), eq: eqNew ? (r.eq || {}) : (P.eq || {}), eqT: Math.max(P.eqT || 0, r.eqT || 0) };
   if (K && missing()) ensure(S.cc).then(() => { bus.emit('lame'); if (active) draw(); }); // thẻ mới mua ở máy khác thuộc nước chưa nạp
   if (eqNew) bus.emit('lame');
   if (ch) { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* bỏ qua */ } if (active && K) draw(); }
@@ -76,7 +77,8 @@ function earned() {
   for (let s = A.monthStart(P.since); s <= today; s = addDays(A.monthEnd(s), 1)) { const e = A.monthEnd(s); sum += A.monthlyFor(s).filter(q => A.isDone(q, A.aggregate(m, s, e < today ? e : today))).length * 100; }
   return sum;
 }
-const spent = () => P.own.reduce((n, id) => n + (P.paid?.[id] ?? (K?.byId[id] ? priceOf(K.byId[id]) : 0)), 0); // giá đã trả lúc mua (có thể được giảm)
+const rawSpent = () => P.own.reduce((n, id) => n + (P.paid?.[id] ?? (K?.byId[id] ? priceOf(K.byId[id]) : 0)), 0); // giá đã trả lúc mua (có thể được giảm)
+const spent = () => Math.max(0, rawSpent() - (P.forgive || 0)); // forgive: xóa khoản nợ do đợt thu hồi xu thử nghiệm
 // thưởng chuỗi ngày học: mỗi ngày học liên tiếp trước đó +10% xu của ngày, tối đa +50%
 const studied = d => !!d && (d.sec || 0) >= 60;
 function streakDays(m, date) { let n = 0; for (let d = addDays(date, -1); n < 5; d = addDays(d, -1)) { if (studied(m.get(d))) n++; else break; } return n; }
@@ -87,7 +89,12 @@ function curPrice(it) {
   const base = priceOf(it), sub = K ? K.items.filter(i => i.cc === it.cc && i.sub === it.sub) : [];
   return sub.length > 1 && sub.filter(i => !own(i.id)).length === 1 && !own(it.id) ? Math.round(base / 2) : base;
 }
-function balance() { const e = Math.max(P.hw, earned()); if (e > P.hw) { P.hw = e; save(); } return Math.max(0, e - spent()); } // xu kiếm được không bao giờ giảm lại (đổi mục tiêu ngày không làm mất xu)
+function balance() {
+  const e = Math.max(P.hw, earned()); if (e > P.hw) { P.hw = e; save(); }
+  // một lần: nếu sau đợt thu hồi 3000 xu thử mà số xu đã tiêu vượt số xu kiếm được thì xóa phần nợ đó (giữ nguyên các thẻ đã mua), để xu mới nhận hiện ra ngay
+  if (!P.fv && K && !missing()) { P.fv = 1; P.forgive = Math.max(0, rawSpent() - (e - (P.extra || 0))); save(); }
+  return Math.max(0, e - spent());
+} // xu kiếm được không bao giờ giảm lại (đổi mục tiêu ngày không làm mất xu)
 function todayParts() {
   const m = tracker.byDate(), d = m.get(vnDate()) || A.blankDay(vnDate()), parts = dayParts(vnDate(), d), base = parts.reduce((n, [, v]) => n + v, 0);
   return [...parts, ['Thưởng chuỗi ngày', streakBonus(m, vnDate(), base)], ['Thói quen', habitCoins(vnDate())]];
@@ -476,6 +483,7 @@ export async function items() { await ensure(); return K; }
 export const ownedIds = () => P.own.slice();
 export const getEq = () => ({ ...(P.eq || {}) });
 export function setEq(eq) { P.eq = { ...eq }; P.eqT = Date.now(); checkStamps(); save(); bus.emit('lame'); }
+
 
 
 
