@@ -725,6 +725,49 @@ body.vx-on #cueList { display: none; }
 #passRoot[data-fr="leaf"] .pp-card.own { border-color: #2f7d3a; box-shadow: inset 0 0 0 3px #b8e08a66; }
 #passRoot[data-fr="chain"] .pp-card.own { border-color: #9aa4c4; border-style: dashed; border-width: 5px; }
 #passRoot[data-fr="candy"] .pp-card.own { border-color: transparent; border-image: repeating-linear-gradient(45deg, #e8452c 0 8px, #fff 8px 16px) 1; }
+/* ===== Giao diện app mua ở cửa hàng (data-skin trên <html>) =====
+   Mỗi giao diện chỉ khai báo 6 màu gốc (--s-*); quy tắc chung bên dưới suy ra toàn bộ biến của app, nên đổi cả ngày lẫn đêm. */
+#skinFx { position: fixed; left: 0; top: 0; width: calc(100vw / var(--zf, 1)); height: calc(100dvh / var(--zf, 1)); z-index: 15; pointer-events: none; image-rendering: pixelated; }
+:root[data-skin][data-theme][data-pal] {
+  --ink: var(--s-ink); --hl: var(--s-acc);
+  --bg: var(--s-bg); --bg2: color-mix(in srgb, var(--s-bg) 90%, var(--s-text));
+  --panel: var(--s-panel); --panel2: color-mix(in srgb, var(--s-panel) 86%, var(--s-acc));
+  --hi: color-mix(in srgb, var(--s-panel) 78%, #fff); --lo: color-mix(in srgb, var(--s-panel) 80%, #000);
+  --field: color-mix(in srgb, var(--s-panel) 72%, var(--s-bg));
+  --text: var(--s-text); --dim: color-mix(in srgb, var(--s-text) 68%, var(--s-panel));
+  --accent: var(--s-acc); --blue: var(--s-acc); --h3: var(--s-acc); --tsh: rgba(0, 0, 0, .35);
+  --line: color-mix(in srgb, var(--s-panel) 62%, var(--s-text)); --btn: color-mix(in srgb, var(--s-panel) 84%, var(--s-acc));
+  --ok: #4fd67a; --bad: #ff6b7e; --miss: var(--s-acc);
+  --okbg: color-mix(in srgb, #2fa55a 30%, var(--s-panel)); --badbg: color-mix(in srgb, #d63b4b 30%, var(--s-panel));
+  --cueon: color-mix(in srgb, var(--s-acc) 35%, var(--s-panel)); --hintbg: color-mix(in srgb, var(--s-acc) 28%, var(--s-panel)); --hinttx: var(--s-text);
+  --wood: var(--s-wood); --wood2: color-mix(in srgb, var(--s-wood) 78%, #000); --woodhi: color-mix(in srgb, var(--s-wood) 78%, #fff);
+  --steel: var(--s-steel); --steel2: color-mix(in srgb, var(--s-steel) 78%, #000); --steelhi: color-mix(in srgb, var(--s-steel) 78%, #fff);
+  --bn: color-mix(in srgb, var(--s-panel) 88%, #fff); --bnl: color-mix(in srgb, var(--s-panel) 70%, #fff); --bnd: color-mix(in srgb, var(--s-panel) 80%, #000); --bnt: var(--s-text);
+  --board: color-mix(in srgb, var(--s-bg) 75%, #000);
+}
+:root[data-skin=sakura] { --s-bg: #ffe3ee; --s-panel: #fff5f9; --s-text: #4a2040; --s-acc: #e8508a; --s-wood: #d98aa8; --s-steel: #b58ad6; --s-ink: #5a2a4a; color-scheme: light; }
+:root[data-skin=ocean] { --s-bg: #08304f; --s-panel: #0f4a73; --s-text: #e8f6ff; --s-acc: #4de0d0; --s-wood: #1a6a8a; --s-steel: #2a8ab0; --s-ink: #021a2e; color-scheme: dark; }
+:root[data-skin=galaxy] { --s-bg: #120a2e; --s-panel: #241648; --s-text: #f0eaff; --s-acc: #ffd84d; --s-wood: #4a2a8a; --s-steel: #6a3fc0; --s-ink: #07031a; color-scheme: dark; }
+:root[data-skin=jungle] { --s-bg: #0f3320; --s-panel: #1a4d30; --s-text: #eaffe8; --s-acc: #b8e04a; --s-wood: #6a4a24; --s-steel: #2f7a4a; --s-ink: #05160c; color-scheme: dark; }
+:root[data-skin=candy] { --s-bg: #ffe6f7; --s-panel: #fffaff; --s-text: #54306a; --s-acc: #ff7ab8; --s-wood: #ff9ccf; --s-steel: #8ab4ff; --s-ink: #6a3a7a; color-scheme: light; }
+:root[data-skin=neon] { --s-bg: #0a0620; --s-panel: #170c3a; --s-text: #e8fbff; --s-acc: #00f0ff; --s-wood: #3a0a6a; --s-steel: #0a3a6a; --s-ink: #000010; color-scheme: dark; }
+:root[data-skin=winter] { --s-bg: #dff0ff; --s-panel: #f7fcff; --s-text: #1f3a5a; --s-acc: #3a8ae0; --s-wood: #6a8ab0; --s-steel: #5a9ad0; --s-ink: #1a2a4a; color-scheme: light; }
+:root[data-skin=desert] { --s-bg: #f4d9a8; --s-panel: #fff1d4; --s-text: #4a2a10; --s-acc: #e0662a; --s-wood: #b8602a; --s-steel: #c9873a; --s-ink: #3a1a08; color-scheme: light; }
+:root[data-skin=retro] { --s-bg: #8bac0f; --s-panel: #9bbc0f; --s-text: #0f380f; --s-acc: #306230; --s-wood: #306230; --s-steel: #0f380f; --s-ink: #0f380f; color-scheme: light; }
+:root[data-skin=autumn] { --s-bg: #f7dcc0; --s-panel: #fff0e0; --s-text: #4a2410; --s-acc: #d8501a; --s-wood: #8a4a22; --s-steel: #b8682a; --s-ink: #3a1808; color-scheme: light; }
+/* nền trang riêng của từng giao diện (đè lên nền ca-rô / trơn) */
+:root[data-skin=sakura][data-bg] body { background-image: radial-gradient(circle at 20% 25%, rgba(255, 150, 190, .35) 0 3px, transparent 4px), radial-gradient(circle at 70% 65%, rgba(255, 190, 215, .45) 0 2px, transparent 3px), linear-gradient(#ffe3ee, #ffd0e2); background-size: 90px 90px, 130px 130px, auto; }
+:root[data-skin=ocean][data-bg] body { background-image: repeating-linear-gradient(0deg, rgba(120, 220, 255, .07) 0 8px, transparent 8px 20px), linear-gradient(#0a3d63, #041c33); background-size: auto; }
+:root[data-skin=galaxy][data-bg] body { background-image: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, .8) 0 1px, transparent 2px), radial-gradient(circle at 70% 70%, rgba(180, 160, 255, .7) 0 1px, transparent 2px), radial-gradient(ellipse at 80% 10%, rgba(150, 60, 220, .35), transparent 55%), linear-gradient(#1a0f40, #07031a); background-size: 100px 100px, 150px 150px, auto, auto; }
+:root[data-skin=jungle][data-bg] body { background-image: radial-gradient(circle at 30% 30%, rgba(184, 224, 74, .12) 0 10px, transparent 11px), radial-gradient(circle at 75% 70%, rgba(184, 224, 74, .1) 0 14px, transparent 15px), linear-gradient(#134029, #08200f); background-size: 90px 90px, 130px 130px, auto; }
+:root[data-skin=candy][data-bg] body { background-image: repeating-linear-gradient(45deg, rgba(255, 122, 184, .12) 0 14px, transparent 14px 28px), repeating-linear-gradient(-45deg, rgba(138, 180, 255, .12) 0 14px, transparent 14px 28px); background-size: auto; }
+:root[data-skin=neon][data-bg] body { background-image: linear-gradient(rgba(0, 240, 255, .12) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 60, 220, .1) 1px, transparent 1px), linear-gradient(#0a0620, #1a0a40); background-size: 44px 44px, 44px 44px, auto; }
+:root[data-skin=neon] body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 14; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .18) 0 1px, transparent 1px 3px); }
+:root[data-skin=winter][data-bg] body { background-image: radial-gradient(circle at 25% 20%, rgba(255, 255, 255, .9) 0 2px, transparent 3px), radial-gradient(circle at 70% 70%, rgba(255, 255, 255, .8) 0 1.5px, transparent 2.5px), linear-gradient(#e8f4ff, #c8e0f8); background-size: 80px 80px, 120px 120px, auto; }
+:root[data-skin=desert][data-bg] body { background-image: repeating-linear-gradient(172deg, rgba(190, 120, 50, .16) 0 12px, transparent 12px 28px), linear-gradient(#f9e2b4, #f0c88a); background-size: auto; }
+:root[data-skin=retro][data-bg] body { background-image: none; background-color: #8bac0f; }
+:root[data-skin=retro] body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 14; background: repeating-linear-gradient(0deg, rgba(15, 56, 15, .16) 0 1px, transparent 1px 3px); }
+:root[data-skin=autumn][data-bg] body { background-image: radial-gradient(circle at 25% 30%, rgba(216, 80, 26, .22) 0 4px, transparent 5px), radial-gradient(circle at 70% 70%, rgba(232, 162, 26, .25) 0 3px, transparent 4px), linear-gradient(#f9e2c8, #f0c9a0); background-size: 80px 80px, 120px 120px, auto; }
 /* khung thẻ đã mua (đồ cửa hàng) */
 #passRoot[data-fr="gold"] .pp-card.own { border-color: #ffd84d; box-shadow: 0 0 0 2px #c9a227, 0 0 10px #ffd84d88; }
 #passRoot[data-fr="rainbow"] .pp-card.own { border-color: transparent; border-image: linear-gradient(135deg, #e8452c, #ffd84d, #5fb85a, #4a7be0, #7a3fc0) 1; }

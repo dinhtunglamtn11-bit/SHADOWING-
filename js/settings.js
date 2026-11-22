@@ -1,4 +1,4 @@
-// Cài đặt: ngôn ngữ giao diện + tùy biến diện mạo (lưu riêng từng máy trong localStorage 'ui') + vài mục học tập (đồng bộ qua prefs).
+﻿// Cài đặt: ngôn ngữ giao diện + tùy biến diện mạo (lưu riêng từng máy trong localStorage 'ui') + vài mục học tập (đồng bộ qua prefs).
 import { $, $$, toast, bus } from './util.js';
 import { prefs, savePrefs } from './prefs.js';
 import { uiLang } from './i18n.js';
@@ -6,7 +6,7 @@ import { pix } from './pixicons.js';
 import { getBk, setBk, checkReminder } from './backup.js';
 import * as sfx from './sfx.js';
 
-export const UI_DEFAULTS = { lang: 'vi', theme: 'day', pal: 'candy', px: '3', corner: 'notch', font: 'pixel', icons: 'pixel', bg: 'check', motion: 'on', zoom: '100', sub: '100', hl: 'yellow', rd: 'default', lbl: 'on', lame: 'on', lamePos: 'r', lameSz: '3' };
+export const UI_DEFAULTS = { lang: 'vi', theme: 'day', pal: 'candy', px: '3', corner: 'notch', font: 'pixel', icons: 'pixel', bg: 'check', motion: 'on', zoom: '100', sub: '100', hl: 'yellow', rd: 'default', lbl: 'on', lame: 'on', lamePos: 'r', lameSz: '3', skinOn: 'on', skinFx: 'on' };
 
 export function getUi() {
   try { return { ...UI_DEFAULTS, ...JSON.parse(localStorage.getItem('ui') || '{}') }; } catch { return { ...UI_DEFAULTS }; }
@@ -17,7 +17,7 @@ const resolveTheme = t => (t === 'auto' ? (matchMedia('(prefers-color-scheme: da
 // Đặt các thuộc tính data-* và biến CSS lên <html>
 export function applyUi(u = getUi()) {
   const d = document.documentElement;
-  for (const k of ['pal', 'px', 'corner', 'font', 'icons', 'bg', 'motion', 'hl', 'rd', 'lbl', 'lame', 'lamePos', 'lameSz']) d.dataset[k] = u[k];
+  for (const k of ['pal', 'px', 'corner', 'font', 'icons', 'bg', 'motion', 'hl', 'rd', 'lbl', 'lame', 'lamePos', 'lameSz', 'skinOn', 'skinFx']) d.dataset[k] = u[k];
   const theme = resolveTheme(u.theme);
   d.dataset.theme = theme;
   d.style.zoom = +u.zoom === 100 ? '' : String(u.zoom / 100); // cỡ chữ giao diện (zoom của trình duyệt)
@@ -83,3 +83,4 @@ export function init() {
   };
   bus.on('prefs', () => { if (dlg.open) markSegs(getUi()); });
 }
+

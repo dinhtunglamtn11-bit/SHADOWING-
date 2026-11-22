@@ -1,4 +1,4 @@
-﻿// Passport: sưu tầm thẻ văn hóa các nước bằng xu kiếm được từ việc học. Chưa mua = hình đen trắng; mua rồi hiện màu và đọc được nguồn gốc;
+// Passport: sưu tầm thẻ văn hóa các nước bằng xu kiếm được từ việc học. Chưa mua = hình đen trắng; mua rồi hiện màu và đọc được nguồn gốc;
 // mua đủ một mục nhỏ / mục lớn thì mở câu chuyện của mục đó. Xu = tổng xu kiếm được từ số liệu học (tài liệu "days", nên tự đồng bộ) trừ giá các thẻ đã mua.
 // Văn bản giao diện ở đây chọn theo ngôn ngữ app bằng t(việt, anh); tiếng Trung hiện bản tiếng Anh. Thẻ chỉ có tiếng Việt / tiếng Anh, không kèm tiếng của nước đó.
 import { $, $$, esc, toast, bus, vnDate, addDays } from './util.js';
@@ -15,7 +15,7 @@ import('./pass-count.js').then(m => { COUNT = m.COUNT; if (active && K) draw(); 
 let K = null, ST = null; // K: kho thẻ (nạp khi mở lần đầu), ST: câu chuyện
 const KEY = 'passport:v1', WELCOME = 100;
 const HWV = 2;
-const TEST_COINS = 300; // XU THỬ NGHIỆM: cộng thẳng vào số xu để thử mua. Khi thử xong, đổi thành 0 (xu đã mua vẫn giữ, chỉ không cộng thêm nữa).
+const START_BONUS = 300; // thưởng khởi đầu cố định: cộng cùng WELCOME vào số xu của mọi người chơi (tổng 400 xu đầu game)
 let P = load(), root = null, active = false, pushT = 0;
 const S = { group: 1, cc: 'jp', cont: 'as', reg: 'ea', lv: 'world', shopSub: 'Mũ và tóc', habOpen: true, he: '', hn: '', hc: '10' };
 // CC / CC_CONT / CC_REG lấy từ pass-world.js: chỉ các nước đã có thẻ (có mã) mới vào đây
@@ -54,6 +54,7 @@ function pull() { // gộp với bản từ máy khác: thẻ đã mua lấy h�
   const eqNew = (r.eqT || 0) > (P.eqT || 0);
   P = { own: [...own], seen: [...seen], since, hw, hwv, paid, forgive, fv, deco, decoT, extra, chestD, qz, wk, stamps, last: Math.max(P.last, r.last || 0), eq: eqNew ? (r.eq || {}) : (P.eq || {}), eqT: Math.max(P.eqT || 0, r.eqT || 0) };
   if (K && missing()) ensure(S.cc).then(() => { bus.emit('lame'); if (active) draw(); }); // thẻ mới mua ở máy khác thuộc nước chưa nạp
+  if (decoNew) bus.emit('skin');
   if (eqNew) bus.emit('lame');
   if (ch) { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* bỏ qua */ } if (active && K) draw(); }
 }
@@ -71,7 +72,7 @@ function dayParts(date, d) {
 function earned() {
   if (!P.since) return 0;
   const m = tracker.byDate(), today = vnDate();
-  let sum = WELCOME + TEST_COINS + (P.extra || 0); // extra: xu từ rương, đố vui, thử thách tuần, tem
+  let sum = WELCOME + START_BONUS + (P.extra || 0); // extra: xu từ rương, đố vui, thử thách tuần, tem
   for (const d of Object.keys(HB.days)) if (d <= today) sum += habitCoins(d);
   for (const [d, x] of m) if (d >= P.since && d <= today) { const b = dayParts(d, x).reduce((n, [, v]) => n + v, 0); sum += b + streakBonus(m, d, b); }
   for (let s = A.weekStart(P.since); s <= today; s = addDays(s, 7)) { const e = addDays(s, 6); sum += A.weeklyFor(s).filter(q => A.isDone(q, A.aggregate(m, s, e < today ? e : today))).length * 30; }
@@ -363,13 +364,13 @@ function draw() {
 }
 
 // ---------- cửa hàng trang trí ----------
-const SHOP_SUBS = ['Mũ và tóc', 'Mặt', 'Eo và đuôi', 'Giày dép', 'Trang phục vui', 'Cầm tay', 'Thú cưng', 'Nền Passport', 'Khung thẻ', 'Danh hiệu', 'Hiệu ứng mua'];
-const SHOP_EN = { 'Mũ và tóc': 'Hats and hair', 'Mặt': 'Face', 'Eo và đuôi': 'Waist and tails', 'Giày dép': 'Footwear', 'Trang phục vui': 'Fun outfits', 'Cầm tay': 'Held items', 'Thú cưng': 'Pets', 'Nền Passport': 'Passport themes', 'Khung thẻ': 'Card frames', 'Danh hiệu': 'Titles', 'Hiệu ứng mua': 'Purchase effects' };
-const SHOP_ICON = { 'Mũ và tóc': '🎩', 'Mặt': '🕶️', 'Eo và đuôi': '🎀', 'Giày dép': '👟', 'Trang phục vui': '🦸', 'Cầm tay': '🎈', 'Thú cưng': '🐾', 'Nền Passport': '🎨', 'Khung thẻ': '🖼️', 'Danh hiệu': '🏷️', 'Hiệu ứng mua': '🎆' };
+const SHOP_SUBS = ['Giao diện app', 'Mũ và tóc', 'Mặt', 'Eo và đuôi', 'Giày dép', 'Trang phục vui', 'Cầm tay', 'Thú cưng', 'Nền Passport', 'Khung thẻ', 'Danh hiệu', 'Hiệu ứng mua'];
+const SHOP_EN = { 'Giao diện app': 'App themes', 'Mũ và tóc': 'Hats and hair', 'Mặt': 'Face', 'Eo và đuôi': 'Waist and tails', 'Giày dép': 'Footwear', 'Trang phục vui': 'Fun outfits', 'Cầm tay': 'Held items', 'Thú cưng': 'Pets', 'Nền Passport': 'Passport themes', 'Khung thẻ': 'Card frames', 'Danh hiệu': 'Titles', 'Hiệu ứng mua': 'Purchase effects' };
+const SHOP_ICON = { 'Giao diện app': '🖥️', 'Mũ và tóc': '🎩', 'Mặt': '🕶️', 'Eo và đuôi': '🎀', 'Giày dép': '👟', 'Trang phục vui': '🦸', 'Cầm tay': '🎈', 'Thú cưng': '🐾', 'Nền Passport': '🎨', 'Khung thẻ': '🖼️', 'Danh hiệu': '🏷️', 'Hiệu ứng mua': '🎆' };
 const FXE = { confetti: ['🎉', '🎊', '✨'], stars: ['⭐', '🌟', '✨'], hearts: ['💖', '💗', '💕'], coins: ['🪙', '💰'], fireworks: ['🎆', '🎇', '✨'], petals: ['🌸', '💮', '🌺'], snow: ['❄️', '⛄', '✨'], bubbles: ['🫧', '💧', '✨'], rocket: ['🚀', '🌟', '💫'] };
 const decoOf = kind => { const id = P.deco?.[kind]; return id && K?.byId[id] && own(id) ? K.byId[id] : null; };
 const isUsed = it => (it.deco ? P.deco?.[it.deco] === it.id : Object.values(P.eq || {}).includes(it.id));
-function applyDeco() { if (!root) return; root.dataset.th = decoOf('theme')?.val || ''; root.dataset.fr = decoOf('frame')?.val || ''; }
+function applyDeco() { if (!root) return; for (const [k, kind] of [['th', 'theme'], ['fr', 'frame']]) { const v = decoOf(kind)?.val; if (v) root.dataset[k] = v; else delete root.dataset[k]; } } // bỏ hẳn thuộc tính khi không dùng (thuộc tính rỗng vẫn khớp [data-th])
 function titleChip() { const it = decoOf('title'); return it ? `<span class="pp-title">${it.val[0]} ${esc(it.val[uiLang === 'vi' ? 1 : 2])}</span>` : ''; }
 function burst(kind) { // hiệu ứng khi mua: emoji bay lên từ dưới màn hình
   const set = FXE[kind]; if (!set) return;
@@ -383,11 +384,11 @@ function shopDraw(h) {
   h.push(`<div class="dim pp-shopnote">${t('Đồ cửa hàng chỉ để trang trí và ghép lên Lame, không có câu chuyện. Mua xong bấm vào món để mặc hoặc dùng.', 'Shop items are for decoration and dressing Lame. After buying, tap an item to wear or use it.')}</div>`);
   h.push(`<div class="pp-grid">${items.map(i => `<button class="pp-card${own(i.id) ? ' own' : ''}${isUsed(i) ? ' used' : ''}" data-id="${i.id}"><span class="cv"></span><span class="nm gt">${esc(name(i))}</span><span class="pr">${own(i.id) ? (isUsed(i) ? '★ ' + t('Đang dùng', 'In use') : '✓') : '🪙 ' + curPrice(i)}</span></button>`).join('')}</div>`);
   root.innerHTML = h.join('');
-  $$('.pp-card', root).forEach(b => { const it = K.byId[b.dataset.id]; $('.cv', b).replaceWith(Object.assign(sprite(it, own(it.id)), { className: 'cv' })); });
+  $$('.pp-card', root).forEach(b => { const it = K.byId[b.dataset.id]; $('.cv', b).replaceWith(Object.assign(sprite(it, true), { className: 'cv' })); }); // trong cửa hàng hiện đủ màu để xem trước
 }
 async function toggleUse(id) {
   const it = K.byId[id]; if (!it || !own(id)) return;
-  if (it.deco) { P.deco = { ...(P.deco || {}), [it.deco]: P.deco?.[it.deco] === id ? '' : id }; P.decoT = Date.now(); save(); applyDeco(); sfx.play('unlock'); }
+  if (it.deco) { P.deco = { ...(P.deco || {}), [it.deco]: P.deco?.[it.deco] === id ? '' : id }; P.decoT = Date.now(); save(); applyDeco(); sfx.play('unlock'); if (it.deco === 'skin') bus.emit('skin'); }
   else {
     const lame = await import('./pass-lame.js'), slot = lame.slotOf(it); if (!slot) return;
     const eq = getEq(); if (eq[slot] === id) delete eq[slot]; else eq[slot] = id; setEq(eq); sfx.play('unlock');
@@ -400,10 +401,10 @@ async function toggleUse(id) {
 function openCard(id) {
   const it = K.byId[id], o = own(id), bal = balance(), dlg = $('#passDlg'), price = curPrice(it);
   $('#pdTitle').textContent = name(it); $('#pdSub').textContent = it.shop ? `${t('Cửa hàng trang trí', 'Decor shop')} · ${t(it.sub, SHOP_EN[it.sub] || it.sub)}` : `${gName(it.gr)} · ${subName(it.sub)}`;
-  const holder = $('#pdArt'); holder.innerHTML = ''; const cv = sprite(it, o); cv.style.width = cv.width * 2 + 'px'; cv.style.height = cv.height * 2 + 'px'; holder.append(cv);
+  const holder = $('#pdArt'); holder.innerHTML = ''; const cv = sprite(it, o || !!it.shop); cv.style.width = cv.width * 2 + 'px'; cv.style.height = cv.height * 2 + 'px'; holder.append(cv);
   $('#pdNote').className = 'gt' + (o || it.shop ? '' : ' lock'); $('#pdNote').textContent = o || it.shop ? it.note : t('🔒 Mua thẻ này để đọc nguồn gốc của nó.', '🔒 Buy this card to read its origin.');
   $('#pdEn').textContent = o && uiLang !== 'vi' ? 'English text: coming soon' : '';
-  $('#pdTag').textContent = it.deco ? { theme: t('🎨 Nền Passport', '🎨 Passport theme'), frame: t('🖼️ Khung thẻ', '🖼️ Card frame'), title: t('🏷️ Danh hiệu', '🏷️ Title'), fx: t('✨ Hiệu ứng mua', '✨ Purchase effect') }[it.deco] : it.use ? { wear: t('👕 Mặc được', '👕 Wearable'), hold: t('✋ Cầm được', '✋ Holdable'), pet: t('🐾 Đi cùng', '🐾 Companion') }[it.use] : '';
+  $('#pdTag').textContent = it.deco ? { theme: t('🎨 Nền Passport', '🎨 Passport theme'), frame: t('🖼️ Khung thẻ', '🖼️ Card frame'), title: t('🏷️ Danh hiệu', '🏷️ Title'), fx: t('✨ Hiệu ứng mua', '✨ Purchase effect'), skin: t('🖥️ Giao diện cả app', '🖥️ Whole-app theme') }[it.deco] : it.use ? { wear: t('👕 Mặc được', '👕 Wearable'), hold: t('✋ Cầm được', '✋ Holdable'), pet: t('🐾 Đi cùng', '🐾 Companion') }[it.use] : '';
   const b = $('#pdBuy'), canUse = !!it.shop && o, used = isUsed(it); b.hidden = o && !canUse; b.disabled = !o && bal < price; const off = price < priceOf(it) ? t(' · giảm nửa giá (thẻ cuối của mục)', ' · half price (last card of the group)') : ''; b.textContent = canUse ? (it.deco ? (used ? t('Bỏ dùng', 'Remove') : t('Dùng ngay', 'Use now')) : (used ? t('Cởi ra', 'Take off') : t('Mặc cho Lame', 'Wear on Lame'))) : t(`Mua · 🪙 ${price}${off}`, `Buy · 🪙 ${price}${off}`);
   $('#pdBal').textContent = o ? (it.shop ? t('✓ Bạn đã có món này', '✓ You own this item') : t('✓ Bạn đã có thẻ này', '✓ You own this card')) : t(`Bạn có 🪙 ${bal}${bal < price ? ` · còn thiếu ${price - bal} xu` : ''}`, `You have 🪙 ${bal}${bal < price ? ` · ${price - bal} more coins needed` : ''}`);
   b.onclick = () => (canUse ? toggleUse(id) : buy(id)); dlg.showModal();
@@ -411,7 +412,7 @@ function openCard(id) {
 function buy(id) {
   const it = K.byId[id]; const price = curPrice(it); if (own(id) || balance() < price) return;
   if (price !== priceOf(it)) (P.paid ||= {})[id] = price; P.own.push(id); { const w = weekNow(); if (!w.claimed && it.cc === w.cc) w.n++; } save(); sfx.play('unlock'); $('#passDlg').close(); toast(t(`Đã mua: ${name(it)} ✓`, `Bought: ${name(it)} ✓`), 2200);
-  if (it.deco && !P.deco?.[it.deco]) { P.deco = { ...(P.deco || {}), [it.deco]: id }; P.decoT = Date.now(); save(); } // món trang trí mới mua dùng luôn nếu ô đó đang trống
+  if (it.deco && !P.deco?.[it.deco]) { P.deco = { ...(P.deco || {}), [it.deco]: id }; P.decoT = Date.now(); save(); if (it.deco === 'skin') bus.emit('skin'); } // món trang trí mới mua dùng luôn nếu ô đó đang trống
   burst(decoOf('fx')?.val);
   const sub = it.shop ? [] : K.items.filter(i => i.cc === it.cc && i.sub === it.sub), grp = it.shop ? [] : K.items.filter(i => i.cc === it.cc && i.gr === it.gr);
   const done = it.shop ? [] : [sub.every(i => own(i.id)) && kk(it.cc, 's:' + it.sub), grp.every(i => own(i.id)) && kk(it.cc, 'g' + it.gr)].filter(Boolean).filter(k => !P.seen.includes(k));
@@ -444,7 +445,7 @@ const missing = () => P.own.some(id => !LOADED.has(ccOf(id)));
 function loadCC(cc) { // chỉ nạp thẻ + câu chuyện của nước cần xem (mỗi nước ~6 file), không nạp tất cả nước
   if (LOADED.has(cc)) return Promise.resolve();
   if (!LOADING.has(cc)) LOADING.set(cc, (async () => {
-    if (cc === 'sh') await Promise.all([1, 2, 3, 4, 5, 6, 7].map(i => import(`./pass-sh${i}.js`))); // cửa hàng trang trí: không có câu chuyện
+    if (cc === 'sh') await Promise.all([1, 2, 3, 4, 5, 6, 7, 8].map(i => import(`./pass-sh${i}.js`))); // cửa hàng trang trí: không có câu chuyện
     else {
       await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-${cc}${i}.js`)));
       if (cc !== 'jp' && cc !== 'kr') await import(`./pass-${cc}6.js`); // chỉnh lại / bỏ nền thẻ, phải nạp sau khi 1–5 đã đăng ký
@@ -527,8 +528,14 @@ export function init() {
 // ---------- dùng chung với nhân vật Lame ----------
 export async function items() { await ensure(); return K; }
 export const ownedIds = () => P.own.slice();
+export const skinOwned = () => P.own.filter(id => id.startsWith('sh-sk-')); // giao diện app đã mua
+export const skinCur = () => P.deco?.skin || '';
+export function skinSet(id) { P.deco = { ...(P.deco || {}), skin: id }; P.decoT = Date.now(); save(); bus.emit('skin'); }
 export const getEq = () => ({ ...(P.eq || {}) });
 export function setEq(eq) { P.eq = { ...eq }; P.eqT = Date.now(); checkStamps(); save(); bus.emit('lame'); }
+
+
+
 
 
 
