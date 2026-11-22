@@ -1,4 +1,4 @@
-// Thế giới của tôi: trang đọc riêng — bài đọc (chữ) chia theo thư mục chủ đề, có nút 🎲 chọn chủ đề ngẫu nhiên.
+﻿// Thế giới của tôi: trang đọc riêng — bài đọc (chữ) chia theo thư mục chủ đề, có nút 🎲 chọn chủ đề ngẫu nhiên.
 // Bài đọc và câu hỏi nằm chung một trang: đọc xong kéo xuống làm các câu hỏi, bấm “Hoàn thành bài đọc” để chấm điểm.
 // Bài lưu trong “articles”, thư mục chủ đề trong “wfolders” (tự đồng bộ như các dữ liệu khác). Nhập nhiều bài một lúc bằng cú pháp:
 //   === Tiêu đề        @chủ đề: …   @biểu tượng: 🏮   @nguồn: …      rồi nội dung bài, các đoạn cách nhau một dòng trống
@@ -447,11 +447,17 @@ function wireHighlighter() {
 }
 bus.on('nav', () => clearHighlights(false)); // rời trang đọc sang mục khác: tự xóa highlight
 
+// thời gian đọc bài ở Thế giới được tính như thời gian học khi trang đang hiện và vừa có thao tác trong 60 giây gần nhất
+let lastAct = 0;
+for (const ev of ['pointerdown', 'keydown', 'scroll', 'wheel', 'touchstart', 'mousemove']) addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true, capture: true });
+tracker.addSource(() => (mode === 'read' && curId && document.body.dataset.view === 'world' && !document.hidden && Date.now() - lastAct < 60000 ? (store.get('articles', curId)?.lang || 'zh') : null));
+
 function finishRead(id, pct) {
   const a = store.get('articles', id); if (!a) return;
-  const first = !a.done;
+  const first = !a.done, passFirst = pct != null && pct >= 80 && !((a.best ?? 0) >= 80);
   store.put('articles', id, { done: a.done || Date.now(), lastRead: Date.now(), ...(pct != null ? { best: Math.max(a.best ?? 0, pct), tries: (a.tries || 0) + 1, lastScore: pct } : {}) });
   if (first) { tracker.world(); tracker.read(); }
+  if (passFirst) bus.emit('worldpass'); // đạt từ 80% lần đầu: Passport thưởng xu
 }
 
 // ---------- viết / sửa một bài ----------
@@ -699,3 +705,4 @@ export function init() {
   bus.on('lang', () => { wvocab.reset(); social.reset(); story.reset(); mode = 'feed'; curId = null; filter.folder = ''; filter.unread = false; if (document.body.dataset.view === 'world') render(); });
   bus.on('store', c => { if ((c === 'articles' || c === 'wfolders' || c === '*') && document.body.dataset.view === 'world' && mode === 'feed' && sec === 'article') drawFeed(); });
 }
+

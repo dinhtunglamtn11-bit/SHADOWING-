@@ -1,5 +1,5 @@
 ﻿// Service worker: Æ°u tiÃªn máº¡ng (luÃ´n láº¥y báº£n má»›i), máº¥t máº¡ng thÃ¬ dÃ¹ng báº£n Ä‘Ã£ lÆ°u.
-const CACHE = 'shadowing-v101';
+const CACHE = 'shadowing-v102';
 const DICT_CACHE = 'shadowing-dict'; // tá»« Ä‘iá»ƒn ~9 MB: giá»¯ riÃªng Ä‘á»ƒ khÃ´ng bá»‹ xÃ³a má»—i láº§n cáº­p nháº­t app
 const SHELL = [
   './', 'index.html', 'styles.css', 'pixel.css', 'exnews.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
@@ -43,4 +43,5 @@ self.addEventListener('fetch', e => {
       .catch(() => caches.match(req).then(r => r || caches.match('index.html')))
   );
 });
+
 

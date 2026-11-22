@@ -27,7 +27,7 @@ const mine = () => K.items.filter(i => i.cc === S.cc);
 const t = (vi, en) => (uiLang === 'vi' ? vi : en);
 const SUBEN = { 'Địa danh': 'Landmarks', 'Mùa và thiên nhiên': 'Seasons and nature', 'Vùng miền': 'Regions', 'Hiện tượng đặc biệt': 'Natural phenomena', 'Trang phục': 'Clothing', 'Phụ kiện': 'Accessories', 'Nhà ở và đồ dùng': 'Home and household', 'Thói quen và phép tắc': 'Habits and etiquette', 'Món ăn': 'Dishes', 'Đồ uống và trà đạo': 'Drinks and tea ceremony', 'Món theo mùa và dịp lễ': 'Seasonal and festive food', 'Quy tắc bàn ăn': 'Table manners', 'Lễ hội và ngày lễ': 'Festivals and holidays', 'Nhạc cụ': 'Instruments', 'Nghệ thuật biểu diễn': 'Performing arts', 'Nghệ thuật truyền thống khác': 'Other traditional arts', 'Văn hóa hiện đại': 'Modern culture', 'Động vật': 'Animals', 'Linh vật': 'Mascots and spirits', 'Tín ngưỡng': 'Beliefs', 'Nhân vật và lịch sử': 'History and figures', 'Người nổi tiếng': 'Famous people' };
 const subName = s => t(s, SUBEN[s] || s);
-const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', 'Trả lời đúng': 'Correct answers', 'Đọc, viết, nghe, nói': 'Reading, writing, listening, speaking', 'Nhiệm vụ ngày': 'Daily quests', 'Đạt mục tiêu ngày': 'Daily goal reached', 'Thói quen': 'Habits', 'Thưởng chuỗi ngày': 'Streak bonus' };
+const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', 'Trả lời đúng': 'Correct answers', 'Đọc, viết, nghe, nói': 'Reading, writing, listening, speaking', 'Nhiệm vụ ngày': 'Daily quests', 'Đạt mục tiêu ngày': 'Daily goal reached', 'Thói quen': 'Habits', 'Thưởng chuỗi ngày': 'Streak bonus', 'Bài đọc Thế giới': 'World articles' };
 
 // ---------- lưu / đồng bộ ----------
 function load() {
@@ -59,11 +59,11 @@ function pull() { // gộp với bản từ máy khác: thẻ đã mua lấy h�
 // ---------- xu ----------
 export const priceOf = it => (it.scene ? 40 : it.use === 'wear' ? 60 : it.use === 'pet' ? 50 : it.use === 'hold' ? 40 : 35) + (it.gr === 5 ? 5 : 0);
 function dayParts(date, d) {
-  const m = Math.floor((d.sec || 0) / 60), act = (d.r || 0) + (d.w || 0) + (d.d || 0) + (d.k || 0) + (d.x || 0) + (d.n || 0);
+  const m = Math.floor((d.sec || 0) / 60), act = (d.r || 0) + (d.w || 0) + (d.d || 0) + (d.k || 0) + (d.x || 0);
   const ds = A.dailyFor(date), done = ds.filter(q => A.isDone(q, d)).length, goal = (prefs.goalMin || 15) * 60;
   return [
     ['Thời gian học', m * 2], ['Ôn thẻ', Math.floor((d.c || 0) / 2)], ['Trả lời đúng', d.qc || 0], // không có trần mỗi ngày
-    ['Đọc, viết, nghe, nói', act * 2], ['Nhiệm vụ ngày', done * 8 + (ds.length && done === ds.length ? 20 : 0)], ['Đạt mục tiêu ngày', (d.sec || 0) >= goal ? 15 : 0],
+    ['Đọc, viết, nghe, nói', act * 2], ['Bài đọc Thế giới', (d.n || 0) * 13], ['Nhiệm vụ ngày', done * 8 + (ds.length && done === ds.length ? 20 : 0)], ['Đạt mục tiêu ngày', (d.sec || 0) >= goal ? 15 : 0],
   ];
 }
 function earned() {
@@ -301,7 +301,7 @@ function draw() {
   h.push(`<div class="pp-top"><div class="pp-coins">🪙 <b>${bal}</b></div>${streakPct(tracker.byDate(), vnDate()) ? `<span class="pp-new">🔥 ${t('Chuỗi', 'Streak')} +${streakPct(tracker.byDate(), vnDate())}%</span>` : ''}${fresh > 0 && P.last ? `<span class="pp-new">+${fresh} ${t('xu mới', 'new coins')}</span>` : ''}
     <span class="grow"></span><button class="btn" id="ppHow">❓ ${t('Cách kiếm xu', 'How to earn coins')}</button></div>`);
   h.push(`<div class="pp-how" id="ppHowBox" ${openHow ? '' : 'hidden'}><b>${t(`Hôm nay đã kiếm được ${todayTot} xu`, `Earned today: ${todayTot} coins`)}</b>${today.map(([k, n]) => `<div class="ppr"><span>${esc(t(k, EARN[k] || k))}</span><b>+${n}</b></div>`).join('')}
-    <div class="dim">${t('Xu tính từ việc học thật: phút học, thẻ ôn, câu trả lời đúng, nhiệm vụ ngày (+8 mỗi nhiệm vụ, +20 khi xong hết), đạt mục tiêu ngày (+15), nhiệm vụ tuần (+30), nhiệm vụ tháng (+100) và thói quen do bạn tự đặt. Không có mức tối đa. Học liên tiếp nhiều ngày được thưởng thêm 10% xu mỗi ngày liên tiếp (tối đa +50%), và thẻ cuối còn lại của một mục nhỏ được giảm nửa giá. Thêm xu từ rương mỗi ngày, đố vui văn hóa, thử thách tuần và tem hộ chiếu.', 'Coins come from real study: study minutes, card reviews, correct answers, daily quests (+8 each, +20 when all are done), reaching the daily goal (+15), weekly quests (+30), monthly quests (+100) and your own habits. There is no cap. Studying on consecutive days adds 10% per day in a row (up to +50%), and the last remaining card of a sub-section is half price. More coins come from the daily chest, culture quiz, weekly challenge and passport stamps.')}</div></div>`);
+    <div class="dim">${t('Xu tính từ việc học thật: phút học, thẻ ôn, câu trả lời đúng, nhiệm vụ ngày (+8 mỗi nhiệm vụ, +20 khi xong hết), đạt mục tiêu ngày (+15), nhiệm vụ tuần (+30), nhiệm vụ tháng (+100) và thói quen do bạn tự đặt. Không có mức tối đa. Học liên tiếp nhiều ngày được thưởng thêm 10% xu mỗi ngày liên tiếp (tối đa +50%), và thẻ cuối còn lại của một mục nhỏ được giảm nửa giá. Đọc bài ở Thế giới: +15 xu mỗi bài đọc xong lần đầu, +10 xu khi làm bài đạt từ 80% lần đầu, và thời gian đọc được tính như thời gian học. Thêm xu từ rương mỗi ngày, đố vui văn hóa, thử thách tuần và tem hộ chiếu.', 'Coins come from real study: study minutes, card reviews, correct answers, daily quests (+8 each, +20 when all are done), reaching the daily goal (+15), weekly quests (+30), monthly quests (+100) and your own habits. There is no cap. Studying on consecutive days adds 10% per day in a row (up to +50%), and the last remaining card of a sub-section is half price. Reading in World: +15 coins per article finished for the first time, +10 when you score 80%+ for the first time, and reading time counts as study time. More coins come from the daily chest, culture quiz, weekly challenge and passport stamps.')}</div></div>`);
   const ctryBtn = c => { const a = { n: cown(c), t: ctot(c) }; return `<button class="pp-ctry${c === S.cc ? ' on' : ''}" data-cc="${c}"><canvas class="ppFlag" data-cc="${c}" width="64" height="48"></canvas><span><b>${CC[c][uiLang === 'vi' ? 0 : 1]}</b><span class="dim">${a.n}/${a.t}${a.n === a.t ? ' ⭐' : ''}</span></span></button>`; };
   const contStat = k => { let n = 0, tt = 0; for (const c of Object.keys(CC)) if (CC_CONT[c] === k) { n += cown(c); tt += ctot(c); } return { n, t: tt }; };
   const regStat = rg => { let n = 0, tt = 0; for (const e of rg.c) { const code = e.split('|')[2]; if (code) { n += cown(code); tt += ctot(code); } } return { n, t: tt }; };
@@ -408,6 +408,7 @@ async function open() {
   await ensure(S.cc); pull(); if (active) draw();
 }
 export function init() {
+  bus.on('worldpass', () => { P.extra = (P.extra || 0) + 10; save(); toast(t('📖 Bài đọc đạt từ 80% lần đầu: +10 xu', '📖 First 80%+ on an article: +10 coins'), 3000); if (active && K) draw(); });
   bus.on('show', v => { active = v === 'passport'; if (active) open(); if (v === 'review') renderContinue(); });
   bus.on('store', c => { if ((c === 'items' || c === '*') && document.body.dataset.view === 'review') renderContinue(); });
   $('#rvCont')?.addEventListener('click', e => {
@@ -455,6 +456,7 @@ export async function items() { await ensure(); return K; }
 export const ownedIds = () => P.own.slice();
 export const getEq = () => ({ ...(P.eq || {}) });
 export function setEq(eq) { P.eq = { ...eq }; P.eqT = Date.now(); checkStamps(); save(); bus.emit('lame'); }
+
 
 
 
