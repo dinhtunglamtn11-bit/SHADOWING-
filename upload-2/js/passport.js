@@ -124,27 +124,25 @@ const subsOf = g => [...new Set(mine().filter(i => i.gr === g).map(i => i.sub))]
 const stat = list => ({ n: list.filter(i => own(i.id)).length, t: list.length });
 const lastVideo = () => store.list('items').filter(i => i.type !== 'note' && (+i.position || 0) > 0 && i.study !== false).sort((a, b) => (b.u || 0) - (a.u || 0))[0] || null;
 
-// biểu tượng châu: quả địa cầu nhỏ, châu đang nói tô sáng, các châu khác mờ
-const WMAP = {
-  am: [[[12, 12], [19, 8], [26, 10], [27, 15], [23, 19], [20, 22], [17, 22], [15, 18], [12, 16]], [[19, 24], [25, 25], [27, 30], [24, 37], [21, 41], [19, 34], [18, 28]]],
-  eu: [[[30, 11], [35, 8], [39, 10], [37, 15], [32, 16]]],
-  af: [[[30, 18], [37, 17], [41, 22], [39, 30], [35, 36], [32, 31], [30, 24]]],
-  as: [[[37, 10], [44, 8], [51, 10], [52, 16], [48, 21], [44, 24], [40, 20], [39, 14]]],
-  oc: [[[45, 30], [51, 29], [53, 34], [48, 37], [44, 35]]],
-  an: [[[16, 40], [48, 40], [44, 44], [20, 44]]],
+// biểu tượng châu: hình bóng lãnh thổ riêng của từng châu, vẽ kiểu pixel (lưới 32×24, phóng gấp đôi), mỗi châu một màu
+const SHAPES = {
+  as: { c: '#ffb703', p: [[[3, 9], [6, 5], [11, 3], [17, 2], [24, 3], [29, 6], [30, 10], [27, 13], [26, 17], [23, 21], [20, 17], [17, 20], [15, 15], [11, 14], [8, 12], [4, 12]]] },
+  af: { c: '#fb8500', p: [[[9, 3], [15, 2], [21, 4], [24, 8], [22, 12], [21, 17], [18, 22], [14, 21], [12, 16], [8, 13], [5, 9], [6, 5]]] },
+  eu: { c: '#4a9be8', p: [[[3, 13], [5, 8], [9, 5], [10, 2], [14, 4], [19, 3], [24, 5], [28, 4], [29, 9], [24, 11], [20, 10], [18, 14], [21, 18], [17, 19], [14, 15], [10, 19], [7, 17], [7, 13]]] },
+  am: { c: '#4fbf6a', p: [[[4, 3], [10, 1], [16, 2], [18, 5], [15, 8], [14, 10], [16, 12], [20, 13], [21, 16], [18, 20], [15, 23], [13, 19], [13, 14], [10, 11], [7, 9], [5, 6]]] },
+  oc: { c: '#a06bdc', p: [[[4, 10], [9, 7], [15, 7], [19, 5], [22, 9], [21, 15], [16, 18], [10, 17], [6, 15]], [[25, 16], [27, 15], [26, 20], [24, 21]], [[22, 2], [28, 3], [26, 6]]] },
+  an: { c: '#e8f2ff', p: [[[3, 16], [8, 13], [13, 14], [16, 11], [21, 13], [26, 13], [29, 17], [26, 21], [16, 22], [6, 21]]] },
 };
 function drawCont(cv, k) {
-  const c = cv.getContext('2d'); c.clearRect(0, 0, 64, 48);
-  c.save(); c.beginPath(); c.arc(32, 24, 22, 0, 7); c.clip();
-  c.fillStyle = '#2f80b8'; c.fillRect(0, 0, 64, 48);
-  for (const key of Object.keys(WMAP)) {
-    const on = key === k; c.fillStyle = on ? '#6fd45f' : 'rgba(40,80,60,.55)'; c.strokeStyle = on ? '#1f5a2a' : 'rgba(0,0,0,0)'; c.lineWidth = 1.5;
-    for (const poly of WMAP[key]) { c.beginPath(); poly.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.fill(); c.stroke(); }
+  const sh = SHAPES[k]; const c = cv.getContext('2d'); c.clearRect(0, 0, 64, 48); if (!sh) return;
+  const tmp = document.createElement('canvas'); tmp.width = 32; tmp.height = 24; const g = tmp.getContext('2d');
+  g.fillStyle = '#000'; for (const poly of sh.p) { g.beginPath(); poly.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fill(); }
+  const d = g.getImageData(0, 0, 32, 24).data, on = (x, y) => x >= 0 && y >= 0 && x < 32 && y < 24 && d[(y * 32 + x) * 4 + 3] > 110;
+  for (let y = 0; y < 24; y++) for (let x = 0; x < 32; x++) {
+    if (on(x, y)) { c.fillStyle = on(x, y - 1) ? sh.c : '#ffffff55'; c.fillStyle = sh.c; c.fillRect(x * 2, y * 2, 2, 2); if (!on(x, y + 1) || !on(x + 1, y)) { c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(x * 2, y * 2 + (on(x, y + 1) ? 0 : 1), 2, on(x, y + 1) ? 2 : 1); } }
+    else if (on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1)) { c.fillStyle = '#2b1d3a'; c.fillRect(x * 2, y * 2, 2, 2); }
   }
-  c.restore(); c.strokeStyle = '#2b1d3a'; c.lineWidth = 2; c.beginPath(); c.arc(32, 24, 22, 0, 7); c.stroke();
-  c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(24, 14, 6, 3, -0.5, 0, 7); c.fill();
 }
-
 // khối thói quen hằng ngày: hiện ở mục Nhiệm vụ (quests.js gọi hàm này)
 export function habitHtml() {
   hpull();
@@ -364,4 +362,6 @@ export async function items() { await ensure(); return K; }
 export const ownedIds = () => P.own.slice();
 export const getEq = () => ({ ...(P.eq || {}) });
 export function setEq(eq) { P.eq = { ...eq }; P.eqT = Date.now(); save(); bus.emit('lame'); }
+
+
 
