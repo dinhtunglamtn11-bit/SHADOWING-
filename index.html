@@ -546,21 +546,26 @@
       <div class="row"><button class="btn" id="muPrev" data-nosfx>↺ Từ đầu</button><button class="btn primary" id="muPlay" data-nosfx>▶ Phát</button><button class="btn" id="muNext" data-nosfx>Bài khác ›</button></div>
       <div class="uirow"><span>Âm lượng nhạc</span><input id="muVol" type="range" min="0" max="100" step="5"></div>
       <small class="dim">Nhạc tự tạm nghỉ khi video bài học đang phát.</small>
+      <div class="uirow"><span>Đổi sang nhạc Thế giới / Story khi</span><div class="seg" id="muMode"><button data-v="full" data-nosfx>Bấm 📺 đọc toàn màn hình</button><button data-v="enter" data-nosfx>Vừa vào Thế giới</button></div></div>
+      <small class="dim">Mặc định: ở Thế giới vẫn nghe nhạc nền như bình thường, không bị ngắt. Chỉ khi bạn bấm 📺 Đọc toàn màn hình (Article, Flash, Focus, Keyword, Story) mới chuyển sang danh sách nhạc đọc; thoát ra thì quay lại nhạc nền.</small>
+      <div class="uirow"><span>Danh sách nhạc đọc đang trống hoặc tắt</span><div class="seg" id="muFb"><button data-v="bg" data-nosfx>Giữ nhạc nền</button><button data-v="off" data-nosfx>Tắt nhạc</button></div></div>
+      <div class="uirow"><span>Quay lại đúng bài đang nghe</span><button class="btn" id="muResume" data-nosfx></button></div>
+      <div class="uirow"><span>Mờ dần khi đổi nhạc</span><select id="muFade" data-nosfx><option value="0">Tắt</option><option value="0.6">Ngắn (0,6 giây)</option><option value="1.5">Vừa (1,5 giây)</option><option value="3">Dài (3 giây)</option></select></div>
       <div class="mu-sec" data-l="bg">
         <div class="row"><b class="grow">🎧 Nhạc nền (ở ngoài)</b><button class="btn" data-on></button></div>
-        <small class="dim">Phát liên tục ở Học, Thư viện, Ôn tập, Soạn, Nhiệm vụ.</small>
+        <small class="dim">Phát liên tục ở mọi mục (Passport, Thư viện, Ôn tập, SCM, Nhiệm vụ…), kể cả ở Thế giới khi bạn chưa bấm đọc toàn màn hình.</small>
         <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
         <div class="mu-list"></div>
       </div>
       <div class="mu-sec" data-l="world">
         <div class="row"><b class="grow">🌍 Nhạc khi đọc Thế giới</b><button class="btn" data-on></button></div>
-        <small class="dim">Vào Thế giới (Article, Flash, Focus) thì chuyển sang danh sách này; rời đi thì quay lại nhạc nền.</small>
+        <small class="dim">Phát khi bạn bấm 📺 Đọc toàn màn hình ở Article, Flash, Focus hoặc Keyword; thoát toàn màn hình thì quay lại nhạc nền (đổi cách chuyển ở phía trên).</small>
         <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
         <div class="mu-list"></div>
       </div>
       <div class="mu-sec" data-l="story">
         <div class="row"><b class="grow">📖 Nhạc khi đọc Story</b><button class="btn" data-on></button></div>
-        <small class="dim">Vào mục Story (đọc sách) thì chuyển sang danh sách riêng này; ra khỏi Story thì quay lại nhạc Thế giới hoặc nhạc nền.</small>
+        <small class="dim">Phát khi bạn bấm 📺 đọc toàn màn hình ở Story (đọc sách); thoát ra thì quay lại nhạc nền.</small>
         <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
         <div class="mu-list"></div>
       </div>
@@ -690,6 +695,41 @@
 </dialog>
 
 <div id="toast"></div>
+<script>
+/* Thanh báo lỗi khởi động: nếu sau ~6 giây app chưa khởi động xong (thường do vừa tải bản mới lên mà trình duyệt còn giữ vài file cũ), hiện lỗi và nút “Làm mới sạch”.
+   Nút chỉ xóa bộ nhớ đệm của app (service worker + cache), KHÔNG xóa video, thẻ, tiến độ hay cài đặt của bạn. */
+(function () {
+  var errs = (window.__bootErrors = window.__bootErrors || []);
+  window.addEventListener('error', function (e) { errs.push((e.message || 'lỗi') + (e.filename ? ' [' + e.filename.split('/').pop() + ':' + e.lineno + ']' : '')); }, true);
+  window.addEventListener('unhandledrejection', function (e) { errs.push('Promise: ' + (e.reason && e.reason.message || e.reason)); });
+  function clean() {
+    var done = function () { location.reload(); };
+    Promise.resolve(navigator.serviceWorker && navigator.serviceWorker.getRegistrations ? navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }) : 0)
+      .then(function () { return window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }) : 0; })
+      .then(done, done);
+  }
+  function show() {
+    if (document.getElementById('bootBar')) return;
+    var d = document.createElement('div'); d.id = 'bootBar';
+    d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#7a1a2a;color:#fff;padding:10px 14px;font:14px/1.4 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+    var t = document.createElement('div'); t.style.flex = '1 1 260px';
+    t.textContent = 'App chưa khởi động xong. Có thể trình duyệt đang giữ vài file cũ sau khi cập nhật.' + (errs.length ? ' Lỗi: ' + errs.slice(0, 2).join(' | ') : '');
+    var b = document.createElement('button'); b.textContent = '🧹 Làm mới sạch'; b.style.cssText = 'padding:8px 12px;font:inherit;cursor:pointer'; b.onclick = clean;
+    var c = document.createElement('button'); c.textContent = '✕'; c.style.cssText = 'padding:8px 10px;font:inherit;cursor:pointer'; c.onclick = function () { d.remove(); };
+    d.append(t, b, c); document.body.append(d);
+    // dò xem máy chủ đang thiếu file nào trong danh sách của sw.js (nguyên nhân hay gặp nhất: chưa tải lên đủ các gói cập nhật)
+    fetch('sw.js', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (s) {
+      var names = Array.from(new Set((s.match(/'(js\/[^']+\.(?:js|json)|[\w.\-]+\.(?:css|html))'/g) || []).map(function (x) { return x.slice(1, -1); }))), miss = [], i = 0;
+      function worker() { if (i >= names.length) return Promise.resolve(); var n = names[i++]; return fetch(n, { method: 'HEAD', cache: 'no-store' }).then(function (r) { return r.ok ? 1 : fetch(n, { cache: 'no-store' }).then(function (g) { if (!g.ok) miss.push(n); }); }, function () {}).then(worker); }
+      return Promise.all([worker(), worker(), worker(), worker(), worker(), worker()]).then(function () {
+        if (miss.length) t.textContent = 'App chưa khởi động xong vì máy chủ đang THIẾU ' + miss.length + ' file: ' + miss.slice(0, 4).join(', ') + (miss.length > 4 ? '…' : '') + '. Hãy tải lên đủ các gói cập nhật rồi bấm “Làm mới sạch”.';
+      });
+    }).catch(function () {});
+  }
+  window.__bootCheck = function (force) { if (force || !document.documentElement.dataset.booted) show(); };
+  setTimeout(function () { window.__bootCheck(false); }, 6000);
+})();
+</script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

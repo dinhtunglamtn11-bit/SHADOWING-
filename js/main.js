@@ -181,9 +181,13 @@ loadPrefs();
 syncSfx();
 bus.on('store', c => { if (c === 'prefs' || c === '*') { loadPrefs(); bus.emit('prefs'); } });
 renderLangs();
-player.init(); side.init(); library.init(); notes.init(); quests.init(); alignui.init(); dictation.init(); speak.init(); shadowrec.init(); review.init(); backup.init(); subedit.init(); subpaste.init(); segments.init(); trash.init(); lookup.init(); vocab.init(); find.init(); shortcuts.init(); offline.init(); readaloud.init(); world.init(); cueedit.init(); music.init(); focusmode.init(); videx.init(); passport.init(); lame.init(); skin.init(); lbl.init(); prompts.init(); scm.init();
+// Mỗi mục tự khởi động trong khối try riêng: một mục lỗi (ví dụ thiếu file sau khi tải bản mới lên) không làm các mục còn lại ngừng chạy; lỗi được ghi lại để thanh báo lỗi hiển thị
+for (const [name, mod] of Object.entries({ player, side, library, notes, quests, alignui, dictation, speak, shadowrec, review, backup, subedit, subpaste, segments, trash, lookup, vocab, find, shortcuts, offline, readaloud, world, cueedit, music, focusmode, videx, passport, lame, skin, lbl, prompts, scm })) {
+  try { mod.init(); } catch (e) { console.error('Lỗi khởi động mục ' + name, e); (window.__bootErrors ||= []).push('init ' + name + ': ' + (e && e.message || e)); }
+}
 show('library');
 initFirebase();
+document.documentElement.dataset.booted = '1'; // đã khởi động xong: tắt thanh báo lỗi khởi động trong index.html
 loadSimplifier(); // sẵn sàng đổi phồn thể → giản thể (chỉ ~100 KB)
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});

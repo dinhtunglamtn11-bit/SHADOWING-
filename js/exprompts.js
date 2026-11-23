@@ -163,6 +163,7 @@ DS: Nhận định | đúng`;
 // Prompt tạo nhiều bài đăng ngắn kiểu mạng xã hội (mục Social của Thế giới, không có câu hỏi).
 // opts: { lang, fields (tên các lĩnh vực, cách nhau dấu phẩy), posts (số bài mỗi lĩnh vực), level, source }
 export function socialPrompt({ lang, kind = 'flash', fields = '', posts = 3, level = '', source = '' }) {
+  if (kind === 'keyword') return keywordPrompt({ lang, fields, posts, level, source });
   const list = fields ? fields.split(/\s*[,;，、]\s*/).filter(Boolean) : [];
   const focus = kind === 'focus';
   const intro = focus
@@ -197,6 +198,77 @@ QUY TẮC:
 - Các dòng ${focus ? '@tiêu đề, ' : ''}@tên, @biểu tượng (một emoji), @tag ${focus ? '(trừ @tiêu đề) ' : ''}đều không bắt buộc và phải nằm ngay đầu bài, trước nội dung.
 - KHÔNG tạo câu hỏi, KHÔNG dịch sang tiếng Việt; chỉ viết nội dung bằng ${lname(lang)}.
 ${lang === 'zh' ? '- Chữ Hán dùng GIẢN THỂ.\n' : ''}${source ? `\nNGUỒN:\n${source}` : ''}`;
+}
+
+// Prompt tạo các thẻ giải thích thuật ngữ (mục Keyword của Thế giới). Tác giả của thuật ngữ chỉ ghi khi biết chắc.
+function keywordPrompt({ lang, fields = '', posts = 3, level = '', source = '' }) {
+  const list = fields ? fields.split(/\s*[,;，、]\s*/).filter(Boolean) : [];
+  const intro = source
+    ? `Hãy đọc phần NGUỒN ở cuối rồi rút ra các THUẬT NGỮ quan trọng và giải thích từng thuật ngữ bằng ${lname(lang)}, chia theo lĩnh vực.`
+    : `Hãy chọn các THUẬT NGỮ quan trọng và giải thích từng thuật ngữ bằng ${lname(lang)}, chia theo lĩnh vực${list.length ? `: ${list.join(', ')}` : ' (tự chọn 3–5 lĩnh vực đa dạng)'}. Mỗi lĩnh vực ${posts} thuật ngữ.`;
+  return `Bạn là người biên soạn từ điển thuật ngữ bằng ${lname(lang)}. ${intro}
+Mỗi thuật ngữ giải thích khoảng 2–4 câu: nó là gì, dùng khi nào, kèm một ví dụ ngắn nếu giúp dễ hiểu${level ? `. Độ khó từ vựng phù hợp trình độ ${level}` : ''}.
+
+ĐỊNH DẠNG ĐẦU RA (rất quan trọng): chỉ trả về nội dung trong MỘT khối code, không giải thích thêm.
+
+# Tên lĩnh vực
+@thuật ngữ: Tên thuật ngữ
+@tác giả: Tên người đặt ra hoặc phát biểu thuật ngữ (chỉ ghi khi biết chắc, không biết thì BỎ dòng này)
+@biểu tượng: 🔑
+@tag: #hashtag1 #hashtag2
+Phần giải thích thuật ngữ (có thể nhiều dòng).
+---
+@thuật ngữ: Thuật ngữ khác (không có tác giả)
+Phần giải thích.
+
+# Tên lĩnh vực khác
+@thuật ngữ: …
+Giải thích…
+
+QUY TẮC:
+- Dòng bắt đầu bằng “# ” (có dấu cách) là tên một lĩnh vực mới; các thuật ngữ trong cùng lĩnh vực cách nhau bằng một dòng chỉ có ba dấu gạch ngang ---.
+- Dòng @thuật ngữ là BẮT BUỘC cho mỗi thuật ngữ. Các dòng @tác giả, @biểu tượng (một emoji), @tag không bắt buộc và phải nằm ngay đầu thuật ngữ, trước phần giải thích.
+- @tác giả chỉ ghi khi thuật ngữ gắn với một người cụ thể (người đặt ra hoặc phát biểu đầu tiên) và bạn chắc chắn về điều đó. Tuyệt đối không bịa tác giả: không chắc thì bỏ dòng này.
+- KHÔNG tạo câu hỏi, KHÔNG dịch sang tiếng Việt; chỉ viết nội dung bằng ${lname(lang)}.
+${lang === 'zh' ? '- Chữ Hán dùng GIẢN THỂ.\n' : ''}${source ? `\nNGUỒN:\n${source}` : ''}`;
+}
+export const KEYWORD_SYNTAX = `# Logistics
+@thuật ngữ: Hiệu ứng roi da (Bullwhip effect)
+@tác giả: Jay Forrester
+@biểu tượng: 🔑
+@tag: #chuỗi_cung_ứng
+Giải thích thuật ngữ thứ nhất (có thể nhiều dòng).
+---
+@thuật ngữ: Chuỗi cung ứng
+Thuật ngữ này không có tác giả nên bỏ dòng @tác giả.
+
+# Tài chính
+@thuật ngữ: Dòng tiền
+Giải thích thuật ngữ thứ ba.`;
+
+// Prompt lập danh sách từ cho Kho từ vựng (Ôn tập → Từ vựng → Nhập từ): từ | phiên âm | nghĩa | câu ví dụ | ghi chú, có nhóm
+export const VOCAB_BANK_SYNTAX = `# Bài 1: Chào hỏi
+你好 | nǐ hǎo | xin chào | 你好，我叫小明。 | lời chào thông dụng
+谢谢 | xièxie | cảm ơn
+再见 | zàijiàn | tạm biệt
+
+# Bài 2: Gia đình
+妈妈 | māma | mẹ
+哥哥 | gēge | anh trai`;
+export function vocabBankPrompt({ lang, topic = '', n = 20, level = '' }) {
+  const nm = lname(lang), pr = lang === 'zh' ? 'pinyin có dấu thanh' : lang === 'ja' ? 'hiragana (hoặc romaji)' : lang === 'ko' ? 'phiên âm Latin' : 'phiên âm IPA (có thể bỏ trống)';
+  return `Bạn là giáo viên ${nm}. Hãy lập danh sách ${n} từ vựng ${nm}${topic ? ` về chủ đề: ${topic}` : ' thông dụng, chia thành vài nhóm chủ đề'}${level ? `, trình độ ${level}` : ''}.
+
+ĐỊNH DẠNG ĐẦU RA (rất quan trọng): chỉ trả về nội dung trong MỘT khối code, không giải thích thêm. Mỗi từ một dòng, các cột cách nhau bằng dấu |:
+
+# Tên nhóm
+từ | phiên âm (${pr}) | nghĩa tiếng Việt | câu ví dụ bằng ${nm} (ngắn) | ghi chú (không bắt buộc)
+
+QUY TẮC:
+- Dòng bắt đầu bằng “# ” là tên nhóm; các từ nằm dưới nhóm đó.
+- Cột nghĩa ngắn gọn bằng tiếng Việt; nhiều nghĩa thì cách nhau bằng dấu chấm phẩy ;
+- Cột ví dụ và ghi chú có thể bỏ trống; nếu bỏ cột cuối thì không cần thêm dấu |.
+${lang === 'zh' ? '- Chữ Hán dùng GIẢN THỂ.\n' : ''}- Không đánh số thứ tự, không thêm bảng hay lời dẫn.`;
 }
 
 export const SOCIAL_SYNTAX = `# Công nghệ
