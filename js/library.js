@@ -187,7 +187,7 @@ export function openEdit(id) {
 
 export function init() {
   $('#eExercises').onclick = () => { const id = editId; $('#editDlg').close(); bus.emit('nav', 'review'); document.dispatchEvent(new CustomEvent('exercises-for', { detail: id })); };
-  $('#libTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.t; showEmpty = false; render(); } });
+  $('#libTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b && b.id === 'libCompose') { bus.emit('nav', 'notes'); return; } if (b) { tab = b.dataset.t; showEmpty = false; render(); } });
   $('#newFolder').onclick = () => {
     const name = (prompt('Tên mục mới (ví dụ: HSK 3, Phim, TikTok):') || '').trim();
     if (!name) return;

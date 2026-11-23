@@ -16,8 +16,21 @@ function decode(topo) {
     for (const p of polys) { const a = area(p[0]); if (a > ba) { ba = a; big = p; } for (const [x, y] of p[0]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
     let bx0 = 1e9, by0 = 1e9, bx1 = -1e9, by1 = -1e9; for (const [x, y] of big[0]) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
     let lx = (bx0 + bx1) / 2; if (lx > 180) lx -= 360;
-    return { name, iso: ISO3[name] ?? '', polys, wrap, bbox: [x0, y0, x1, y1], lab: [lx, (by0 + by1) / 2], lw: bx1 - bx0, lh: by1 - by0 };
+    return { name, iso: ISO3[name] ?? '', polys, wrap, bbox: [x0, y0, x1, y1], lab: [lx, (by0 + by1) / 2], lw: bx1 - bx0, lh: by1 - by0, big, bb: [bx0, by0, bx1, by1], placed: false };
   }).filter(c => c.name !== 'Antarctica');
+}
+// đặt mã nước vào điểm nằm TRONG lãnh thổ và xa biên nhất (tâm hộp bao có thể rơi ra ngoài với nước hình dài như Việt Nam, Chile)
+function distSeg(px, py, ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy; let t = l ? ((px - ax) * dx + (py - ay) * dy) / l : 0; t = t < 0 ? 0 : t > 1 ? 1 : t; return Math.hypot(px - (ax + t * dx), py - (ay + t * dy)); }
+export function placeLabel(c) {
+  if (c.placed) return; c.placed = true; const [x0, y0, x1, y1] = c.bb, rings = c.big;
+  const inside = (x, y) => inRing(rings[0], x, y) && !rings.slice(1).some(h => inRing(h, x, y));
+  const dist = (x, y) => { if (!inside(x, y)) return -1; let d = Infinity; for (const r of rings) for (let i = 0, j = r.length - 1; i < r.length; j = i++) d = Math.min(d, distSeg(x, y, r[j][0], r[j][1], r[i][0], r[i][1])); return d; };
+  let best = null, bd = -1, cx0 = x0, cy0 = y0, cw = x1 - x0, ch = y1 - y0, N = 12;
+  for (let pass = 0; pass < 3; pass++) {
+    for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) { const x = cx0 + cw * i / N, y = cy0 + ch * j / N, d = dist(x, y); if (d > bd) { bd = d; best = [x, y]; } }
+    if (!best) break; cw /= 4; ch /= 4; cx0 = best[0] - cw / 2; cy0 = best[1] - ch / 2;
+  }
+  if (best && bd > 0) { let lx = best[0]; if (lx > 180) lx -= 360; c.lab = [lx, best[1]]; }
 }
 export async function loadWorld() {
   if (!DATA) { const r = await fetch(new URL('./world-110m.json', import.meta.url)); if (!r.ok) throw new Error('world-110m.json'); DATA = decode(await r.json()); }
@@ -56,7 +69,7 @@ export async function createMap(box, opts) {
     ctx.font = 'bold 11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
     if (k >= 2) for (const c of world) {
       if (!c.iso) continue; const w = c.lw * scale(), h = c.lh * scale(); if (w < 30 || h < 14) continue;
-      const x = X(c.lab[0]), y = Y(c.lab[1]); if (x < 10 || x > W - 10 || y < 8 || y > H - 8) continue;
+      placeLabel(c); const x = X(c.lab[0]), y = Y(c.lab[1]); if (x < 10 || x > W - 10 || y < 8 || y > H - 8) continue;
       ctx.strokeStyle = 'rgba(15,12,40,.85)'; ctx.strokeText(c.iso, x, y); ctx.fillStyle = '#fff'; ctx.fillText(c.iso, x, y);
     }
   }

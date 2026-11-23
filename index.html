@@ -55,7 +55,7 @@
   <button data-view="library" class="on"><i>📚</i><span>Thư viện</span></button>
   <button data-view="review"><i>📒</i><span>Ôn tập</span><em id="rvDue"></em></button>
   <button data-view="world" title="Thế giới của tôi"><i>🌍</i><span>Thế giới</span></button>
-  <button data-view="notes"><i>✍️</i><span>Soạn</span></button>
+  <button data-view="scm" title="Chuỗi cung ứng: tình huống thực chiến"><i>📦</i><span>SCM</span></button>
   <button data-view="quest"><i>🎯</i><span>Nhiệm vụ</span><em id="qBadge"></em></button>
 </nav>
 
@@ -208,6 +208,7 @@
         <button data-t="video" class="on">🎬 Video</button>
         <button data-t="pdf">📄 Tài liệu</button>
         <button data-t="note">📝 Ghi chú</button>
+        <button type="button" id="libCompose" title="Soạn văn bản, gắn video / âm thanh vào chữ">✍️ Soạn</button>
         <button data-t="pron" id="libPron" title="Luyện nghe, phân biệt và nói pinyin (Tiếng Trung): 1000 mục tập trung vào k·h, z·c·s, zh·ch·sh·r, j·q·x">🔊 Luyện âm</button>
       </div>
       <div id="lessonBox" hidden></div>
@@ -250,6 +251,9 @@
   </section>
 
   <!-- ===== Soạn văn bản ===== -->
+  <!-- ===== SCM: chuỗi cung ứng ===== -->
+  <section id="vScm" class="view"><div class="wrap"><div id="scmRoot" class="scmroot"></div></div></section>
+
   <section id="vNotes" class="view">
     <div class="wrap">
       <div class="row">

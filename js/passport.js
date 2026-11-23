@@ -75,7 +75,7 @@ function dayParts(date, d) {
 function earned() {
   if (!P.since) return 0;
   const m = tracker.byDate(), today = vnDate();
-  let sum = WELCOME + START_BONUS + (P.extra || 0) + rankCoins(); // extra: xu từ rương, đố vui, thử thách tuần, tem; rankCoins: thưởng dấu hạng (tính từ hạng đã đạt)
+  let sum = WELCOME + START_BONUS + (P.extra || 0) + rankCoins() + scmCoins(); // extra: xu từ rương, đố vui, thử thách tuần, tem; rankCoins: thưởng dấu hạng (tính từ hạng đã đạt)
   for (const d of Object.keys(HB.days)) if (d <= today) sum += habitCoins(d);
   for (const [d, x] of m) if (d >= P.since && d <= today) { const b = dayParts(d, x).reduce((n, [, v]) => n + v, 0); sum += b + streakBonus(m, d, b); }
   for (let s = A.weekStart(P.since); s <= today; s = addDays(s, 7)) { const e = addDays(s, 6); sum += A.weeklyFor(s).filter(q => A.isDone(q, A.aggregate(m, s, e < today ? e : today))).length * 30; }
@@ -468,6 +468,7 @@ const RANKS = [{ pct: 25, k: 'bronze', ic: '🥉', coins: 15, vi: 'Đồng', en:
 const pctOf = c => { const tt = ctot(c); return tt ? Math.floor(100 * cown(c) / tt) : 0; };
 const tierNow = c => { const p = pctOf(c); return ctot(c) ? RANKS.filter(r => p >= r.pct).length : 0; };
 const tierOf = c => Math.max((P.rk || {})[c] || 0, tierNow(c)); // hạng không bao giờ tụt, kể cả khi nước thêm thẻ mới
+const scmCoins = () => { try { const o = JSON.parse(localStorage.getItem('scm:v1') || 'null'); return Object.values((o && o.best) || {}).reduce((n, v) => n + ([0, 20, 45, 80][v] || 0), 0); } catch { return 0; } }; // xu thưởng từ sao của mục SCM
 const rankCoins = () => Object.values(P.rk || {}).reduce((n, k) => n + RANKS.slice(0, k).reduce((m, r) => m + r.coins, 0), 0);
 const rname = r => t(r.vi, r.en);
 function checkRanks() {
