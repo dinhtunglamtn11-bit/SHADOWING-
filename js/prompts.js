@@ -1,10 +1,11 @@
 // Prompt tổng (⚙ Cài đặt → Prompt tổng): một chỗ chứa mọi prompt để nhờ ChatGPT / Claude soạn nội dung đúng cú pháp của app
-// (bài tập, bài đọc + câu hỏi, bài đăng Social, phụ đề, từ vựng, thêm nước vào Passport).
+// (bài tập, bài đọc + câu hỏi, bài đăng Flash / Focus, thuật ngữ Keyword, phụ đề, kho từ vựng, từ vựng cho bài tập,
+// và hai prompt dành cho Claude Code: thêm bộ case SCM, thêm nước vào Passport).
 // Mỗi loại có bản mặc định; bạn sửa thoải mái, tự lưu (đồng bộ giữa các máy khi đã đăng nhập, có trong file sao lưu). "Mặc định" trả lại bản gốc.
 // Bản mặc định tự đổi theo ngôn ngữ đang chọn chừng nào bạn chưa sửa.
 import { $, toast, bus, LANGS } from './util.js';
 import * as store from './store.js';
-import { setPrompt, newsPrompt, socialPrompt, KIND_ORDER, KIND_INFO, EX } from './exprompts.js';
+import { setPrompt, newsPrompt, socialPrompt, vocabBankPrompt, KIND_ORDER, KIND_INFO, EX } from './exprompts.js';
 
 // Biến dùng được trong mọi prompt (viết trong dấu { }): sẽ được thay bằng giá trị bạn nhập ở các ô phía trên
 const VARS = ['chung', 'ngôn_ngữ', 'trình_độ', 'chủ_đề', 'số_lượng', 'số_bài', 'nguồn', 'tên_nước', 'châu'];
@@ -48,10 +49,28 @@ const PASSPORT = `Làm thêm nước {tên_nước} (châu {châu}) cho tab Pass
 
 Nội dung: theo tài liệu "Sổ tay 5 nhóm" dán bên dưới. Mỗi nước có 5 nhóm lớn, mỗi nhóm có mục nhỏ rồi thẻ; mỗi thẻ có tên Việt, tên Anh, ghi chú 1–2 câu (rút gọn từ tài liệu, sửa lỗi chính tả). Mỗi mục lớn một câu chuyện dài lấy từ tài liệu, mỗi mục nhỏ một câu chuyện ngắn tự viết. Thẻ chỉ có tiếng Việt/Anh.
 
-Việc cần làm (mã nước xx): js/pass-xx1..5.js (thẻ pixel 16×16, mã thẻ ASCII có tiền tố xx-, d.l chỉ nhận số nguyên); trang phục và đồ cho Lame (OUTM, OUT_KEY, SLOT_OF, O); js/pass-story-xx.js (BIG và SUB, khóa phải khớp tên mục nhỏ); js/pass-xx6.js; pass-world.js (|xx); drawFlag trong passport.js; pass-count.js (COUNT); pass-iso.js (CC2ISO: mã ISO 3 chữ cái của nước); sw.js (tăng phiên bản, thêm file); chép sang upload và upload-capnhat.
+Việc cần làm (mã nước xx): js/pass-xx1..5.js (thẻ pixel 16×16, mã thẻ ASCII có tiền tố xx-, d.l chỉ nhận số nguyên); trang phục và đồ cho Lame (OUTM, OUT_KEY, SLOT_OF, O); js/pass-story-xx.js (BIG và SUB, khóa phải khớp tên mục nhỏ); js/pass-xx6.js; pass-world.js (|xx); drawFlag trong passport.js; pass-count.js (COUNT); pass-iso.js (CC2ISO: mã ISO 3 chữ cái của nước); sw.js (tăng phiên bản, thêm file); chép sang upload và upload-capnhat (mỗi gói dưới 100 file; quá thì tách upload-capnhat-2, -3 và nói rõ thứ tự tải).
 Kiểm tra trước khi báo xong: số thẻ, không trùng mã, mọi mục nhỏ có truyện, mọi thẻ vẽ được, đồ ghép lên Lame không lỗi, mở thử trên trình duyệt, console không lỗi. Báo cáo ngắn bằng tiếng Việt.
 
 TÀI LIỆU:
+{nguồn}`;
+
+const SCMCASE = `Thêm bộ case mới vào mục SCM của app SHADOWING. Đọc trước memory/passport-project.md (các dòng ghi về SCM), js/scm.js, js/scm-keys2.js, js/scm-engines2.js, js/scm-events.js và tools/scm/extract-cases.ps1.
+{chung}
+
+TÀI LIỆU case là file .docx theo khuôn "SC Case Bank". Phần "Part I – The cases": mỗi case là "Case X# · Tên" (Heading 1, X = chữ lĩnh vực, # = 1 Dễ / 2 Trung bình / 3 Khó) gồm bảng thông tin (Field | Difficulty | Time allowance | Form steps), đoạn "Brief.", "Time plan" (bảng Milestone | Deadline "+N days" hoặc ngày giờ cụ thể | What is locked "Steps a–b"; mốc có cập nhật ghi "Update released at Mk" hoặc "Exhibit n released"), "Case file" (các Exhibit, hình), "Your tasks (form)" gồm các "Step n – tên (N points…)": bảng tick (# | Statement | Tick), bảng điền (Field | Your entry | Unit, ô trống là "__________"), ma trận ("____"), cuối cùng là bảng luật sao. Phần "Part II – Solutions and answer keys": mỗi case có "Solution X# · Tên", đáp án từng bước và "Marking guide".
+
+VIỆC CẦN LÀM
+1. Trích: powershell -File tools\\scm\\extract-cases.ps1 -Docx "<đường dẫn file>" -JsonName scm-casesN.json -ImgPrefix bN-  (ảnh vào js/scm-img/ có tiền tố để không trùng).
+2. js/scm.js: thêm lĩnh vực vào FIELDS (vi, en, ic, blurb), ORDER, FIELD_IDS; nạp thêm file JSON trong data(). js/scm-art.js: icon lĩnh vực (f-xxx) và icon từng case (pixel 16×16).
+3. Đáp án trong js/scm-keysN.js (gộp vào KEYS bằng Object.assign). Khóa ô: "bước.bảng.dòng[.cột]", bảng tính theo thứ tự (kể cả bảng tick và bảng luật). Mỗi ô: ticks[bước] = các dòng đúng; f[khóa] = { v | s | set | nums, tol | rel, w, ft (tính tiếp), eng (tính lại từ lựa chọn của người chơi), pf (điểm từng phần 0..1) }; dq(g) trả { dq, valid, why }.
+4. Bài có tối ưu hóa phải viết ENGINE trong js/scm-engines*.js: tính lại chi phí / điều kiện hợp lệ từ lựa chọn của người chơi, duyệt mọi phương án để ra tối ưu; ĐỐI CHIẾU engine với MỌI con số trong lời giải của tài liệu trước khi dùng. Số liệu nằm trong hình thì đọc từ hình rồi đối chiếu với bảng lời giải.
+5. Sao: ★ ≥ 60 điểm và hợp lệ; ★★ ≥ 75 và chất lượng quyết định ≥ 80%; ★★★ ≥ 90 và chọn đúng tối ưu. Mốc khóa bước, cập nhật giữa chừng, hộp thư ngẫu nhiên, thưởng xu theo độ khó (mã case: chữ cái là lĩnh vực, chữ số là độ khó) đã có sẵn trong code.
+6. sw.js: tăng phiên bản shadowing-vNN, thêm mọi file mới (js, json, ảnh). Chép file đổi sang upload và upload-capnhat; mỗi gói phải dưới 100 file (quá thì tách upload-capnhat-2, -3 và nói rõ thứ tự tải, gói chứa sw.js mới nhất tải sau cùng).
+
+KIỂM TRA TRƯỚC KHI BÁO XONG (trình duyệt http://localhost:8080, preview_start "shadowing"): mọi case điền đáp án chuẩn đạt 100/100; thử phương án sai và không hợp lệ cho đúng kết quả như lời giải; kiểm tra mốc khóa và cập nhật; mọi hình tải được; không lỗi console; các case cũ vẫn 100/100; dọn localStorage scm:v1 sau cùng. Báo cáo bằng tiếng Việt, ngắn gọn: phần nào do engine tính, phần nào dựng sẵn theo lời giải, cách đẩy bản mới.
+
+TÀI LIỆU / GHI CHÚ:
 {nguồn}`;
 
 // Danh sách loại nội dung: mã, tên, hàm dựng bản mặc định theo ngôn ngữ
@@ -60,8 +79,11 @@ const TYPES = [
   { id: 'news', name: '📰 Bài đọc + câu hỏi (Thế giới → Tin tức)', build: lang => head + newsPrompt({ lang, kinds: KIND_ORDER, count: '{số_lượng}', topic: '{chủ_đề}', level: '{trình_độ}', articles: '{số_bài}', source: '' }) + '\n\nNGUỒN (nếu có):\n{nguồn}' },
   { id: 'flash', name: '⚡ Bài đăng ngắn (Social: Fact)', build: lang => head + socialPrompt({ lang, kind: 'flash', fields: '{chủ_đề}', posts: '{số_bài}', level: '{trình_độ}', source: '{nguồn}' }) },
   { id: 'focus', name: '🔭 Bài đọc dài (Social: Focus)', build: lang => head + socialPrompt({ lang, kind: 'focus', fields: '{chủ_đề}', posts: '{số_bài}', level: '{trình_độ}', source: '{nguồn}' }) },
+  { id: 'keyword', name: '🔑 Thuật ngữ + tác giả (Thế giới → Keyword)', build: lang => head + socialPrompt({ lang, kind: 'keyword', fields: '{chủ_đề}', posts: '{số_bài}', level: '{trình_độ}', source: '{nguồn}' }) },
   { id: 'subs', name: '💬 Phụ đề / câu 3 phần (chữ gốc | phiên âm | nghĩa)', build: SUB_SYNTAX },
-  { id: 'vocab', name: '🔤 Từ vựng (T: từ | phiên âm | nghĩa)', build: VOCAB },
+  { id: 'vocabbank', name: '🔠 Kho từ vựng (Ôn tập → Từ vựng → Nhập từ)', build: lang => head + vocabBankPrompt({ lang, topic: '{chủ_đề}', n: '{số_lượng}', level: '{trình_độ}' }) + '\n\nNGUỒN (nếu có, chỉ lấy từ trong đây):\n{nguồn}' },
+  { id: 'vocab', name: '🔤 Từ vựng cho bài tập (dòng T: từ | phiên âm | nghĩa)', build: VOCAB },
+  { id: 'scmcase', name: '📦 Thêm bộ case mới vào SCM', build: () => SCMCASE },
   { id: 'passport', name: '🛂 Thêm nước mới vào Passport', build: () => PASSPORT },
 ];
 const DEF = { lang: 'zh', level: 'trung cấp', topic: '', n: 5, posts: 3, src: '', type: 'sets' };

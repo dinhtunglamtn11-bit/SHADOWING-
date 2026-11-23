@@ -146,6 +146,12 @@ const ICONS = {
     '.kkkkkkk.', 'kpppppppk', 'kwwwwwwwk', 'kkkkkkkkk', 'knnnnnnnk', 'knnwwwnnk',
     'knnwwwnnk', 'knnnnnnNk', 'kNNNNNNNk', '.kkkkkkk.',
   ],
+  key: [ // Keyword: chìa khóa vàng
+    '.kkkk......', 'kyyyyk.....', 'ky..yk.....', 'kyyyykkkkk.', '.kkkkyyyyyk', '.....kkkyky', '........kkk',
+  ],
+  vocab: [ // Từ vựng: cuốn sổ có chữ A
+    '.kkkkkkkk.', 'kbbbbbbbbk', 'kbwwwwwwbk', 'kbwwkkwwbk', 'kbwkwwkwbk', 'kbwkkkkwbk', 'kbwkwwkwbk', 'kbwwwwwwbk', 'kbbbbbbbbk', '.kkkkkkkk.',
+  ],
   crate: [ // SCM: thùng hàng có băng keo
     '.kkkkkkkkk.', 'knnnyyynnnk', 'knnnyyynnnk', 'knnnnnnnnnk', 'kkkkkkkkkkk', 'knnnnynnnnk',
     'knnnnynnnnk', 'knnnnynnnNk', 'kNNNNyNNNNk', '.kkkkkkkkk.',
@@ -428,7 +434,7 @@ const MAP = {
   '📈': 'chart', '🔎': 'search', '🔍': 'search', '🔔': 'bell', '⌨': 'keyboard', '🏆': 'trophy', '❤': 'heart', '♥': 'heart', '⭐': 'star', '💎': 'gem', '📰': 'news', '🎲': 'dice', '📕': 'book', '📗': 'book', '📘': 'book', '🌍': 'globe', '🌎': 'globe', '🌏': 'globe',
 };
 // Mỗi mục lớn có biểu tượng riêng: trước đây 📝 📄 📋 📑 cùng là tờ giấy, ✍ ✏ 🖊 cùng là bút chì, 📖 📚 📕 cùng là cuốn sách…
-Object.assign(MAP, { '🛂': 'passport', '📝': 'memo', '📋': 'clipboard', '📑': 'sections', '🖊': 'brush', '✍': 'writing', '📚': 'books', '📕': 'redbook', '🗂': 'box', '⚡': 'bolt', '📓': 'journal', '🔭': 'scope', '📜': 'scroll', '🔖': 'bookmark', '🔤': 'abc', '💬': 'subtitle', '⛶': 'expand', '📅': 'cal', '🗓': 'cal2', '🏅': 'medal', '🌅': 'sun', '🎓': 'book', '📦': 'crate' });
+Object.assign(MAP, { '🛂': 'passport', '📝': 'memo', '📋': 'clipboard', '📑': 'sections', '🖊': 'brush', '✍': 'writing', '📚': 'books', '📕': 'redbook', '🗂': 'box', '⚡': 'bolt', '📓': 'journal', '🔭': 'scope', '📜': 'scroll', '🔖': 'bookmark', '🔤': 'abc', '💬': 'subtitle', '⛶': 'expand', '📅': 'cal', '🗓': 'cal2', '🏅': 'medal', '🌅': 'sun', '🎓': 'book', '📦': 'crate', '🔑': 'key', '🔠': 'vocab' });
 const RE = new RegExp('(' + Object.keys(MAP).join('|') + ')\\uFE0F?', 'gu');
 // vùng chứa nội dung của người dùng hoặc ô nhập: không đổi emoji ở đó
 const DENY = 'script,style,textarea,input,select,option,.pxe,#now,.cue:not(.ed),.qtext,.qexp,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.wvw,.wvm,.wvs,.mbq,.nw-emoji,.stc-cover,.nw-h,.nw-lead,.nw-ttl,.nw-text,.sp-text,.sp-ct,.sp-av,.sp-tags,.wchip,.slot,[contenteditable]';

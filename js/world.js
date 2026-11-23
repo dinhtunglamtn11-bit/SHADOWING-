@@ -1,4 +1,4 @@
-﻿// Thế giới của tôi: trang đọc riêng — bài đọc (chữ) chia theo thư mục chủ đề, có nút 🎲 chọn chủ đề ngẫu nhiên.
+// Thế giới của tôi: trang đọc riêng — bài đọc (chữ) chia theo thư mục chủ đề, có nút 🎲 chọn chủ đề ngẫu nhiên.
 // Bài đọc và câu hỏi nằm chung một trang: đọc xong kéo xuống làm các câu hỏi, bấm “Hoàn thành bài đọc” để chấm điểm.
 // Bài lưu trong “articles”, thư mục chủ đề trong “wfolders” (tự đồng bộ như các dữ liệu khác). Nhập nhiều bài một lúc bằng cú pháp:
 //   === Tiêu đề        @chủ đề: …   @biểu tượng: 🏮   @nguồn: …      rồi nội dung bài, các đoạn cách nhau một dòng trống
@@ -197,8 +197,8 @@ const dateLine = () => { const d = new Date(); return `${WD[d.getDay()]}, ${d.ge
 // Thế giới có 2 mục: Article (bài đọc + câu hỏi) và Social (lướt bài đăng ngắn, không câu hỏi)
 const store0 = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const save0 = (k, v) => { try { localStorage.setItem(k, v); } catch { /* bỏ qua */ } };
-let sec = (s => (s === 'social' ? 'flash' : ['flash', 'focus', 'story'].includes(s) ? s : 'article'))(store0('worldSec')); // “social” cũ nay là Flash
-const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="flash" class="${sec === 'flash' ? 'on' : ''}" title="Lướt các mẩu thông tin ngắn, đơn giản mà hay">⚡ Flash</button><button data-s="focus" class="${sec === 'focus' ? 'on' : ''}" title="Đọc các bài dài, thông tin sâu">🔭 Focus</button><button data-s="story" class="${sec === 'story' ? 'on' : ''}">📜 Story</button></div>`;
+let sec = (s => (s === 'social' ? 'flash' : ['flash', 'focus', 'keyword', 'story'].includes(s) ? s : 'article'))(store0('worldSec')); // “social” cũ nay là Flash
+const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="flash" class="${sec === 'flash' ? 'on' : ''}" title="Lướt các mẩu thông tin ngắn, đơn giản mà hay">⚡ Flash</button><button data-s="focus" class="${sec === 'focus' ? 'on' : ''}" title="Đọc các bài dài, thông tin sâu">🔭 Focus</button><button data-s="keyword" class="${sec === 'keyword' ? 'on' : ''}" title="Giải thích thuật ngữ, kèm tên tác giả của thuật ngữ nếu có">🔑 Keyword</button><button data-s="story" class="${sec === 'story' ? 'on' : ''}">📜 Story</button></div>`;
 function bindSec() {
   $$('#wSec button', root).forEach(b => {
     b.onclick = () => { if (b.dataset.s === sec) return; social.leave(); story.leave(); sec = b.dataset.s; save0('worldSec', sec); mode = 'feed'; render(); scrollTo(0, 0); };
@@ -221,7 +221,7 @@ export function render() {
   if (mode === 'import') return drawImport();
   if (mode === 'move') return drawMove();
   mode = 'feed';
-  if (sec === 'flash' || sec === 'focus') { tools(true, true); social.setKind(sec); social.render(root, { bar: secBar, bindBar: bindSec }); return; }
+  if (sec === 'flash' || sec === 'focus' || sec === 'keyword') { tools(true, true); social.setKind(sec); social.render(root, { bar: secBar, bindBar: bindSec }); return; }
   if (sec === 'story') { tools(true); story.render(root, { bar: secBar, bindBar: bindSec }); return; }
   drawFeed();
 }

@@ -182,6 +182,60 @@ function mapLines(entries, segs) {
   return out;
 }
 
+// Canh theo NỘI DUNG: so từng chữ của văn bản dán với từng chữ Whisper nghe được (quy hoạch động Needleman–Wunsch, chỉ xét dải quanh đường chéo),
+// rồi lấy giờ của chữ đầu và chữ cuối mỗi câu. Chữ nghe sai vẫn được ghép (thay thế), đoạn thừa hoặc thiếu được bỏ qua nên không bị lệch dây chuyền.
+// Câu nào chữ đầu / cuối rơi sát mép một đoạn tiếng thì lấy đúng mép đoạn đó, nên không dính vào khoảng nghỉ. Trả về { cues, ratio } hoặc null nếu văn bản quá khác với tiếng.
+export function alignScript(entries, segs) {
+  const nrm = s => [...String(s || '').toLowerCase()].filter(ch => LETTER.test(ch));
+  const S = [], eRange = [];
+  entries.forEach((e, i) => { const a = S.length; for (const ch of nrm(e.lines[0])) S.push(ch); eRange.push([a, S.length]); });
+  const R = [], rSeg = [], rOff = [], segLen = [];
+  segs.forEach((g, k) => { const cs = nrm(g.lines[0]); segLen.push(cs.length); cs.forEach((ch, p) => { R.push(ch); rSeg.push(k); rOff.push(p); }); });
+  const n = S.length, m = R.length; if (!n || !m) return null;
+  const B = Math.min(700, Math.max(60, Math.ceil(0.15 * Math.max(n, m)))), W = 2 * B + 1, NEG = -1e9;
+  const lo = i => Math.max(0, Math.round(i * m / n) - B), hi = i => Math.min(m, Math.round(i * m / n) + B);
+  const dir = new Uint8Array((n + 1) * W); // 1 chéo, 2 bỏ chữ trong văn bản dán, 3 bỏ chữ Whisper nghe được
+  let prev = new Int32Array(m + 2).fill(NEG), cur = new Int32Array(m + 2).fill(NEG);
+  for (let j = lo(0); j <= hi(0); j++) { prev[j] = -j; dir[j - lo(0)] = 3; }
+  for (let i = 1; i <= n; i++) {
+    const l = lo(i), h = hi(i); cur.fill(NEG);
+    for (let j = l; j <= h; j++) {
+      let best = NEG, d = 0;
+      if (j > 0 && prev[j - 1] > NEG) { const v = prev[j - 1] + (S[i - 1] === R[j - 1] ? 2 : -1); if (v > best) { best = v; d = 1; } }
+      if (prev[j] > NEG) { const v = prev[j] - 1; if (v > best) { best = v; d = 2; } }
+      if (j > l && cur[j - 1] > NEG) { const v = cur[j - 1] - 1; if (v > best) { best = v; d = 3; } }
+      cur[j] = best; dir[i * W + (j - l)] = d;
+    }
+    [prev, cur] = [cur, prev];
+  }
+  let j = Math.min(m, hi(n)); if (prev[j] <= NEG) return null;
+  const map = new Int32Array(n).fill(-1); let i = n, same = 0;
+  while (i > 0 && j >= 0) {
+    const l = lo(i), d = dir[i * W + (j - l)];
+    if (d === 1) { map[i - 1] = j - 1; if (S[i - 1] === R[j - 1]) same++; i--; j--; } else if (d === 2) i--; else if (d === 3) j--; else break;
+  }
+  const ratio = same / n; if (ratio < 0.4) return null; // văn bản dán quá khác với tiếng nói: để cách chia theo độ dài lo
+  const tAt = (jj, edge) => { const g = segs[rSeg[jj]], L = Math.max(1, segLen[rSeg[jj]]), p = rOff[jj], d = (g.end - g.start) / L; // edge: 0 = đầu chữ, 1 = cuối chữ
+    if (edge === 0 && p <= 1) return g.start; if (edge === 1 && p >= L - 2) return g.end; return g.start + (p + edge) * d; };
+  const fixed = entries.map((e, k) => {
+    const [a, b] = eRange[k]; let f = -1, l2 = -1, cnt = 0; for (let q = a; q < b; q++) if (map[q] >= 0) { if (f < 0) f = q; l2 = q; cnt++; }
+    if (f < 0 || cnt < Math.max(1, 0.2 * (b - a))) return null;
+    return { start: tAt(map[f], 0), end: tAt(map[l2], 1) };
+  });
+  const len = k => Math.max(1, eRange[k][1] - eRange[k][0]), out = new Array(entries.length);
+  let k = 0; while (k < entries.length) {
+    if (fixed[k]) { out[k] = { ...fixed[k] }; k++; continue; }
+    let q = k; while (q < entries.length && !fixed[q]) q++; // k..q-1 không có chỗ khớp: chia đều theo độ dài chữ vào khoảng giữa hai câu đã định giờ
+    const t0 = k > 0 ? out[k - 1].end : segs[0].start, t1 = q < entries.length ? fixed[q].start : segs[segs.length - 1].end;
+    const tot = Array.from({ length: q - k }, (_, z) => len(k + z)).reduce((x, y) => x + y, 0); let acc = 0;
+    for (let z = k; z < q; z++) { const s = t0 + (t1 - t0) * acc / tot; acc += len(z); out[z] = { start: s, end: t0 + (t1 - t0) * acc / tot }; }
+    k = q;
+  }
+  const cues = entries.map((e, z) => ({ start: +out[z].start.toFixed(2), end: +Math.max(out[z].end, out[z].start + 0.4).toFixed(2), lines: e.lines }));
+  for (let z = 1; z < cues.length; z++) { if (cues[z].start < cues[z - 1].start) cues[z].start = cues[z - 1].start; if (cues[z].start < cues[z - 1].end) cues[z - 1].end = +Math.max(cues[z - 1].start + 0.3, cues[z].start - 0.02).toFixed(2); }
+  return { cues, ratio };
+}
+
 // ---------- giao diện ----------
 let ctl = null, parsed = { kind: 'empty', entries: [] };
 
@@ -246,8 +300,9 @@ async function apply() {
         onProgress: (d, n) => { $('#pgProg').value = d / n; $('#pgStat').textContent = `AI đang nghe… ${Math.floor(d / 60)}:${String(Math.floor(d % 60)).padStart(2, '0')} / ${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, '0')}`; },
       });
       if (!segs.length) throw new Error('Không nghe ra lời nói nào trong video.');
-      cues = mapLines(entries, segs);
-      $('#pgStat').textContent = `Đã canh giờ ${cues.length} câu theo giọng nói.`;
+      const al = alignScript(entries, segs);
+      if (al) { cues = al.cues; $('#pgStat').textContent = `Đã canh giờ ${cues.length} câu theo giọng nói (khớp ${Math.round(al.ratio * 100)}% chữ với tiếng nghe được).`; }
+      else { cues = mapLines(entries, segs); $('#pgStat').textContent = `Đã canh giờ ${cues.length} câu, nhưng văn bản dán khác tiếng nói khá nhiều nên chỉ chia theo độ dài chữ. Hãy kiểm tra lại giờ từng câu.`; }
     }
     cues = await simplifyCues(cues, lang);
     if (lang === 'zh' && cues.some(c => c.lines.length === 1)) { try { await addPinyin(cues); } catch { /* không có mạng: bỏ qua */ } }
@@ -284,7 +339,7 @@ function drawExport() {
   $('#pgxInfo').textContent = cues.length ? `Video đang có ${cues.length} câu phụ đề.` : 'Video này chưa có phụ đề để tải.';
   const text = cues.length ? buildExport(cues.slice(0, 4), fmt, use) : '';
   $('#pgxPrev').textContent = text ? text + (cues.length > 4 ? `\n… (${cues.length - 4} câu nữa)` : '') : '';
-  $('#pgxGo').disabled = !cues.length || !use.some(Boolean);
+  $('#pgxGo').disabled = !cues.length || !use.some(Boolean); $('#pgxCopy').disabled = $('#pgxGo').disabled;
 }
 function doExport() {
   const { cues, use, fmt } = exportState();
@@ -332,6 +387,11 @@ export function init() {
   };
   $('#pgxFmt').addEventListener('change', drawExport); ['#pgxL1', '#pgxL2', '#pgxL3'].forEach(s => $(s).addEventListener('change', drawExport));
   $('#pgxGo').onclick = doExport;
+  $('#pgxCopy').onclick = async () => { // chép timeline cả video theo cú pháp "[mm:ss.cc] gốc | phiên âm | nghĩa", dán lại vào hộp “Dán phụ đề” của video khác (kể cả link YouTube) là dùng được
+    const { cues, use } = exportState(); if (!cues.length) return; const t = buildExport(cues, 'txt', use);
+    try { await navigator.clipboard.writeText(t); toast(`Đã chép timeline ${cues.length} câu ✓ Dán vào “Dán phụ đề” của video khác.`, 4000); }
+    catch { $('#pgxPrev').textContent = t; const r = document.createRange(); r.selectNodeContents($('#pgxPrev')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Trình duyệt chặn chép tự động: đã chọn sẵn toàn bộ, bấm Ctrl+C.', 5000); }
+  };
   $('#pgApply').onclick = apply;
   $('#pgStop').onclick = () => ctl?.abort();
 }

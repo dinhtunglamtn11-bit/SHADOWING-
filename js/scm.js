@@ -7,6 +7,7 @@ import * as sfx from './sfx.js';
 import * as store from './store.js';
 import { KEYS } from './scm-keys.js';
 import { icon, paintIcons, banner, mascot } from './scm-art.js';
+import { eventsFor, kindInfo } from './scm-events.js';
 
 const FIELDS = {
   A: { vi: 'Hải quan & chứng từ', en: 'Customs & documentation', ic: 'f-customs', blurb: 'Soát chứng từ, tính thuế, định giá hải quan, đối phó hậu kiểm.' },
@@ -22,18 +23,19 @@ const ORDER = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3', 'D1', 'D2',
 const FIELD_IDS = 'ABCDEF';
 const SKEY = 'scm:v1', LV_COINS = { 1: [0, 200, 500, 1000], 2: [0, 400, 1000, 2000], 3: [0, 800, 2000, 4000] }; // xu cộng dồn theo số sao đạt được, nhân theo độ khó (Easy / Medium / Hard)
 const reward = (code, s) => (LV_COINS[+String(code).charAt(1)] || LV_COINS[1])[s] || 0;
-let DATA = null, S = { code: '', tab: 'file', home: true }, root = null, active = false, timer = 0, saveT = 0, dirty = false;
+const notified = new Set(); // thư đã báo bằng thông báo nhỏ trong phiên này (mỗi thư báo một lần)
+let DATA = null, S = { code: '', tab: 'file', home: true, mail: false }, root = null, active = false, timer = 0, saveT = 0, dirty = false;
 let DOC = load();
 
 // ---------- lưu trạng thái ----------
-function load() { try { const o = JSON.parse(localStorage.getItem(SKEY) || 'null'); if (o) return { runs: o.runs || {}, best: o.best || {}, speed: o.speed || 'real', all: !!o.all, t: o.t || 0 }; } catch { /* bỏ qua */ } return { runs: {}, best: {}, speed: 'real', all: false, t: 0 }; }
+function load() { try { const o = JSON.parse(localStorage.getItem(SKEY) || 'null'); if (o) return { runs: o.runs || {}, best: o.best || {}, speed: o.speed || 'real', all: !!o.all, ev: o.ev !== false, t: o.t || 0 }; } catch { /* bỏ qua */ } return { runs: {}, best: {}, speed: 'real', all: false, ev: true, t: 0 }; }
 function save() { DOC.t = Date.now(); dirty = true; try { localStorage.setItem(SKEY, JSON.stringify(DOC)); } catch { /* bỏ qua */ } clearTimeout(saveT); saveT = setTimeout(push, 1500); }
 function push() { dirty = false; store.put('prefs', 'scm', { ...DOC }); }
 function pull() { // gộp với máy khác: mỗi case lấy lượt chơi mới hơn; sao lấy số cao hơn
   const r = store.get('prefs', 'scm'); if (!r) return; let ch = false;
   for (const [c, run] of Object.entries(r.runs || {})) { const m = DOC.runs[c]; if (!m || (run.t || 0) > (m.t || 0)) { DOC.runs[c] = run; ch = true; } }
   for (const [c, n] of Object.entries(r.best || {})) if (n > (DOC.best[c] || 0)) { DOC.best[c] = n; ch = true; }
-  if ((r.t || 0) > (DOC.t || 0) && r.speed) { DOC.speed = r.speed; DOC.all = !!r.all; }
+  if ((r.t || 0) > (DOC.t || 0) && r.speed) { DOC.speed = r.speed; DOC.all = !!r.all; DOC.ev = r.ev !== false; }
   if (ch) { try { localStorage.setItem(SKEY, JSON.stringify(DOC)); } catch { /* bỏ qua */ } }
 }
 export const coins = () => Object.entries(DOC.best).reduce((n, [c, s]) => n + reward(c, s), 0); // xu thưởng từ sao (Passport cộng vào số xu)
@@ -150,7 +152,8 @@ function drawHome(D) {
     <p>18 tình huống thật từ hải quan, thanh toán quốc tế, mua hàng, tài chính đến phân tích dữ liệu và lập kế hoạch. Mỗi case chạy theo <b>đồng hồ thật</b>: đọc hồ sơ, làm từng bước, bị khóa theo mốc, đối mặt cập nhật giữa chừng rồi nhận 1–3 sao.</p></div></div>
     <div class="scm-sum"><span>⭐ ${st}/${ORDER.length * 3}</span><span>✅ ${done}/${ORDER.length} ${'case có sao'}</span><span>🪙 +${coins()} ${'xu từ SCM'}</span><span class="grow"></span>
       <label class="scm-opt">${'Tốc độ mặc định'} <select id="scmSpeed">${Object.entries(SPEEDS).map(([k, v]) => `<option value="${k}" ${DOC.speed === k ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label>
-      <label class="scm-opt"><input type="checkbox" id="scmAll" ${DOC.all ? 'checked' : ''}> ${'Mở hết case'}</label></div>`;
+      <label class="scm-opt"><input type="checkbox" id="scmAll" ${DOC.all ? 'checked' : ''}> ${'Mở hết case'}</label>
+      <label class="scm-opt" title="Chỉ xuất hiện khi chơi chế độ Thời gian thực. Không đổi số liệu, không ảnh hưởng điểm, không có hạn trả lời."><input type="checkbox" id="scmEv" ${DOC.ev ? 'checked' : ''}> 📬 Hộp thư ngẫu nhiên</label></div>`;
   for (const f of FIELD_IDS) {
     h += `<section class="scm-field"><header>${`<span class="scm-fi" data-art="${FIELDS[f].ic}" data-sc="4"></span>`}<div><b>${FIELDS[f].vi}</b><small class="dim">${FIELDS[f].en} · ${FIELDS[f].blurb}</small></div></header><div class="scm-cards">`;
     for (let l = 1; l <= 3; l++) {
@@ -169,6 +172,7 @@ function drawIntro(cs) {
     <div class="scm-intro"><span class="scm-ci big" data-art="${cs.code}" data-sc="8"></span><div><div class="scm-cc">${FIELDS[cs.f].vi} · <span data-art="${LEVELS[cs.lv].ic}" data-sc="1"></span>${LEVELS[cs.lv].vi}</div><h3>${esc(cs.name)}</h3>
       <p class="gt">${esc(cs.brief)}</p><p class="dim">Thời gian: <b>${cs.days} ngày</b> · ${cs.steps.length} bước · ${cs.ms.length} mốc khóa${cs.updH >= 0 ? ' · <b>có cập nhật giữa chừng</b>' : ''}</p><p class="scm-rw">🪙 Thưởng xu: ${[1, 2, 3].map(s => `<b>${'★'.repeat(s)} +${reward(cs.code, s) - reward(cs.code, s - 1)}</b>`).join(' · ')} <small class="dim">(mỗi mức sao chỉ nhận một lần, chơi lại để lên sao thì nhận phần chênh)</small></p></div></div>
     <div class="scm-spd"><b>Chọn nhịp thời gian</b>${Object.entries(SPEEDS).map(([k, v]) => `<label class="scm-sp"><input type="radio" name="scmSp" value="${k}" ${DOC.speed === k ? 'checked' : ''}> <span><b>${v[0]}</b><small class="dim">${v[2]}${v[1] ? ` Hết hạn sau ${fmtD(realMs({ speed: k }, cs.hours)).replace(/:\d\d$/, '')}.` : ''}</small></span></label>`).join('')}</div>
+    ${DOC.ev ? '<p class="dim scm-evnote">📬 Ở chế độ Thời gian thực, thỉnh thoảng bạn nhận thư nhắc mốc, gợi ý hoặc tin chưa chính thức trong Hộp thư. Thư không đổi số liệu, không ảnh hưởng điểm và không có hạn trả lời. Tắt được ở màn danh sách case.</p>' : ''}
     <div class="row"><button class="btn primary" data-act="start">▶ Bắt đầu case</button></div>`;
   paintIcons(root);
 }
@@ -232,15 +236,32 @@ function timerHtml(cs, run) {
   const rows = cs.ms.map(m => { const dleft = m.h - e, st = dleft <= 0 ? 'past' : cs.ms.find(x => x.h > e) === m ? 'cur' : 'next'; return `<li class="${st}"><b>${m.id}</b> ${esc(m.name)} <span class="dim">· khóa bước ${m.steps.join(', ')}</span><span class="grow"></span><span class="scm-cd" data-h="${m.h}">${dleft <= 0 ? '✓ đã khóa' : fmtD(realMs(run, dleft))}</span></li>`; }).join('');
   return `<div class="scm-tm"><div class="scm-clock"><span data-art="clock" data-sc="2"></span><b>Còn <span id="scmLeft">${fmtD(realMs(run, left))}</span></b><span class="dim">/ ${cs.days} ngày · ${SPEEDS[run.speed][0]}</span></div><div class="scm-bar"><i id="scmBar" style="width:${Math.min(100, 100 * e / cs.hours)}%"></i>${cs.ms.map(m => `<u style="left:${100 * m.h / cs.hours}%" title="${m.id}"></u>`).join('')}</div><ul class="scm-ms">${rows}</ul></div>`;
 }
+// ---------- hộp thư (thư nhắc mốc, gợi ý, tin chưa chính thức; không ảnh hưởng điểm) ----------
+const mailOn = run => DOC.ev && !run.sub && run.speed === 'real';
+const mailList = (cs, run) => (mailOn(run) ? eventsFor(cs, run, true).filter(e => e.at <= elapsed(run)) : []);
+const mailWhen = at => `Ngày ${Math.floor(at / 24) + 1} · ${String(Math.floor(at % 24)).padStart(2, '0')}:${String(Math.floor(at % 1 * 60)).padStart(2, '0')}`;
+function mailHtml(cs, run) {
+  const l = mailList(cs, run).reverse(), seen = run.seen || {};
+  if (!l.length) return '<p class="dim">Chưa có thư nào. Khi có thư nhắc mốc hoặc tin mới, chúng sẽ hiện ở đây. Thư không ảnh hưởng điểm.</p>';
+  return l.map(e => { const [ic, lab] = kindInfo(e.kind); return `<article class="scm-mi ${e.kind}${seen[e.id] ? '' : ' new'}"><header><span class="scm-mik">${ic} ${lab}</span><b>${esc(e.subj)}</b><small class="dim">${esc(e.from)} · ${mailWhen(e.at)} (giờ trong case)</small></header><p>${esc(e.body)}</p></article>`; }).join('') + '<p class="dim scm-mnote">Thư chỉ để tham khảo: không đổi số liệu và không ảnh hưởng điểm. Số liệu chính thức là hồ sơ case và các Exhibit cập nhật.</p>';
+}
+function mailBadge(cs, run) {
+  const b = $('#scmMailBtn', root); if (!b) return; const n = mailList(cs, run).filter(e => !(run.seen || {})[e.id]).length; const c = $('#scmMailN', root); if (c) c.textContent = n ? String(n) : ''; b.classList.toggle('has', n > 0);
+}
+function openMail(cs, run) {
+  S.mail = !S.mail; const p = $('#scmMail', root); if (!p) return;
+  if (S.mail) { p.innerHTML = mailHtml(cs, run); p.hidden = false; const seen = { ...(run.seen || {}) }; let ch = false; for (const e of mailList(cs, run)) if (!seen[e.id]) { seen[e.id] = 1; ch = true; } if (ch) { run.seen = seen; run.t = Date.now(); save(); } setTimeout(() => mailBadge(cs, run), 0); } else p.hidden = true;
+}
 function drawPlay(cs, run) {
   const filled = cs.steps.map(st => stepAnswered(st, run));
-  const tab = S.tab;
-  root.innerHTML = `<div class="scm-top"><button class="btn" data-go="home">← Danh sách case</button><b class="grow">${cs.code} · ${esc(cs.name)}</b></div>
+  const tab = S.tab, hasMail = mailOn(run) && eventsFor(cs, run, true).length > 0;
+  root.innerHTML = `<div class="scm-top"><button class="btn" data-go="home">← Danh sách case</button><b class="grow">${cs.code} · ${esc(cs.name)}</b>${hasMail ? '<button class="btn scm-mailbtn" id="scmMailBtn" data-act="mail" title="Hộp thư: nhắc mốc, gợi ý, tin chưa chính thức (không ảnh hưởng điểm)">📬 <span id="scmMailN"></span></button>' : ''}</div>
+    ${hasMail ? `<section class="scm-mail" id="scmMail" ${S.mail ? '' : 'hidden'}>${S.mail ? mailHtml(cs, run) : ''}</section>` : ''}
     <div class="scm-tmwrap" id="scmTm">${timerHtml(cs, run)}</div>
     <div class="seg scm-tabs"><button data-tab="file" class="${tab === 'file' ? 'on' : ''}">📁 Hồ sơ</button><button data-tab="form" class="${tab === 'form' ? 'on' : ''}">📝 Làm bài <small>${filled.filter(Boolean).length}/${cs.steps.length}</small></button></div>
     <div id="scmFile" ${tab === 'file' ? '' : 'hidden'}><p class="gt scm-brief"><b>Brief.</b> ${esc(cs.brief)}</p>${fileHtml(cs, run)}</div>
     <div id="scmForm" ${tab === 'form' ? '' : 'hidden'}>${cs.steps.map(st => stepHtml(cs, run, st)).join('')}<div class="row scm-submit"><button class="btn primary" data-act="submit">📤 Nộp bài và chấm điểm</button><button class="btn danger" data-act="abandon">Bỏ case này</button></div></div>`;
-  paintIcons(root); startTimer(cs, run);
+  paintIcons(root); startTimer(cs, run); mailBadge(cs, run);
 }
 function stepAnswered(st, run) { const n = st.n; if ((run.ans[`${n}.tick`] || []).length) return true; return Object.keys(run.ans).some(k => k.startsWith(n + '.') && !k.includes('tick') && String(run.ans[k]).trim() !== ''); }
 function startTimer(cs, run) {
@@ -252,6 +273,11 @@ function startTimer(cs, run) {
     if (left <= 0) { clearInterval(timer); toast('⏰ Hết giờ: bài được nộp tự động'); submit(true); return; }
     const L = $('#scmLeft', root); if (L) L.textContent = fmtD(realMs(r, left)); const B = $('#scmBar', root); if (B) B.style.width = Math.min(100, 100 * e / cs.hours) + '%';
     $$('.scm-cd', root).forEach(el => { const d = +el.dataset.h - e; el.textContent = d <= 0 ? '✓ đã khóa' : fmtD(realMs(r, d)); });
+    if (mailOn(r)) { // thư mới đến: huy hiệu, và một thông báo nhỏ (chỉ với thư vừa đến trong 15 phút gần đây, mỗi thư một lần)
+      const l = mailList(cs, r), fresh = l.filter(x => e - x.at < 0.25 && !(r.seen || {})[x.id] && !notified.has(r.start + x.id));
+      if (fresh.length) { fresh.forEach(x => notified.add(r.start + x.id)); toast('📬 Có thư mới trong Hộp thư (không ảnh hưởng điểm)', 3500); }
+      mailBadge(cs, r); const P = $('#scmMail', root); if (P && !P.hidden) { const seen = { ...(r.seen || {}) }; l.forEach(x => { seen[x.id] = 1; }); if (l.some(x => !(r.seen || {})[x.id])) { P.innerHTML = mailHtml(cs, { ...r, seen: r.seen || {} }); r.seen = seen; r.t = Date.now(); save(); mailBadge(cs, r); } }
+    }
     const k = lockKey(cs, r); if (k !== lastKey) { lastKey = k; toast('🔔 Một mốc vừa đến: xem lại các bước bị khóa hoặc phần cập nhật'); const keep = S.tab; draw().then(() => { S.tab = keep; }); }
   }, 1000);
 }
@@ -295,6 +321,7 @@ function onClick(e) {
   if (b.dataset.go === 'home') { S.home = true; S.code = ''; draw(); window.scrollTo(0, 0); return; }
   if (b.dataset.tab) { S.tab = b.dataset.tab; $$('.scm-tabs button', root).forEach(x => x.classList.toggle('on', x === b)); $('#scmFile', root).hidden = S.tab !== 'file'; $('#scmForm', root).hidden = S.tab !== 'form'; window.scrollTo(0, 0); return; }
   const a = b.dataset.act; if (!a) return;
+  if (a === 'mail') { const cs = DATA && DATA[S.code], run = DOC.runs[S.code]; if (cs && run) openMail(cs, run); return; }
   if (a === 'start') startCase(S.code);
   else if (a === 'submit') submit(false);
   else if (a === 'abandon') { if (confirm('Bỏ lượt chơi này? Mọi câu trả lời sẽ mất (sao đã có vẫn giữ).')) { delete DOC.runs[S.code]; save(); draw(); } }
@@ -306,7 +333,7 @@ function onClick(e) {
 export function init() {
   root = $('#scmRoot'); if (!root) return;
   root.addEventListener('click', onClick); root.addEventListener('input', onInput); root.addEventListener('change', e => {
-    if (e.target.id === 'scmSpeed') { DOC.speed = e.target.value; save(); } else if (e.target.id === 'scmAll') { DOC.all = e.target.checked; save(); draw(); } else onInput(e);
+    if (e.target.id === 'scmSpeed') { DOC.speed = e.target.value; save(); } else if (e.target.id === 'scmAll') { DOC.all = e.target.checked; save(); draw(); } else if (e.target.id === 'scmEv') { DOC.ev = e.target.checked; save(); } else onInput(e);
   });
   bus.on('show', v => { active = v === 'scm'; if (active) { pull(); draw(); } else clearInterval(timer); });
   bus.on('store', c => { if (c === 'prefs' || c === '*') pull(); });

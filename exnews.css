@@ -1008,3 +1008,39 @@ body.vx-on #cueList { display: none; }
 .scm-dt.ok { background: rgba(91, 224, 160, .25); } .scm-dt.bad { background: rgba(255, 106, 74, .3); }
 .scm-sol { margin-top: 12px; padding-top: 4px; border-top: 4px solid var(--line); }
 @media (max-width: 600px) { .scm-cards { grid-template-columns: 1fr; } .scm-in input[type=text], .scm-in select { width: 44vw; } }
+/* SCM: hộp thư ngẫu nhiên (không ảnh hưởng điểm) */
+.scm-mailbtn { position: relative; }
+.scm-mailbtn.has { border-color: var(--hl, #ffd84d); }
+.scm-mailbtn #scmMailN:not(:empty) { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 2px; background: var(--hl, #ffd84d); color: #2b1d3a; font-weight: 700; text-align: center; }
+.scm-mail { padding: 10px 12px; margin-bottom: 10px; background: var(--panel); border: 4px solid var(--line); display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow: auto; }
+.scm-mail[hidden] { display: none; }
+.scm-mi { padding: 8px 10px; border: 3px solid var(--line); }
+.scm-mi.new { border-color: var(--hl, #ffd84d); }
+.scm-mi header { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+.scm-mi p { margin: 0; line-height: 1.5; }
+.scm-mik { font-size: .85em; opacity: .85; }
+.scm-mi.noise { opacity: .8; }
+.scm-mnote, .scm-evnote { font-size: .85em; margin: 4px 0 0; }
+
+/* Ôn tập → Từ vựng (kho từ + bài tập) và Thế giới → Keyword */
+.vc-nav { margin-bottom: 10px; }
+.vc-form { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding: 10px; border: 3px dashed var(--line); }
+.vc-chip { display: inline-block; padding: 0 6px; border: 2px solid var(--line); font-size: .85em; }
+.vc-filter { margin: 8px 0; align-items: center; }
+.vq-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.vq-top progress { flex: 1; min-width: 80px; }
+.vq { display: flex; flex-direction: column; gap: 10px; text-align: center; }
+.vq-main { font-size: 2.2rem; line-height: 1.25; overflow-wrap: anywhere; }
+.vq-mean { font-size: 1.5rem; }
+.vq-pron { font-size: 1.1rem; }
+.vq-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px) { .vq-opts { grid-template-columns: 1fr; } .vq-main { font-size: 1.8rem; } }
+.vq-o { display: flex; align-items: center; gap: 10px; text-align: left; justify-content: flex-start; padding: 12px; white-space: normal; }
+.vq-o i { font-style: normal; min-width: 24px; opacity: .7; }
+.vq-o.right { background: #2f9a4a; color: #fff; border-color: #fff; }
+.vq-o.wrong { background: #c2354a; color: #fff; border-color: #fff; }
+.vq-in { flex: 1; min-width: 160px; font-size: 1.3rem; }
+.vq-fb { text-align: left; padding: 10px 12px; border: 3px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.vq-fb.good { border-color: #5fd068; }
+.vq-fb.bad { border-color: #ff7b88; }
+.sp-who b.sp-by { font-size: 18px; }

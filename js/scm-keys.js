@@ -5,6 +5,7 @@
 //   ft dùng a('bước.bảng.dòng') để lấy số người chơi đã gõ.
 import { b3Decision, d3Decision, c3Eval, c3Optimum, c3Decision, a3Eval, a3Decision } from './scm-engines.js';
 import { KEYS2 } from './scm-keys2.js';
+import { c2Eval, c2Code, c2Decision, c2BreakEven } from './scm-engines2.js';
 const c3m = g => [1, 2, 3, 4].map(r => [1, 2, 3].map(c => g.a(`6.0.${r}.${c}`) || 0)); // ma trận phân bổ C3 người chơi nhập
 export const KEYS = {
   A1: {
@@ -87,9 +88,9 @@ export const KEYS = {
       '1.0.1': { s: 'A' }, '1.0.2': { s: 'A' }, '1.0.3': { s: 'A' }, '1.0.4': { s: 'B' }, '1.0.5': { s: 'B' }, '1.0.6': { s: 'B' }, '1.0.7': { s: 'C' }, '1.0.8': { s: 'C' }, '1.0.9': { s: 'C' }, '1.0.10': { s: 'C' },
       '2.0.1': { s: 'LEVERAGE' }, '2.0.2': { s: 'LEVERAGE' }, '2.0.3': { s: 'STRATEGIC' }, '2.0.4': { s: 'NONCRITICAL' }, '2.0.5': { s: 'BOTTLENECK' },
       '4.0.1': { v: 1.21, tol: 0.002 }, '4.0.2': { v: 58140, rel: 0.002 }, '4.0.3': { v: 50.368, rel: 0.002 }, '4.0.4': { v: 50.053, rel: 0.002 }, '4.0.5': { v: 51.88, rel: 0.002 }, '4.0.6': { v: 49.754, rel: 0.002 },
-      '5.0.1': { s: 'S3', w: 10 }, '5.0.2': { v: 49.754, rel: 0.002, w: 5 }, '5.0.3': { v: 51.88, rel: 0.002, w: 5 }, '5.0.4': { v: 3.72, tol: 0.05, w: 5 }, '5.0.5': { s: 'CFO', w: 5 }, '5.0.6': { set: ['S2', 'S4', 'S5'], w: 2 },
+      '5.0.1': { s: 'S3', w: 10, pf: g => (c2Decision(g.s('5.0.1')).valid ? 0.5 : 0) }, '5.0.2': { v: 49.754, rel: 0.002, w: 5, eng: g => { const e = c2Eval(c2Code(g.s('5.0.1'))); return e ? e.ev : NaN; } }, '5.0.3': { v: 51.88, rel: 0.002, w: 5, eng: g => { const e = c2Eval(c2Code(g.s('5.0.1'))); return e ? e.worst : NaN; } }, '5.0.4': { v: 3.72, tol: 0.05, w: 5, eng: g => c2BreakEven(c2Code(g.s('5.0.1'))) }, '5.0.5': { s: 'CFO', w: 5, eng: g => { const e = c2Eval(c2Code(g.s('5.0.1'))); return e ? e.approval : undefined; } }, '5.0.6': { set: ['S2', 'S4', 'S5'], w: 2 },
     },
-    dq: g => ({ S3: { dq: 100, valid: true }, S6: { dq: 64, valid: true }, S1: { dq: 0, valid: true }, S2: { dq: 0, valid: false }, S4: { dq: 0, valid: false }, S5: { dq: 0, valid: false } }[g.s('5.0.1')] || { dq: 0, valid: false }),
+    dq: g => c2Decision(g.s('5.0.1')), // engine tính lại 6 cấu trúc × 3 kịch bản nhựa, lọc theo trần ngân sách 52,5 tỷ
   },
   C3: {
     ticks: { 1: [1, 2, 3, 5, 6], 3: [1, 5, 8, 9] },

@@ -151,3 +151,42 @@ export function e2Decision(s) {
   if (!e.valid) return { dq: 0, valid: false, why: `${m} có tracking signal ${e.ts.toFixed(1)} (|TS| > 4): phương pháp bị lệch, không hợp lệ.`, e };
   return { dq: Math.max(0, Math.min(100, Math.round(100 * (m3.wape - e.wape) / (m3.wape - best.wape)))), valid: true, e, best };
 }
+
+// ---------- C2: hợp đồng giá nhựa cho vỏ nhựa (6 cấu trúc × 3 kịch bản chỉ số nhựa) ----------
+// Chuỗi chỉ số nhựa 12 tháng đọc từ Hình 1 của đề (tháng 0 = 100); khớp với bảng lời giải (S3 Base 50,053; Spike 51,880; Fall 47,033, v.v.)
+const C2 = {
+  P0: 53300, vol: 75000, labour: 1.07, budget: 52.5, // giá hiện tại (VND), sản lượng tháng (vỏ), chỉ số lao động & năng lượng, trần ngân sách (tỷ VND)
+  idx: { base: [100, 101, 101, 102, 102, 103, 103, 104, 104, 104, 105, 105], spike: [100, 104, 110, 118, 126, 132, 135, 134, 130, 128, 126, 125], fall: [100, 98, 96, 95, 93, 91, 90, 89, 88, 87, 86, 85] },
+  prob: { base: 0.5, spike: 0.25, fall: 0.25 },
+  struct: { S1: { fixed: 0.05 }, S2: {}, S3: { c: 0.08, prem: 0.01 }, S4: { dual: true }, S5: { c: 0.12, prem: 0.005 }, S6: { c: 0.05, prem: 0.02 } },
+  alt: { price: 0.94, quality: 0.01, setup: 450_000_000, from: 7, share: 0.3 },
+};
+export const c2Factor = i => 0.55 * i / 100 + 0.25 * C2.labour + 0.20; // hệ số giá theo chỉ số nhựa
+// chi phí cả năm (tỷ VND) của một cấu trúc trong một kịch bản
+export function c2Cost(code, scen) {
+  const st = C2.struct[code]; if (!st) return NaN; let sum = 0;
+  C2.idx[scen].forEach((i, m) => {
+    const f = c2Factor(i); let price;
+    if (st.fixed != null) price = C2.P0 * (1 + st.fixed);
+    else if (st.c != null) price = C2.P0 * (1 + st.prem) * Math.min(1 + st.c, Math.max(1 - st.c, f));
+    else if (st.dual) { const idxP = C2.P0 * f, altP = C2.P0 * C2.alt.price * (1 + C2.alt.quality); price = m + 1 >= C2.alt.from ? (1 - C2.alt.share) * idxP + C2.alt.share * altP : idxP; }
+    else price = C2.P0 * f;
+    sum += C2.vol * price;
+  });
+  return (sum + (st.dual ? C2.alt.setup : 0)) / 1e9;
+}
+export function c2Eval(code) {
+  const sc = {}; for (const k of ['base', 'spike', 'fall']) sc[k] = c2Cost(code, k); if (!Number.isFinite(sc.base)) return null;
+  const ev = Object.keys(sc).reduce((n, k) => n + C2.prob[k] * sc[k], 0), worst = Math.max(...Object.values(sc));
+  return { code, sc, ev, worst, valid: worst <= C2.budget + 1e-9, approval: worst < 30 ? 'PROCUREMENT DIRECTOR' : worst <= 60 ? 'CFO' : 'CEO' };
+}
+export const c2Code = s => { const m = /S\s*([1-6])/i.exec(String(s || '')); return m ? 'S' + m[1] : ''; };
+export function c2Decision(s) {
+  const code = c2Code(s); if (!code) return { dq: 0, valid: false, why: 'Chọn một cấu trúc S1–S6.' };
+  const all = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'].map(c2Eval), ok = all.filter(x => x.valid), e = all.find(x => x.code === code);
+  if (!e.valid) return { dq: 0, valid: false, why: `${code} có chi phí xấu nhất ${e.worst.toFixed(1)} tỷ, vượt trần ngân sách 52,5 tỷ.`, e };
+  const worstV = ok.reduce((a, b) => (b.ev > a.ev ? b : a)), best = ok.reduce((a, b) => (b.ev < a.ev ? b : a));
+  return { dq: Math.max(0, Math.min(100, Math.round(100 * (worstV.ev - e.ev) / (worstV.ev - best.ev)))), valid: true, e, best };
+}
+// mức phụ phí cố định cao nhất để S1 vẫn bằng chi phí kỳ vọng của cấu trúc (theo % P0)
+export const c2BreakEven = code => { const e = c2Eval(code); return e ? 100 * (e.ev * 1e9 / (C2.vol * 12 * C2.P0) - 1) : NaN; };
