@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14161a">
+<title>SHADOWING</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="pixel.css">
+<link rel="stylesheet" href="exnews.css">
+<script>
+// Áp dụng cài đặt giao diện sớm (tránh nháy màu): đọc 'ui' trong localStorage, cùng logic với js/settings.js
+(function () {
+  var d = document.documentElement;
+  try {
+    var u = JSON.parse(localStorage.getItem('ui') || 'null');
+    if (!u) u = { theme: localStorage.getItem('theme') === 'night' ? 'night' : 'day' };
+    var D = { pal: 'candy', px: '3', corner: 'notch', font: 'pixel', icons: 'pixel', bg: 'check', motion: 'on', hl: 'yellow', rd: 'default', lbl: 'on' };
+    for (var k in D) d.dataset[k] = u[k] || D[k];
+    var t = u.theme || 'day';
+    if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day';
+    d.dataset.theme = t;
+    if (u.zoom && +u.zoom !== 100) { d.style.zoom = String(u.zoom / 100); d.style.setProperty('--zf', String(u.zoom / 100)); }
+    d.style.setProperty('--sub', (u.sub || 100) / 100);
+    var L = u.lang === 'en' || u.lang === 'zh' ? u.lang : 'vi';
+    d.lang = L === 'zh' ? 'zh-CN' : L; d.dataset.uilang = L;
+  } catch (e) { d.dataset.theme = 'day'; }
+})();
+</script>
+</head>
+<body data-view="library">
+
+<header id="top">
+  <button id="btnBack" class="btn" title="Quay lại trang vừa xem" disabled>←</button>
+  <b class="logo"><span data-ic="headphones"></span><span>SHADOW<i>ING</i></span></b>
+  <div id="langs" class="chips"></div>
+  <span class="grow"></span>
+  <span id="sync"></span>
+  <button id="btnSound" class="btn" title="Tắt / bật toàn bộ âm thanh (nhạc nền và tiếng nút bấm)">🔊</button>
+  <button id="btnTheme" class="btn" title="Đổi giao diện ngày / đêm"><span data-ic="moon"></span></button>
+  <button id="btnSettings" class="btn" title="Cài đặt giao diện và ngôn ngữ">⚙</button>
+  <button id="btnUser" class="btn">Đăng nhập</button>
+</header>
+
+<div id="bkBar" class="subhint topbar" hidden></div>
+
+<nav id="nav">
+  <button data-view="passport"><i>🛂</i><span>Passport</span></button>
+  <button data-view="library" class="on"><i>📚</i><span>Thư viện</span></button>
+  <button data-view="review"><i>📒</i><span>Ôn tập</span><em id="rvDue"></em></button>
+  <button data-view="world" title="Thế giới của tôi"><i>🌍</i><span>Thế giới</span></button>
+  <button data-view="scm" title="Chuỗi cung ứng: tình huống thực chiến"><i>📦</i><span>SCM</span></button>
+  <button data-view="quest"><i>🎯</i><span>Nhiệm vụ</span><em id="qBadge"></em></button>
+</nav>
+
+<button id="focusExit" class="btn" hidden title="Thoát chế độ tập trung (Esc)">✕ Thoát</button>
+<main id="views">
+
+  <!-- ===== Học ===== -->
+  <!-- ===== Passport ===== -->
+  <section id="vPassport" class="view"><div class="wrap"><div id="passRoot" class="passroot"></div></div></section>
+
+  <section id="vPlayer" class="view">
+    <div class="grid landscape" id="pgrid">
+      <div id="left">
+        <div class="tools">
+          <button class="btn primary" id="btnAdd">＋ Thêm video</button>
+          <button class="btn" id="btnCard" title="Lưu câu đang chạy vào sổ thẻ để ôn lặp lại">🔖 Lưu câu</button>
+          <button class="btn" id="btnLookup" data-lookup title="Bật rồi chạm vào từ trong phụ đề để tra nghĩa và thêm từ vào sổ thẻ (Trung tra offline; Anh, Nhật, Hàn tra bằng Wiktionary, cần mạng)">📖 Tra từ</button>
+          <button class="btn" id="btnDict" title="Nghe từng câu rồi gõ lại">⌨ Chép chính tả</button>
+          <button class="btn" id="btnSpeak" title="Ghi âm giọng bạn, nghe so sánh và chấm phát âm">🎙 Luyện nói</button>
+          <button class="btn" id="btnFocusMode" title="Toàn màn hình để tập trung học: ẩn thanh trên và thanh dưới (thoát bằng nút Thoát, phím Esc hoặc nút Back)">⛶ Tập trung</button>
+          <button class="btn" id="btnMoreTools" title="Thêm phụ đề, sửa phụ đề, chia đoạn, canh từ, từ vựng, khung hình">⋯ Công cụ <span class="ar">▾</span></button>
+          <button class="btn" id="btnSet" title="Cài đặt phát: lặp câu, tốc độ, dòng dưới…">⚙</button>
+        </div>
+        <div class="tools tools2" id="toolMore" hidden>
+          <button class="btn" id="btnPaste" title="Thêm phụ đề từ file hoặc dán văn bản (gốc | phiên âm | nghĩa)">💬 Phụ đề</button>
+          <button class="btn" id="btnVx" title="Làm bài tập (trắc nghiệm, đúng/sai, điền từ, chọn nhiều đáp án…) gắn với video này, vừa xem video vừa làm">📝 Bài tập</button>
+          <input id="sfile" type="file" accept=".srt,.vtt">
+          <button class="btn" id="btnSubEdit" title="Hộp thoại sửa nhiều câu một lúc: dán phiên âm / nghĩa hàng loạt, gộp, xuất file .srt. (Sửa từng câu: bấm nút ✏️ ở đầu danh sách câu bên phải)">✏️ Sửa hàng loạt</button>
+          <button class="btn" id="btnSeg" title="Chia phụ đề thành từng đoạn: video dừng cuối đoạn, lặp lại hoặc tiếp tục">📑 Chia đoạn</button>
+          <button class="btn" id="btnAlign" title="Tự động tạo phụ đề và canh giờ từng từ theo giọng nói">✨ Canh từ</button>
+          <button class="btn" id="btnVocab" title="Liệt kê từ vựng trong phụ đề của video để chọn thêm vào sổ thẻ (tiếng Trung)">🔤 Từ vựng</button>
+          <button class="btn" id="btnFrame">🖥 Ngang (YouTube)</button>
+        </div>
+        <div id="itemTitle" class="ellipsis dim"></div>
+        <div id="settings">
+          <label><input type="checkbox" id="loop"> Lặp câu</label>
+          <label><input type="checkbox" id="autopause"> Dừng cuối câu</label>
+          <label>Dòng dưới
+            <select id="hideSub"><option value="0">Hiện phiên âm + nghĩa</option><option value="1">Ẩn nghĩa</option><option value="2">Ẩn cả hai</option></select>
+          </label>
+          <label>Tốc độ
+            <select id="rate"><option>0.5</option><option>0.6</option><option>0.75</option><option>0.9</option><option>1</option><option>1.25</option><option>1.5</option></select>
+          </label>
+          <label>Lệch sub (s) <input id="offset" type="number" step="0.1" value="0" style="width:70px"></label>
+          <label title="Cho chữ sáng sớm hơn giọng nói một chút (ms). Tăng nếu chữ sáng chậm hơn tiếng, giảm nếu sáng sớm quá. Dùng tai nghe Bluetooth thì thường cần tăng.">Chữ sáng sớm (ms) <input id="wordLead" type="number" step="10" min="-300" max="500" value="30" style="width:70px"></label>
+        </div>
+        <div id="stage" class="landscape">
+          <video id="v" controls playsinline></video>
+          <div id="ytWrap"><div id="ytHost"></div></div>
+          <div id="now"></div>
+        </div>
+        <div id="bar">
+          <button id="bPrev" title="Câu trước">⏮</button>
+          <button id="bReplay" title="Nghe lại câu">↺</button>
+          <button id="bPlay" title="Phát / dừng">▶</button>
+          <button id="bNext" title="Câu sau">⏭</button>
+          <button id="bLoop" title="Lặp câu">🔁</button>
+          <button id="bHide" title="Ẩn dòng phiên âm / nghĩa (bấm để đổi: hiện hết, ẩn nghĩa, ẩn cả hai)">🙈</button>
+          <button id="bRec" title="Ghi âm khi học shadowing: bật lên rồi bấm Play và nói theo video, giọng bạn được ghi tự động từng câu (nên dùng tai nghe)">🎙</button>
+        </div>
+        <div id="recBar" class="subhint" hidden>
+          <span id="rbTxt"></span><span id="rbMeter"><i></i></span><span class="grow"></span>
+          <label class="dim" title="Mặc định chỉ ghi: bạn nghe lại và tự đánh giá, bấm 🎯 khi muốn chấm. Bật ô này nếu muốn máy tự chấm sau mỗi câu bạn nói (AI chạy ngay trên máy, không gửi âm thanh đi đâu). Chỉ lưu điểm lần nói gần nhất, không lưu bản ghi."><input type="checkbox" id="rbScoreOn"> Tự chấm</label>
+          <span id="rbBtns" hidden><button class="btn" id="rbPlay" title="Nghe lại giọng bạn ở câu vừa nói">▶ Giọng tôi</button><button class="btn" id="rbAB" title="Nghe bản gốc rồi tới giọng bạn để so sánh">⇄ Gốc → tôi</button><button class="btn" id="rbScore" title="Chấm điểm câu vừa nói">🎯 Chấm</button></span>
+          <div id="rbResult" hidden></div>
+        </div>
+        <div id="segBar" class="segbar" hidden>
+          <div class="row between"><b id="sgNum"></b><span id="sgTime" class="dim"></span></div>
+          <div class="row c">
+            <button class="btn" id="sgPrev">⏮ Đoạn trước</button>
+            <button class="btn primary" id="sgRepeat">🔁 Lặp lại đoạn</button>
+            <button class="btn" id="sgNext">⏭ Tiếp tục (đoạn sau)</button>
+          </div>
+          <div class="row">
+            <label class="dim">Tự lặp thêm <select id="sgAuto"><option value="0">0 lần</option><option value="1">1 lần</option><option value="2">2 lần</option><option value="3">3 lần</option></select> trước khi dừng</label>
+            <span class="grow"></span>
+            <button class="btn" id="sgSplit">✂ Chia đoạn…</button>
+            <button class="btn" id="sgOff">Thoát</button>
+          </div>
+          <div class="dim sghelp">Video tự dừng khi hết đoạn. Bấm vào một câu để bắt đầu từ câu đó. Bấm ✂ cạnh câu để chia thêm đoạn.</div>
+        </div>
+        <div id="subHint" class="subhint" hidden></div>
+        <div id="speakPanel" hidden>
+          <div class="row between"><b id="spNum"></b><span id="spSum" class="dim"></span></div>
+          <div class="row">
+            <button class="btn" id="spOrig" title="Nghe lại câu gốc">🔊 Nghe gốc</button>
+            <button class="btn primary" id="spRec" title="Ghi âm giọng bạn (tự dừng sau khi hết câu)">🎙 Ghi âm</button>
+            <button class="btn" id="spMine" disabled title="Nghe lại giọng bạn">▶ Giọng tôi</button>
+            <button class="btn" id="spAB" disabled title="Nghe bản gốc rồi tới giọng bạn">⇄ Gốc → tôi</button>
+            <button class="btn" id="spScore" disabled title="AI nghe giọng bạn và chấm điểm">🎯 Chấm</button>
+          </div>
+          <div class="row">
+            <button class="btn" id="spRamp" title="Nghe và nhắc lại ở các tốc độ 0.6×, 0.75×, 0.9×, 1× liên tiếp, cuối cùng ghi âm">📈 Tăng tốc dần</button>
+            <label class="dim"><input type="checkbox" id="spRampRec" checked> ghi âm ở bước cuối</label>
+          </div>
+          <div id="spMeter"><i></i></div>
+          <div id="spStat" class="dim"></div>
+          <label class="dim"><input type="checkbox" id="spVizOn" checked> Hiện sóng âm và cao độ (bản gốc ↔ giọng bạn)</label>
+          <div id="spViz" hidden>
+            <canvas id="spWave"></canvas>
+            <canvas id="spPitch"></canvas>
+            <div class="dim spvl"><span style="color:#5ab4ff">■</span> bản gốc <span style="color:#ff8f3a">■</span> giọng bạn · khung dưới là đường cao độ (thanh điệu), hai giọng khác nhau vẫn so được</div>
+            <div class="dim" id="spVizNote"></div>
+          </div>
+          <div class="row">
+            <label class="dim"><input type="checkbox" id="spWith"> Ghi lúc đang phát gốc (nên dùng tai nghe)</label>
+            <label class="dim"><input type="checkbox" id="spAuto" checked> Tự chấm sau khi ghi</label>
+            <label class="dim" id="spToneRow" hidden><input type="checkbox" id="spTone"> Bỏ qua thanh điệu</label>
+          </div>
+          <div class="row">
+            <label class="dim">Tốc độ gốc <select id="spRate"><option value="0.75">0.75×</option><option value="1" selected>1×</option></select></label>
+            <label class="dim">Mô hình chấm <select id="spModel"><option value="Xenova/whisper-base">Cân bằng (~80 MB)</option><option value="Xenova/whisper-small">Chính xác hơn (~250 MB)</option></select></label>
+          </div>
+          <div id="spResult" hidden></div>
+          <div class="row"><button class="btn" id="spPrev">← Trước</button><span class="grow"></span><button class="btn" id="spNext">Câu sau ⏭</button></div>
+        </div>
+        <div id="dictPanel" hidden>
+          <div class="row between"><b id="dNum"></b><span id="dSum" class="dim"></span></div>
+          <div class="row">
+            <button class="btn" id="dReplay" title="Nghe lại câu (Ctrl+Enter)">🔊 Nghe lại</button>
+            <button class="btn" id="dSlow" title="Nghe chậm">🐢 Chậm</button>
+            <button class="btn" id="dHintBtn" title="Hiện thêm một từ/chữ">💡 Gợi ý</button>
+            <label class="dim">Tốc độ <select id="dRate"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option></select></label>
+          </div>
+          <div class="row" id="dTargetRow">
+            <label class="dim">Chép <select id="dTarget"><option value="orig">chữ gốc (dòng 1)</option><option value="pron">phiên âm (dòng 2)</option></select></label>
+            <label class="dim" id="dToneRow" hidden><input type="checkbox" id="dTone" checked> bỏ qua dấu thanh/dấu giọng</label>
+          </div>
+          <textarea id="dText" rows="3" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Nghe rồi gõ lại những gì bạn nghe được. Enter để kiểm tra."></textarea>
+          <div id="dHint" class="dim"></div>
+          <div class="row">
+            <button class="btn primary" id="dCheck">✔ Kiểm tra</button>
+            <button class="btn" id="dNext" hidden>⏭ Câu sau</button>
+            <span class="grow"></span>
+            <button class="btn" id="dPrev">← Trước</button>
+          </div>
+          <div id="dResult" hidden></div>
+        </div>
+      </div>
+      <div id="cueList"></div>
+      <div id="vxPanel" class="vxpanel" hidden></div>
+    </div>
+  </section>
+
+  <!-- ===== Thư viện ===== -->
+  <section id="vLibrary" class="view active">
+    <div class="wrap">
+      <div class="seg" id="libTabs">
+        <button data-t="lesson">🎓 Bài học</button>
+        <button data-t="video" class="on">🎬 Video</button>
+        <button data-t="pdf">📄 Tài liệu</button>
+        <button data-t="note">📝 Ghi chú</button>
+        <button type="button" id="libCompose" title="Soạn văn bản, gắn video / âm thanh vào chữ">✍️ Soạn</button>
+        <button data-t="pron" id="libPron" title="Luyện nghe, phân biệt và nói pinyin (Tiếng Trung): 1000 mục tập trung vào k·h, z·c·s, zh·ch·sh·r, j·q·x">🔊 Luyện âm</button>
+      </div>
+      <div id="lessonBox" hidden></div>
+      <div id="pronBox" hidden></div>
+      <div id="libMain">
+      <div class="row"><button class="btn primary" id="libAdd">＋ Thêm video</button><button class="btn" id="libLink">🔗 Thêm bằng link</button><button class="btn" id="newFolder" title="Tạo một mục (thư mục) mới để gom video, tài liệu hoặc ghi chú">📁 Mục mới</button><button class="btn" id="libFind" title="Tìm một từ hay một câu trong mọi phụ đề, ghi chú và thẻ">🔎 Tìm câu</button><input id="libSearch" type="search" placeholder="🔍 Tìm theo tên…" style="flex:1;min-width:120px;max-width:260px"></div>
+      <div id="libItems" class="lbs"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Ôn tập ===== -->
+  <section id="vReview" class="view">
+    <div class="wrap">
+      <div id="rvCont" class="pp-cont" hidden></div>
+      <div class="seg" id="rvTabs">
+        <button data-t="cards" class="on">📒 Ôn thẻ</button>
+        <button data-t="quiz">🧩 Bài tập hôm nay</button>
+        <button data-t="free" title="Câu hỏi ngẫu nhiên không giới hạn từ các tài liệu bạn đã tick “Đang học”">🎲 Luyện ngẫu nhiên</button>
+        <button data-t="vocab" title="Kho từ vựng (nhập đầy đủ) và bài tập từ vựng: trắc nghiệm 4 ý hoặc gõ từ">🔠 Từ vựng</button>
+        <button data-t="write">🖊 Viết chữ</button>
+        <button data-t="mine">📋 Bài tập của tôi</button>
+        <button data-t="mistakes">📕 Sổ lỗi</button>
+        <button data-t="deck">🗂 Sổ thẻ</button>
+      </div>
+      <label class="dim ttsrate">🔊 Tốc độ đọc <select id="ttsRate"><option value="0.7">Chậm</option><option value="0.9" selected>Vừa</option><option value="1.1">Nhanh</option></select></label>
+      <div id="rvBody"></div>
+    </div>
+  </section>
+
+  <!-- ===== Thế giới của tôi ===== -->
+  <section id="vWorld" class="view">
+    <div class="wrap">
+      <div class="row" id="nwTools" hidden>
+        <button class="btn" data-readall title="Đọc to bài bằng giọng máy (tiếng Trung, Nhật, Hàn, Anh). Chạm câu để nghe riêng">🔊 Đọc</button>
+        <button class="btn" data-tapread title="Bật rồi chạm vào một câu để nghe câu đó (tắt Tra từ khi dùng)">👆 Chạm câu</button>
+        <button class="btn" data-lookup title="Bật rồi chạm vào từ để tra nghĩa">📖 Tra từ</button>
+      </div>
+      <div id="worldRoot"></div>
+    </div>
+  </section>
+
+  <!-- ===== Soạn văn bản ===== -->
+  <!-- ===== SCM: chuỗi cung ứng ===== -->
+  <section id="vScm" class="view"><div class="wrap"><div id="scmRoot" class="scmroot"></div></div></section>
+
+  <section id="vNotes" class="view">
+    <div class="wrap">
+      <div class="row">
+        <button class="btn" id="nList">☰ Ghi chú</button>
+        <button class="btn" id="nNew">＋ Mới</button>
+        <span class="grow"></span>
+        <div class="seg" id="nMode"><button data-m="edit" class="on">✏️ Sửa</button><button data-m="view">👁 Xem</button></div>
+      </div>
+      <div id="nEmpty" class="empty">Chưa mở ghi chú nào.<br>Bấm “＋ Mới” để viết, hoặc “☰ Ghi chú” để mở ghi chú cũ.</div>
+      <div id="nMain" hidden>
+        <input id="nTitle" class="title" placeholder="Tiêu đề">
+        <div class="row" id="nTools">
+          <select id="nFolder"></select>
+          <button class="btn" id="nAudio" title="Bôi đen chữ trước, rồi chọn file âm thanh để gắn vào chữ đó">🔊 Gắn âm thanh</button>
+          <button class="btn" id="nVideo" title="Bôi đen chữ trước, rồi chọn một video trong thư viện để gắn vào chữ đó">🎬 Gắn video</button>
+          <button class="btn" id="nLink" title="Bôi đen chữ trước, rồi dán link YouTube / TikTok / .mp4 để gắn vào chữ đó">🔗 Gắn link video</button>
+          <button class="btn" data-lookup title="Bật rồi chạm vào từ (chế độ Xem) để tra nghĩa">📖 Tra từ</button>
+          <button class="btn" data-readall title="Đọc to cả ghi chú bằng giọng máy (tiếng Trung, Nhật, Hàn). Chạm câu để nghe riêng">🔊 Đọc</button>
+          <button class="btn" data-tapread title="Bật rồi chạm vào một câu trong chế độ Xem để nghe câu đó (tắt Tra từ khi dùng)">👆 Chạm câu</button>
+          <span id="nSaved" class="dim"></span>
+        </div>
+        <div class="rtbar" id="nFmt">
+          <button class="btn" data-f="b" title="Chữ đậm (bôi đen chữ rồi bấm)"><b>B</b></button><button class="btn" data-f="i" title="Chữ nghiêng"><i>I</i></button>
+          <span class="rtgrp" title="Tô màu chữ"><small>Chữ</small><button class="rtsw rc-red" data-f="c:red" title="Tô màu chữ"></button><button class="rtsw rc-orange" data-f="c:orange" title="Tô màu chữ"></button><button class="rtsw rc-green" data-f="c:green" title="Tô màu chữ"></button><button class="rtsw rc-blue" data-f="c:blue" title="Tô màu chữ"></button><button class="rtsw rc-purple" data-f="c:purple" title="Tô màu chữ"></button><button class="rtsw rc-pink" data-f="c:pink" title="Tô màu chữ"></button></span>
+          <span class="rtgrp" title="Tô nền như bút dạ quang"><small>Nền</small><button class="rtsw rh-yellow" data-f="h:yellow" title="Tô nền (bút dạ quang)"></button><button class="rtsw rh-green" data-f="h:green" title="Tô nền (bút dạ quang)"></button><button class="rtsw rh-blue" data-f="h:blue" title="Tô nền (bút dạ quang)"></button><button class="rtsw rh-pink" data-f="h:pink" title="Tô nền (bút dạ quang)"></button><button class="rtsw rh-orange" data-f="h:orange" title="Tô nền (bút dạ quang)"></button><button class="rtsw rh-purple" data-f="h:purple" title="Tô nền (bút dạ quang)"></button></span>
+          <button class="btn ind" data-f="out" title="Lùi ra (Shift+Tab)">⇤</button><button class="btn ind" data-f="in" title="Thụt vào đầu dòng (Tab): mỗi 2 dấu cách là một cấp">⇥</button><button class="btn ind" data-f="bu" title="Bật / tắt gạch đầu dòng cho các dòng đang chọn">•≡</button>
+          <button class="btn" data-f="x" title="Bỏ định dạng của đoạn đang bôi đen">✕ Bỏ định dạng</button>
+        </div>
+        <div id="nSelBar" class="nsel"></div>
+        <div id="nBox" class="nbox"><div id="nHL" aria-hidden="true"></div><textarea id="nBody" placeholder="Viết ở đây. Dòng bắt đầu bằng # là tiêu đề, **chữ** là in đậm.&#10;Muốn gắn link: bôi đen một từ, rồi bấm 🎬 Gắn video, 🔗 Gắn link video hoặc 🔊 Gắn âm thanh. Chữ đã gắn được tô màu; sang chế độ Xem, bấm vào chữ đó là video hiện bên cạnh."></textarea></div>
+        <div id="nPreview" class="preview" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Nhiệm vụ ===== -->
+  <section id="vQuest" class="view"><div class="wrap" id="questBody"></div></section>
+
+  <!-- ===== Xem tài liệu ===== -->
+  <section id="vDoc" class="view">
+    <div class="wrap">
+      <div class="row"><button class="btn" id="docBack">← Thư viện</button><b id="docTitle" class="ellipsis grow"></b><button class="btn" data-readall title="Đọc to tài liệu dạng chữ bằng giọng máy">🔊 Đọc</button><button class="btn" data-tapread title="Bật rồi chạm vào một câu để nghe câu đó">👆 Chạm câu</button></div>
+      <div id="docBody"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Khung video bên cạnh -->
+<aside id="side" hidden>
+  <div class="sh"><b id="sTitle" class="ellipsis grow"></b><button class="btn" id="sLogin" title="Đăng nhập YouTube / TikTok để xem video riêng tư">🔑</button><button class="btn" id="sOpen" title="Mở trong trình học">↗</button><button class="btn" id="sClose" title="Đóng">✕</button></div>
+  <div class="sb"><video id="sVideo" controls playsinline></video><iframe id="sFrame" hidden title="Video" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe><div id="sPick" class="row"></div></div>
+</aside>
+
+<dialog id="findDlg" class="wide">
+  <div class="hd"><span class="grow">🔎 Tìm trong phụ đề, ghi chú, thẻ</span><button class="btn" id="findClose">✕</button></div>
+  <div class="row subtools">
+    <input id="findQ" type="search" placeholder="Gõ chữ Hán, phiên âm hoặc tiếng Việt…" style="flex:1;min-width:160px">
+    <label class="chk"><input type="checkbox" id="findAllLang"> mọi ngôn ngữ</label>
+  </div>
+  <div class="dim" id="findStat" style="padding:6px 14px"></div>
+  <div class="bd" id="findList"></div>
+</dialog>
+
+<dialog id="vocDlg" class="wide">
+  <div class="hd"><span class="grow">📚 Từ vựng trong video</span><button class="btn" id="vocClose">✕</button></div>
+  <div class="row subtools">
+    <label class="chk"><input type="checkbox" id="vocHave" checked> Ẩn từ đã có trong sổ thẻ</label>
+    <label class="chk"><input type="checkbox" id="vocMin2" checked> Chỉ từ 2 chữ trở lên</label>
+    <label class="chk"><input type="checkbox" id="vocMean" checked> Kèm nghĩa tiếng Anh</label>
+    <span class="grow"></span>
+    <button class="btn" id="vocAll">Chọn hết</button><button class="btn" id="vocNone">Bỏ chọn</button>
+  </div>
+  <div class="dim" id="vocStat" style="padding:6px 14px"></div>
+  <div class="bd" id="vocList"></div>
+  <div class="row" style="padding:8px 14px"><button class="btn primary" id="vocAdd" disabled>＋ Thêm 0 từ vào thẻ</button><span class="dim">Nghĩa lấy từ từ điển CC-CEDICT (tiếng Anh).</span></div>
+</dialog>
+
+<!-- Khung tra từ (chạm chữ Hán) -->
+<aside id="lkPop" hidden>
+  <div class="sh"><b id="lkWord" class="grow" lang="zh-CN"></b><span id="lkPy"></span><button class="btn" id="lkClose" title="Đóng">✕</button></div>
+  <div class="sb">
+    <div id="lkCands" class="chips"></div>
+    <div id="lkBody"></div>
+    <label class="dim lkmean">Nghĩa (bạn có thể sửa trước khi thêm)<input id="lkMean" type="text"></label>
+    <div class="row"><button class="btn" id="lkSay">🔊 Nghe</button><button class="btn primary" id="lkAdd">＋ Thêm vào thẻ</button></div>
+    <div class="row"><button class="btn primary" id="lkWorld" hidden title="Lưu từ kèm câu chứa nó vào danh sách từ vựng riêng của Thế giới của tôi">🌍 Lưu vào từ vựng Thế giới</button></div>
+    <small class="dim" id="lkSrc">Từ điển CC-CEDICT (CC BY-SA 4.0), nghĩa tiếng Anh.</small>
+  </div>
+</aside>
+
+<dialog id="editDlg">
+  <div class="hd"><span class="grow">Sửa mục</span><button class="btn" id="eClose">✕</button></div>
+  <div class="bd form">
+    <label>Tên<input id="eTitle"></label>
+    <label>Ngôn ngữ<select id="eLang"></select></label>
+    <label>Mục<select id="eFolder"></select></label>
+    <label id="eSrcRow">Link nguồn video (không bắt buộc)
+      <input id="eSrc" type="text" inputmode="url" placeholder="https://youtu.be/…  hoặc  https://…/video.mp4">
+      <small>Dán link YouTube, TikTok hoặc link file mp4. Máy nào chưa có file sẽ phát từ link này, và chữ gắn link trong ghi chú cũng mở được.</small></label>
+    <label id="eFrameRow">Khung video
+      <select id="eFrame"><option value="landscape">Ngang (kiểu YouTube 16:9)</option><option value="portrait">Dọc (kiểu TikTok 9:16)</option></select></label>
+    <div class="row"><button class="btn primary" id="eSave">Lưu</button><button class="btn" id="eExercises" title="Xem hoặc tạo bài tập gắn với mục này">🧩 Bài tập</button><span class="grow"></span><button class="btn danger" id="eDel">🗑 Xóa</button></div>
+  </div>
+</dialog>
+
+<dialog id="segDlg">
+  <div class="hd"><span class="grow">📑 Chia đoạn tự động</span><button class="btn" id="sdClose">✕</button></div>
+  <div class="bd form">
+    <small>File phụ đề thường không ghi ai đang nói, nên app đoán chỗ đổi người theo các dấu hiệu dưới đây. Chia xong bạn vẫn chỉnh tay được.</small>
+    <label class="chk"><input type="checkbox" id="sdGapOn" checked> Chia khi có <b>khoảng nghỉ</b> giữa hai câu từ <input type="number" id="sdGap" value="1.2" min="0.1" step="0.1" style="width:70px"> giây</label>
+    <label class="chk"><input type="checkbox" id="sdDash" checked> Chia trước câu bắt đầu bằng <b>gạch đầu dòng</b> (- hoặc –)</label>
+    <label class="chk"><input type="checkbox" id="sdLabel" checked> Chia khi <b>nhãn nhân vật</b> đổi (A: …, 小明：…, [Nam] …)</label>
+    <label class="chk"><input type="checkbox" id="sdMaxOn" checked> Mỗi đoạn tối đa <input type="number" id="sdMax" value="6" min="1" style="width:70px"> câu</label>
+    <div id="sdPreview" class="pgpreview"></div>
+    <div class="row"><button class="btn primary" id="sdApply">✔ Áp dụng</button><button class="btn" id="sdClear">Xóa hết mốc</button></div>
+  </div>
+</dialog>
+
+<dialog id="pgDlg" class="wide">
+  <div class="hd"><span class="grow">📄 Thêm phụ đề</span><button class="btn" id="pgClose">✕</button></div>
+  <div class="bd form">
+    <div class="seg" id="pgTabs"><button data-t="file">📂 Từ file</button><button data-t="paste" class="on">📋 Dán văn bản</button><button data-t="export">⬇ Tải xuống</button></div>
+
+    <div id="pgFilePane" hidden>
+      <small>Chọn file <b>.srt</b> hoặc <b>.vtt</b>. File có thể có 1, 2 hoặc 3 dòng chữ mỗi câu: dòng 1 chữ gốc, dòng 2 phiên âm, dòng 3 nghĩa.</small>
+      <div class="row"><button class="btn primary" id="pgPick">📂 Chọn file phụ đề</button></div>
+    </div>
+
+    <div id="pgExportPane" hidden>
+      <small>Tải phụ đề của video đang mở về máy, kèm giờ bắt đầu – kết thúc của từng câu. Hãy bấm 💾 Lưu trong màn “✏️ Sửa phụ đề” trước nếu bạn vừa sửa.</small>
+      <div id="pgxInfo" class="dim"></div>
+      <label>Định dạng
+        <select id="pgxFmt">
+          <option value="srt">.srt: phụ đề chuẩn, dùng được trong trình phát video (khuyên dùng)</option>
+          <option value="vtt">.vtt: phụ đề cho web / YouTube</option>
+          <option value="txt">.txt: danh sách [mm:ss.ss] chữ gốc | phiên âm | nghĩa (dán lại vào app được)</option>
+          <option value="csv">.csv: bảng (bắt đầu, kết thúc, chữ gốc, phiên âm, nghĩa) mở bằng Excel</option>
+        </select></label>
+      <div class="row pgx-cols"><span class="dim">Gồm các dòng:</span>
+        <label class="chk"><input type="checkbox" id="pgxL1" checked> Chữ gốc</label>
+        <label class="chk"><input type="checkbox" id="pgxL2" checked> Phiên âm</label>
+        <label class="chk"><input type="checkbox" id="pgxL3" checked> Nghĩa</label></div>
+      <pre id="pgxPrev" class="pgx-prev"></pre>
+      <div class="row"><button class="btn primary" id="pgxGo">⬇ Tải xuống</button><button class="btn" id="pgxCopy" title="Chép cả timeline theo cú pháp dán lại được vào app (kể cả video link YouTube)">📋 Chép cú pháp</button></div>
+    </div>
+
+    <div id="pgPastePane">
+      <small>Dán nhiều câu cùng lúc, <b>mỗi câu một dòng</b> theo cú pháp: <code>chữ gốc | phiên âm | nghĩa tiếng Việt</code>. Có thể thêm giờ bắt đầu ở đầu dòng: <code>[01:23] chữ gốc | phiên âm | nghĩa</code>. Cũng nhận mỗi câu là một khối 3 dòng (cách nhau bằng dòng trống), hoặc nguyên file .srt/.vtt.</small>
+      <textarea id="pgText" class="mono" rows="9" spellcheck="false" placeholder="你好，今天天气很好 | nǐ hǎo jīn tiān tiān qì hěn hǎo | Xin chào, hôm nay thời tiết rất đẹp&#10;我们去吃饭吧 | wǒ men qù chī fàn ba | Chúng ta đi ăn cơm đi"></textarea>
+      <div class="row"><button class="btn" id="pgExample">Chèn ví dụ</button><button class="btn" id="pgPromptBtn">🤖 Prompt mẫu cho AI</button></div>
+      <div id="pgPromptBox" class="help" hidden>
+        <small>Chưa có sẵn phiên âm và nghĩa? Sao chép prompt này, dán vào ChatGPT/Claude cùng lời thoại của bạn, rồi dán kết quả AI trả về vào ô trên. App tự đọc và tách.</small>
+        <textarea id="pgPromptText" class="mono" rows="12" readonly></textarea>
+        <div class="row"><button class="btn primary" id="pgCopy">📋 Sao chép prompt</button></div>
+      </div>
+      <div id="pgPreview" class="pgpreview"></div>
+      <label class="chk" id="pgKeepRow" hidden><input type="checkbox" id="pgKeep" checked> Giữ nguyên dòng 1 (chữ gốc) đang có, chỉ thêm/cập nhật dòng phiên âm và nghĩa</label>
+      <label id="pgModelRow" hidden>Mô hình AI canh giờ <select id="pgModel"><option value="Xenova/whisper-base">Cân bằng (~80 MB)</option><option value="Xenova/whisper-small">Chính xác hơn (~250 MB)</option></select></label>
+      <label>Cách áp dụng
+        <select id="pgMode">
+          <option value="auto">Tự chọn (khuyên dùng)</option>
+          <option value="existing">Gán vào các câu đang có theo thứ tự</option>
+          <option value="times">Theo giờ [mm:ss] ở đầu mỗi dòng</option>
+          <option value="ai">AI nghe video và tự canh giờ</option>
+          <option value="srt">Thay bằng nội dung file .srt đã dán</option>
+        </select></label>
+      <progress id="pgProg" max="1" hidden></progress>
+      <div id="pgStat" class="dim"></div>
+      <div class="row"><button class="btn primary" id="pgApply" disabled>✔ Áp dụng</button><button class="btn danger" id="pgStop" hidden>■ Dừng</button></div>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="subDlg" class="wide">
+  <div class="hd"><span class="grow">✏️ Sửa phụ đề <small id="subCount" class="dim"></small></span><button class="btn" id="subClose">✕</button></div>
+  <div class="row subtools">
+    <button class="btn" id="subAdd">＋ Thêm câu</button>
+    <button class="btn" id="subBulk" title="Dán nhiều dòng phiên âm hoặc nghĩa cùng lúc">📋 Dán phiên âm / nghĩa hàng loạt</button>
+    <button class="btn" id="subExport">⬇ Xuất .srt</button>
+    <span class="grow"></span>
+    <button class="btn primary" id="subSave">💾 Lưu</button>
+  </div>
+  <div class="bd" id="subRows"></div>
+</dialog>
+
+<dialog id="bulkDlg">
+  <div class="hd"><span class="grow">📋 Dán hàng loạt</span><button class="btn" id="sbClose">✕</button></div>
+  <div class="bd form">
+    <small>Mỗi dòng dán vào ứng với một câu theo thứ tự (dòng 1 vào câu bắt đầu, dòng 2 vào câu kế tiếp…). Dán bản dịch hoặc bản phiên âm có đúng số dòng với phụ đề là khớp nhất.</small>
+    <label>Gán vào <select id="sbTarget"><option value="l3">Dòng 3: nghĩa (tiếng Việt)</option><option value="l2">Dòng 2: phiên âm</option></select></label>
+    <label>Bắt đầu từ câu số <input id="sbFrom" type="number" min="1" value="1" style="width:90px"></label>
+    <label class="chk"><input type="checkbox" id="sbSkip" checked> Bỏ qua dòng trống trong nội dung dán</label>
+    <textarea id="sbText" rows="10" placeholder="Dán nhiều dòng ở đây…"></textarea>
+    <div class="row"><button class="btn primary" id="sbApply">Áp dụng</button></div>
+  </div>
+</dialog>
+
+<dialog id="loginDlg">
+  <div class="hd"><span class="grow">🔑 Đăng nhập YouTube / TikTok</span><button class="btn" id="lgClose">✕</button></div>
+  <div class="bd">
+    <small class="dim">Video riêng tư, giới hạn độ tuổi hay chỉ dành cho người đã đăng nhập chỉ phát được khi trình duyệt của bạn đã đăng nhập trang gốc. Khung video trong app không cho đăng nhập ngay bên trong (YouTube và TikTok không cho phép), nên bạn đăng nhập ở tab mới một lần, rồi quay lại bấm “Tải lại video”.</small>
+    <div class="row"><a class="btn primary" id="lgYt" href="https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F" target="_blank" rel="noopener">▶ Đăng nhập YouTube (tab mới)</a><a class="btn primary" id="lgTt" href="https://www.tiktok.com/login" target="_blank" rel="noopener">🎵 Đăng nhập TikTok (tab mới)</a></div>
+    <div class="row"><button class="btn" id="lgUse"></button></div>
+    <small class="dim" id="lgUseNote"></small>
+    <div class="row"><button class="btn" id="lgReload">↻ Tải lại video</button><a class="btn" id="lgSrc" target="_blank" rel="noopener" hidden>↗ Mở video trên trang gốc</a></div>
+    <small class="dim">App không lưu mật khẩu hay thông tin đăng nhập của bạn: việc đăng nhập diễn ra hoàn toàn trên YouTube / TikTok trong trình duyệt. Nếu vẫn báo “video riêng tư”, trình duyệt có thể đang chặn cookie của bên thứ ba (Safari, Firefox chế độ nghiêm ngặt, Chrome ẩn danh), hoặc video không cho nhúng: hãy dùng “Mở video trên trang gốc”.</small>
+  </div>
+</dialog>
+
+<dialog id="passDlg">
+  <div class="hd"><span class="grow gt" id="pdTitle"></span><button class="btn" id="pdClose">✕</button></div>
+  <div class="bd pdbd">
+    <div id="pdArt" class="pdart"></div>
+    <small class="dim" id="pdSub"></small><small class="pdtag" id="pdTag"></small>
+    <p id="pdNote"></p><small class="dim" id="pdEn"></small>
+    <div class="dim" id="pdBal"></div>
+    <div class="row"><button class="btn primary" id="pdBuy">Mua</button></div>
+  </div>
+</dialog>
+<dialog id="passStory" class="wide">
+  <div class="hd"><span class="grow gt" id="psTitle"></span><button class="btn" id="psClose">✕</button></div>
+  <div class="bd psbd"><small class="dim" id="psKind"></small><div id="psBody"></div></div>
+</dialog>
+
+<dialog id="uiDlg">
+  <div class="hd"><span class="grow">⚙ Cài đặt</span><button class="btn" id="uiClose">✕</button></div>
+  <div class="bd">
+    <div class="uirow uitop"><span>🌐 Ngôn ngữ giao diện</span><div class="seg uiseg" data-k="lang"><button data-v="vi">Tiếng Việt</button><button data-v="en">English</button><button data-v="zh">中文</button></div></div>
+    <details class="uigrp"><summary>🎨 Giao diện</summary><div class="uigb"><h4>Màu sắc</h4>
+    <div class="uirow"><span>Chủ đề</span><div class="seg uiseg" data-k="theme"><button data-v="day">Ngày</button><button data-v="night">Đêm</button><button data-v="auto">Theo máy</button></div></div>
+    <div class="uirow"><span>Bảng màu</span><div class="seg uiseg" data-k="pal"><button data-v="candy">Kẹo</button><button data-v="pastel">Pastel</button><button data-v="forest">Rừng</button><button data-v="sunset">Hoàng hôn</button></div></div>
+    <div class="uirow"><span>Màu chữ đang đọc</span><div class="seg uiseg" data-k="hl"><button data-v="yellow"><i class="sw" style="background:#ffd84d"></i>Vàng</button><button data-v="pink"><i class="sw" style="background:#ff9fcb"></i>Hồng</button><button data-v="blue"><i class="sw" style="background:#7fd8ff"></i>Xanh lam</button><button data-v="green"><i class="sw" style="background:#9af09a"></i>Xanh lá</button><button data-v="orange"><i class="sw" style="background:#ffb066"></i>Cam</button></div></div>
+<h4>Kiểu pixel</h4>
+    <div class="uirow"><span>Độ dày pixel</span><div class="seg uiseg" data-k="px"><button data-v="2">Mịn</button><button data-v="3">Vừa</button><button data-v="4">Thô</button></div></div>
+    <div class="uirow"><span>Góc khung</span><div class="seg uiseg" data-k="corner"><button data-v="notch">Khuyết góc</button><button data-v="square">Vuông</button></div></div>
+    <div class="uirow"><span>Phông chữ giao diện</span><div class="seg uiseg" data-k="font"><button data-v="pixel">Pixel</button><button data-v="clean">Rõ nét</button></div></div>
+    <div class="uirow"><span>Biểu tượng</span><div class="seg uiseg" data-k="icons"><button data-v="pixel">Pixel</button><button data-v="emoji">Emoji</button></div></div>
+    <div class="uirow"><span>Nền trang</span><div class="seg uiseg" data-k="bg"><button data-v="check">Ca-rô</button><button data-v="plain">Trơn</button></div></div>
+    <div class="uirow"><span>Hiệu ứng chuyển động</span><div class="seg uiseg" data-k="motion"><button data-v="on">Bật</button><button data-v="off">Tắt</button></div></div>
+    </div></details>
+    <details class="uigrp"><summary>🧑 Nhân vật Lame</summary><div class="uigb">
+      <div class="lamebox"><canvas id="lamePrev"></canvas><div id="lameSum" class="dim gt"></div></div>
+      <div class="uirow"><span>Hiện ở rìa màn hình</span><div class="seg uiseg" data-k="lame"><button data-v="on">Bật</button><button data-v="off">Tắt</button></div></div>
+      <div class="uirow"><span>Vị trí</span><div class="seg uiseg" data-k="lamePos"><button data-v="r">Phải</button><button data-v="l">Trái</button></div></div>
+      <div class="uirow"><span>Cỡ</span><div class="seg uiseg" data-k="lameSz"><button data-v="2">Nhỏ</button><button data-v="3">Vừa</button><button data-v="4">Lớn</button></div></div>
+      <h4>Đang mặc và cầm</h4>
+      <div id="lameSlots"></div>
+      <small class="dim">Chỉ chọn được những thẻ bạn đã mua trong Passport. Lame ẩn khi đang xem video để không che nút học.</small>
+    </div></details>
+    <details class="uigrp"><summary>🎨 Giao diện cửa hàng</summary><div class="uigb">
+      <div class="uirow"><span>Đang dùng</span><select id="skinSel"></select></div>
+      <div class="uirow"><span>Bật giao diện đã mua</span><div class="seg uiseg" data-k="skinOn"><button data-v="on">Bật</button><button data-v="off">Tắt</button></div></div>
+      <div class="uirow"><span>Hiệu ứng động (tuyết, sao, cánh hoa...)</span><div class="seg uiseg" data-k="skinFx"><button data-v="on">Bật</button><button data-v="off">Tắt</button></div></div>
+      <small class="dim" id="skinHint"></small>
+    </div></details>
+    <details class="uigrp"><summary>🔠 Cỡ chữ & đọc</summary><div class="uigb">
+    <div class="uirow"><span>Giao diện</span><div class="seg uiseg" data-k="zoom"><button data-v="90">90%</button><button data-v="100">100%</button><button data-v="115">115%</button><button data-v="130">130%</button></div></div>
+    <div class="uirow"><span>Phụ đề đang chạy</span><div class="seg uiseg" data-k="sub"><button data-v="80">80%</button><button data-v="100">100%</button><button data-v="125">125%</button><button data-v="150">150%</button></div></div>
+    <div class="uirow"><span>Nền trang đọc bài</span><div class="seg uiseg" data-k="rd"><button data-v="default">Theo giao diện</button><button data-v="white">Trắng · chữ đen</button><button data-v="paper">Giấy · chữ nâu</button><button data-v="green">Xanh dịu</button><button data-v="dark">Đen · chữ sáng</button></div></div>
+    <div class="uirow"><span>Chữ cạnh biểu tượng</span><div class="seg uiseg" data-k="lbl"><button data-v="on">Bật</button><button data-v="off">Tắt</button></div></div>
+    <small class="dim">Bật: nút hiện biểu tượng kèm chữ. Tắt: chỉ còn biểu tượng, trên toàn app (rê chuột hoặc giữ lên biểu tượng để xem tên). Các nút ＋ màu xanh và nút chính giữ nguyên.</small>
+    <small class="dim">Áp dụng cho nửa bài đọc ở Thế giới → Article, để đọc dễ hơn hoặc tập trung hơn.</small>
+    <div class="uipv" lang="zh-CN"><div class="main"><span class="w">你好，</span><span class="w on">今天</span><span class="w">天气很好</span></div><div class="sub l2">nǐ hǎo jīn tiān tiān qì hěn hǎo</div><div class="sub l3">Xin chào, hôm nay thời tiết rất đẹp</div></div>
+    </div></details>
+    <details class="uigrp"><summary>📚 Học tập</summary><div class="uigb">
+    <div class="uirow"><span>Mục tiêu mỗi ngày (phút)</span><input id="uiGoal" type="number" min="1" max="600"></div>
+    <div class="uirow"><span>Thẻ mới mỗi ngày</span><input id="uiNew" type="number" min="1" max="200"></div>
+    <div class="uirow"><span>Thuật toán ôn thẻ</span><div class="seg uiseg" data-k="srs"><button data-v="fsrs">FSRS (khuyên dùng)</button><button data-v="sm2">Cổ điển</button></div></div>
+    <div class="uirow"><span>Mức nhớ mục tiêu</span><div class="seg uiseg" data-k="retention"><button data-v="0.8">80%</button><button data-v="0.85">85%</button><button data-v="0.9">90%</button><button data-v="0.95">95%</button></div></div>
+    <small class="dim">FSRS ước tính lúc bạn sắp quên để hẹn ôn đúng lúc; mức nhớ mục tiêu càng cao thì ôn càng dày.</small>
+    <div class="uirow"><span>Tốc độ đọc</span><div class="seg uiseg" data-k="ttsRate"><button data-v="0.7">Chậm</button><button data-v="0.9">Vừa</button><button data-v="1.1">Nhanh</button></div></div>
+
+    <div class="uirow"><span>Tốc độ phát mặc định</span><div class="seg uiseg" data-k="rate"><button data-v="0.75">0.75×</button><button data-v="0.9">0.9×</button><button data-v="1">1×</button><button data-v="1.25">1.25×</button></div></div>
+    <small class="dim">Mỗi video nhớ tốc độ riêng khi bạn đổi ở ⚙ trong màn Học; video chưa chọn thì dùng tốc độ này.</small>
+    </div></details>
+    <details class="uigrp"><summary>🔊 Âm thanh & nhạc</summary><div class="uigb"><h4>Âm thanh</h4>
+    <div class="uirow"><span>Tất cả âm thanh</span><div class="seg uiseg" data-k="mute" data-nosfx><button data-v="0">Bật</button><button data-v="1">Tắt</button></div></div>
+    <small class="dim">Cũng là nút 🔊 ở đầu trang: tắt / bật cùng lúc cả nhạc nền và tiếng nút bấm.</small>
+<h4>Tiếng nút bấm</h4>
+    <div class="uirow"><span>Âm thanh</span><div class="seg uiseg" data-k="sfx" data-nosfx><button data-v="1">Bật</button><button data-v="0">Tắt</button></div></div>
+    <div class="uirow"><span>Âm lượng</span><input id="sfxVol" type="range" min="0" max="100" step="5"></div>
+    <div class="uirow"><span>Kiểu âm</span><div class="seg uiseg" data-k="sfxKind" data-nosfx><button data-v="glass">Thủy tinh (mới)</button><button data-v="soft">Pixel mịn</button><button data-v="chip">Pixel cổ điển</button><button data-v="bubble">Nhẹ nhàng</button></div></div>
+    <div class="row"><button id="sfxTest" class="btn" data-nosfx>🔊 Thử âm</button></div>
+    <small class="dim">Âm thanh do máy tự tạo (không có file âm thanh) nên tự cập nhật cùng app. Bật / tắt, âm lượng và kiểu âm được đồng bộ giữa các máy khi đã đăng nhập. Thanh phát video và khung luyện nói luôn im lặng để không lẫn vào tiếng bạn đang nghe hoặc ghi âm.</small>
+<h4>Nhạc nền</h4>
+    <div id="musicBox">
+      <div id="muNow" class="dim"></div>
+      <div class="row"><button class="btn" id="muPrev" data-nosfx>↺ Từ đầu</button><button class="btn primary" id="muPlay" data-nosfx>▶ Phát</button><button class="btn" id="muNext" data-nosfx>Bài khác ›</button></div>
+      <div class="uirow"><span>Âm lượng nhạc</span><input id="muVol" type="range" min="0" max="100" step="5"></div>
+      <small class="dim">Nhạc tự tạm nghỉ khi video bài học đang phát.</small>
+      <div class="mu-sec" data-l="bg">
+        <div class="row"><b class="grow">🎧 Nhạc nền (ở ngoài)</b><button class="btn" data-on></button></div>
+        <small class="dim">Phát liên tục ở Học, Thư viện, Ôn tập, Soạn, Nhiệm vụ.</small>
+        <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
+        <div class="mu-list"></div>
+      </div>
+      <div class="mu-sec" data-l="world">
+        <div class="row"><b class="grow">🌍 Nhạc khi đọc Thế giới</b><button class="btn" data-on></button></div>
+        <small class="dim">Vào Thế giới (Article, Flash, Focus) thì chuyển sang danh sách này; rời đi thì quay lại nhạc nền.</small>
+        <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
+        <div class="mu-list"></div>
+      </div>
+      <div class="mu-sec" data-l="story">
+        <div class="row"><b class="grow">📖 Nhạc khi đọc Story</b><button class="btn" data-on></button></div>
+        <small class="dim">Vào mục Story (đọc sách) thì chuyển sang danh sách riêng này; ra khỏi Story thì quay lại nhạc Thế giới hoặc nhạc nền.</small>
+        <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
+        <div class="mu-list"></div>
+      </div>
+      <small class="dim">Chọn được nhiều file mp3 một lúc. Mỗi danh sách tự trộn ngẫu nhiên, phát hết lượt rồi mới xáo lại. File chỉ lưu trong máy này (không đồng bộ, không tốn dung lượng đám mây); máy khác cần tải lên lại.</small>
+    </div>
+    </div></details>
+    <details class="uigrp"><summary>⌨ Phím tắt</summary><div class="uigb">
+    <small class="dim">Bấm vào một phím rồi nhấn phím mới. Esc: hủy · Backspace: gỡ phím.</small>
+    <div id="keyList"></div>
+    <div class="row"><button id="keyReset" class="btn">Đặt lại phím tắt</button></div>
+    </div></details>
+    <details class="uigrp"><summary>🗣 Giọng đọc</summary><div class="uigb">
+    <small class="dim">Chọn giọng đọc cho từng ngôn ngữ. Mỗi máy có bộ giọng riêng nên lựa chọn này chỉ áp dụng cho máy đang dùng. Giọng “Tự chọn” là giọng đầu tiên máy tìm được.</small>
+    <div id="voiceList"></div>
+    <div class="uirow"><span>Đọc cả phần tiếng Việt / tiếng Anh trong ghi chú</span><input type="checkbox" id="readVi"></div>
+    </div></details>
+    <details class="uigrp"><summary>⬇ Dùng offline</summary><div class="uigb">
+    <small class="dim">Bấm một lần khi có Wi-Fi để máy này dùng được các tính năng lúc mất mạng. Không gồm file video, PDF, âm thanh của bạn vì những file đó không đồng bộ giữa các máy. Mô hình AI khá nặng, nên chỉ tải khi cần chấm phát âm hoặc canh từ.</small>
+    <div id="offList"></div>
+    <progress id="offProg" max="1" value="0" hidden></progress>
+    <div class="dim" id="offStat"></div>
+    <div class="row"><button id="offGo" class="btn primary">⬇ Tải mục đã chọn</button></div>
+    </div></details>
+    <details class="uigrp"><summary>🧠 Prompt tổng</summary><div class="uigb">
+    <small class="dim">Một chỗ chứa mọi prompt để nhờ ChatGPT / Claude soạn nội dung đúng cú pháp của app. Chọn loại, điền các ô, sửa nội dung prompt theo ý bạn (tự lưu, đồng bộ khi đã đăng nhập), rồi bấm “Chép prompt”.</small>
+    <div class="uirow"><span>Loại nội dung</span><select id="pgType"></select></div>
+    <div class="uirow"><span>Ngôn ngữ</span><select id="pgLang"></select></div>
+    <div class="uirow"><span>Trình độ</span><input id="pgLevel" type="text" placeholder="vd: sơ cấp, HSK3, trung cấp"></div>
+    <div class="uirow"><span>Chủ đề</span><input id="pgTopic" type="text" placeholder="vd: ẩm thực, du lịch, công nghệ"></div>
+    <div class="uirow"><span>Số lượng</span><input id="pgN" type="number" min="1" max="60" style="width:72px"></div>
+    <div class="uirow"><span>Số bài</span><input id="pgPosts" type="number" min="1" max="30" style="width:72px"></div>
+    <div class="uirow" id="pgPassOnly" hidden><span>Nước / châu</span><span class="row"><input id="pgCountry" type="text" placeholder="Tên nước" style="width:48%"><input id="pgCont" type="text" placeholder="Châu" style="width:48%"></span></div>
+    <label class="dim">Nguồn (tùy chọn): dán văn bản, phụ đề hoặc tài liệu</label><textarea id="pgSrc" rows="3" spellcheck="false"></textarea>
+    <label class="dim">Dặn riêng của bạn (thêm vào đầu mọi prompt, ví dụ “luôn dùng chữ giản thể, giọng thân mật”)</label><textarea id="pgCommon" rows="2" spellcheck="false"></textarea>
+    <label class="dim">Nội dung prompt (sửa được). Biến dùng được: <span id="pgVars"></span></label><textarea id="pgTpl" class="mono" rows="12" spellcheck="false"></textarea>
+    <small class="dim" id="pgNote"></small>
+    <div class="row"><button id="pgCopy" class="btn primary">📋 Chép prompt</button><button id="pgShow" class="btn">👁 Xem bản đã điền</button><button id="pgReset" class="btn">↩ Mặc định</button></div>
+    <textarea id="pgOut" class="mono" rows="8" readonly hidden spellcheck="false"></textarea>
+    </div></details>    <details class="uigrp"><summary>💾 Dữ liệu & tài khoản</summary><div class="uigb"><h4>Tài khoản video</h4>
+    <div class="uirow"><span>YouTube / TikTok</span><button class="btn" id="loginOpen">🔑 Đăng nhập…</button></div>
+<h4>Dữ liệu</h4>
+    <div class="row"><button id="btnData" class="btn">💾 Sao lưu và khôi phục…</button><button id="btnTrash" class="btn">🗑 Thùng rác</button></div>
+    <div class="uirow"><span>Nhắc sao lưu</span><div class="seg uiseg" data-k="bk"><button data-v="0">Tắt</button><button data-v="7">Mỗi tuần</button><button data-v="14">2 tuần</button><button data-v="30">Mỗi tháng</button></div></div>
+    <small class="dim" id="bkLast"></small>
+    <small class="dim" id="setUsage"></small>
+    <div class="row"><button id="uiReset" class="btn danger">Đặt lại giao diện</button></div>
+    <small class="dim">Cài đặt giao diện lưu riêng trên từng thiết bị. Mục tiêu và số thẻ mới được đồng bộ khi đã đăng nhập.</small>
+    </div></details>
+  </div>
+</dialog>
+
+<dialog id="trashDlg">
+  <div class="hd"><span class="grow">🗑 Thùng rác</span><button class="btn" id="trashClose">✕</button></div>
+  <div class="bd">
+    <small class="dim" style="display:block;padding:6px 8px">Mục đã xóa được giữ 30 ngày. File video, PDF, âm thanh đã bị xóa khỏi máy ngay khi xóa nên không khôi phục được (chỉ khôi phục phần thông tin, bạn chọn lại file sau).</small>
+    <div id="trashEmpty" class="empty" hidden>Thùng rác trống.</div>
+    <div id="trashList"></div>
+    <div class="row" style="padding:8px"><button class="btn danger" id="trashClear">Dọn sạch thùng rác</button></div>
+  </div>
+</dialog>
+
+<dialog id="dataDlg">
+  <div class="hd"><span class="grow">💾 Sao lưu và khôi phục</span><button class="btn" id="dataClose">✕</button></div>
+  <div class="bd form">
+    <small id="dataInfo" class="dim"></small>
+    <small>Sao lưu gồm phụ đề, thẻ ôn, bộ bài tập, ghi chú, tiến độ và thống kê. <b>Không gồm file video, PDF, âm thanh</b> (những file đó nằm riêng trong từng máy).</small>
+    <div class="row"><button class="btn primary" id="dataExport">⬇ Tạo file sao lưu</button><button class="btn" id="dataExportLight" title="Chỉ lịch sử học, xu và thẻ Passport, thói quen, Luyện âm, thẻ ôn, câu sai: file nhỏ, hợp để chuyển máy">⬇ Chỉ tiến độ (nhẹ)</button><button class="btn" id="dataImport">⬆ Khôi phục từ file</button></div>`n    <small><b>Chỉ tiến độ</b> gồm lịch sử học, xu và thẻ Passport, đồ đã mua, thói quen, Luyện âm (gồm Bộ thủ), thẻ ôn và câu sai, nhưng không có phụ đề, ghi chú, bộ bài tập. Cả hai loại file đều khôi phục được từ nút bên cạnh.</small>
+    <small>Khôi phục chỉ ghi đè những mục mới hơn bản đang có, nên dùng an toàn. Nếu đã đăng nhập, dữ liệu khôi phục cũng được đồng bộ lên.</small>
+    <small id="dataUsage" class="dim"></small>
+    <hr>
+    <label class="chk"><input type="checkbox" id="simpOnly" checked> 🀄 Chữ Trung luôn là <b>giản thể</b></label>
+    <small>Khi bật: phụ đề tiếng Trung nhập vào, phụ đề AI tự tạo, ghi chú, thẻ, bộ bài tập, danh sách chữ viết đều được đổi sang giản thể; gõ phồn thể khi làm bài vẫn tính đúng. Không ảnh hưởng tiếng Nhật.</small>
+    <div class="row"><button class="btn" id="dataSimp">🔄 Chuyển dữ liệu tiếng Trung cũ sang giản thể</button></div>
+  </div>
+</dialog>
+
+<dialog id="alignDlg">
+  <div class="hd"><span class="grow">✨ Canh giờ từng từ</span><button class="btn" id="aClose">✕</button></div>
+  <div class="bd form">
+    <small>Để chữ sáng đúng lúc người nói đọc tới từ đó, app cần biết giờ của từng từ. App tự nghe âm thanh của video để tìm ra, không cần làm tay. Phụ đề của bạn vẫn là chữ chuẩn.</small>
+    <label>Cách canh
+      <select id="aMode">
+        <option value="ai">🎯 Chính xác: AI Whisper nghe từng câu (chậm hơn, lần đầu tải mô hình)</option>
+        <option value="fast">⚡ Nhanh: phân tích chỗ có tiếng nói (vài giây, không cần tải)</option>
+      </select></label>
+    <label id="aModelRow">Mô hình AI (cũng dùng cho “Tạo phụ đề tự động”)
+      <select id="aModel">
+        <option value="Xenova/whisper-base">Cân bằng (khoảng 80 MB)</option>
+        <option value="Xenova/whisper-small">Chính xác hơn (khoảng 250 MB, chậm hơn nhiều)</option>
+      </select></label>
+    <progress id="aProg" max="1" hidden></progress>
+    <div id="aStat" class="dim"></div>
+    <div class="row"><button class="btn primary" id="aStart">▶ Bắt đầu canh</button><button class="btn danger" id="aStop" hidden>■ Dừng</button><span class="grow"></span><button class="btn" id="aClear">Xóa giờ từng từ</button></div>
+    <small>Video phải có file trong máy này (YouTube/TikTok không cho lấy âm thanh). Kết quả được lưu và đồng bộ cùng phụ đề.</small>
+    <hr>
+    <small><b>Video chưa có phụ đề?</b> AI nghe giọng nói và tạo phụ đề cho bạn (dùng “Mô hình AI” ở trên). Với video dài sẽ mất vài phút; nên xem lại và sửa chữ sai bằng “✏️ Sửa phụ đề”.</small>
+    <div class="row"><button class="btn" id="aMakeSubs">📝 Tạo phụ đề tự động</button></div>
+    <hr>
+    <small><b>Phụ đề 3 dòng:</b> dòng 1 tiếng gốc, dòng 2 phiên âm, dòng 3 nghĩa; cả ba sáng dần cùng nhau. Nếu phụ đề tiếng Trung của bạn chưa có dòng phiên âm, app tự tạo pinyin được:</small>
+    <div class="row"><button class="btn" id="aPinyin">🔤 Tạo phiên âm pinyin (tiếng Trung)</button></div>
+  </div>
+</dialog>
+
+<dialog id="linkDlg">
+  <div class="hd"><span class="grow">Thêm video bằng link</span><button class="btn" onclick="this.closest('dialog').close()">✕</button></div>
+  <div class="bd form">
+    <label>Link video<input id="lUrl" type="text" inputmode="url" placeholder="https://youtu.be/…  /  https://www.tiktok.com/@…/video/…  /  https://…/video.mp4"></label>
+    <label>Tên (bỏ trống để tự lấy)<input id="lTitle" type="text"></label>
+    <small class="dim">YouTube và link mp4 phát được trong trình học với phụ đề chạy theo (thêm phụ đề bằng nút “📄 Phụ đề”). TikTok chỉ xem được ở khung bên cạnh.</small>
+    <div class="row"><button class="btn primary" id="lSave">Thêm</button></div>
+  </div>
+</dialog>
+
+<dialog id="vidDlg">
+  <div class="hd"><span class="grow">Gắn video vào chữ</span><button class="btn" onclick="this.closest('dialog').close()">✕</button></div>
+  <div class="vidopt dim" id="vidHint"></div>
+  <div class="vidopt"><label class="dim">Dán link video (YouTube, TikTok hoặc file .mp4)<input id="vidUrl" type="url" placeholder="https://www.youtube.com/watch?v=…" style="width:100%"></label>
+    <div class="row" style="margin-top:6px"><button class="btn primary" id="vidUrlGo">🔗 Gắn link này</button></div></div>
+  <div class="vidopt"><label class="dim">Mở từ giây (không bắt buộc) <input id="vidStart" type="number" min="0" step="0.1" placeholder="0" style="width:80px"></label></div>
+  <div class="vidopt dim">Hoặc chọn một video đã có trong thư viện:</div>
+  <div class="bd" id="vidList"></div>
+</dialog>
+
+<dialog id="noteDlg">
+  <div class="hd"><span class="grow">Ghi chú</span><button class="btn" onclick="this.closest('dialog').close()">✕</button></div>
+  <div class="bd" id="noteList"></div>
+</dialog>
+
+<div id="toast"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
+
