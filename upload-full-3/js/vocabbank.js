@@ -10,7 +10,9 @@ import * as cards from './cards.js';
 import * as tracker from './tracker.js';
 import { say } from './tts.js';
 import { zhText } from './prefs.js';
-import { vocabBankPrompt, VOCAB_BANK_SYNTAX as SYN } from './exprompts.js';
+import * as EP from './exprompts.js'; // nhập theo không gian tên để thiếu một mục (máy chủ còn bản cũ) không làm app chết khi khởi động
+const SYN = EP.VOCAB_BANK_SYNTAX || '# Bài 1\n你好 | nǐ hǎo | xin chào | 你好，我叫小明。\n谢谢 | xièxie | cảm ơn';
+const vocabBankPrompt = EP.vocabBankPrompt || (() => 'Chưa có prompt này: file exprompts.js trên máy chủ còn bản cũ, hãy tải lên đủ các gói cập nhật.');
 
 const wordsOf = lang => store.list('wwords').filter(w => (w.lang || 'zh') === lang && !w.deleted);
 let root = null, view = 'bank', run = null, editId = '';

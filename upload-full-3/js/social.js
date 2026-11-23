@@ -10,7 +10,8 @@ import * as store from './store.js';
 import { say } from './tts.js';
 import { zhText } from './prefs.js';
 import { flat } from './exparse.js';
-import { socialPrompt, SOCIAL_SYNTAX, FOCUS_SYNTAX, KEYWORD_SYNTAX } from './exprompts.js';
+import * as EP from './exprompts.js'; // nhập theo không gian tên để thiếu một mục (máy chủ còn bản cũ) không làm app chết khi khởi động
+const { socialPrompt, SOCIAL_SYNTAX, FOCUS_SYNTAX } = EP, KEYWORD_SYNTAX = EP.KEYWORD_SYNTAX || '# Lĩnh vực\n@thuật ngữ: Tên thuật ngữ\n@tác giả: Tên tác giả (không bắt buộc)\nPhần giải thích.';
 import { pix } from './pixicons.js';
 
 const COLORS = ['#ff8f3a', '#5fd068', '#ff8fc0', '#7ec3ff', '#a98bff', '#ffd84d', '#ff7b88', '#4fd1c5'];
