@@ -115,6 +115,7 @@ export function checkReminder() {
 }
 
 export function init() {
+  bus.on('settingsOpen', async () => { const u = await store.usage(); const el = $('#setUsage'); if (el) el.textContent = u ? `Bộ nhớ app: ${fmtMB(u.used)} / ${fmtMB(u.quota)}` : ''; });
   $('#simpOnly').onchange = e => { prefs.simpOnly = e.target.checked; savePrefs(); toast(prefs.simpOnly ? 'Chữ Trung sẽ luôn là giản thể' : 'Đã tắt tự chuyển giản thể'); };
   $('#dataSimp').onclick = async () => {
     if (!confirm('Chuyển toàn bộ dữ liệu tiếng Trung đã lưu (phụ đề, ghi chú, thẻ, bộ bài tập) sang chữ giản thể?\nBạn nên tạo file sao lưu trước.')) return;

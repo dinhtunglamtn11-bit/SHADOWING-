@@ -9,6 +9,7 @@ import { prefs } from './prefs.js';
 import * as sfx from './sfx.js';
 import { uiLang } from './i18n.js';
 import { WORLD } from './pass-world.js';
+import { CC2ISO } from './pass-iso.js';
 let COUNT = {}; // số thẻ từng nước (nạp riêng để thiếu file này không làm hỏng cả app)
 import('./pass-count.js').then(m => { COUNT = m.COUNT; if (active && K) draw(); }).catch(() => { /* bỏ qua: số thẻ sẽ được đếm khi nạp nước đó */ });
 
@@ -363,7 +364,7 @@ function draw() {
   if (lv === 'shop') { shopDraw(h); return; }
   if (lv === 'world' && S.quiz) { h.push(quizHtml()); root.innerHTML = h.join(''); return; }
   if (lv === 'world') h.push(`<div class="pp-wtabs">${[['cont', '🌍', t('Châu lục', 'Continents')], ['map', '🗺️', t('Bản đồ', 'Map')], ['pass', '🛂', t('Hộ chiếu', 'Passport')]].map(([k, ic, n]) => `<button class="pp-wt${S.wv === k ? ' on' : ''}" data-wv="${k}">${ic} ${n}</button>`).join('')}</div>`);
-  if (lv === 'world' && S.wv === 'map') { h.push(`<div id="ppMapWrap">${mapSummary()}<div class="pp-map" id="ppMapBox"><div class="dim pp-maploading">${t('Đang vẽ bản đồ…', 'Drawing the map…')}</div></div>${mapLegend()}</div>`); root.innerHTML = h.join(''); import('./pass-map.js').then(M => { if (active && S.lv === 'world' && S.wv === 'map') fillMap(M); }); return; }
+  if (lv === 'world' && S.wv === 'map') { h.push(`<div id="ppMapWrap">${mapSummary()}<div class="pp-map" id="ppMapBox"><div class="dim pp-maploading">${t('Đang vẽ bản đồ…', 'Drawing the map…')}</div></div><div class="pp-mapinfo dim" id="ppMapInfo" aria-live="polite"></div>${mapLegend()}</div>`); root.innerHTML = h.join(''); import('./pass-map.js').then(M => { if (active && S.lv === 'world' && S.wv === 'map') fillMap(M); }); return; }
   if (lv === 'world' && S.wv === 'pass') { h.push(passHtml()); root.innerHTML = h.join(''); $$('.ppFlag', root).forEach(cv => drawFlag(cv, cv.dataset.cc)); return; }
   if (lv === 'world') h.push(funHtml());
   if (lv !== 'ctry') {
@@ -485,21 +486,21 @@ function rankBar(c) {
     <small class="dim">${nx ? t(`Còn ${need} thẻ nữa tới dấu ${rname(nx)} (+${nx.coins} xu)`, `${need} more cards for the ${rname(nx)} stamp (+${nx.coins} coins)`) : t('Đã đủ thẻ: dấu cao nhất 💎', 'Complete: the top stamp 💎')}</small><i class="pp-rb"><b style="width:${pct}%"></b></i></div></div>`;
 }
 const mapTiers = () => Object.keys(CC).map(tierOf);
-function mapSummary() { const tr = mapTiers(), lit = tr.filter(k => k === 4).length; return `<div class="pp-mapsum"><b>🗺️ ${t(`${lit}/${tr.length} nước đã sáng`, `${lit}/${tr.length} countries lit`)}</b><small class="dim">${t('Đủ thẻ thì nước sáng lên 💎. Chạm vào ghim để vào nước đó.', 'Collect every card to light a country up 💎. Tap a pin to open that country.')}</small></div>`; }
+function mapSummary() { const tr = mapTiers(), lit = tr.filter(k => k === 4).length; return `<div class="pp-mapsum"><b>🗺️ ${t(`${lit}/${tr.length} nước đã sáng`, `${lit}/${tr.length} countries lit`)}</b><small class="dim">${t('Đủ thẻ thì cả nước sáng lên 💎. Chạm vào nước đã tô màu để vào; kéo để di chuyển, lăn chuột hoặc dùng hai ngón để thu phóng, phóng to sẽ thấy mã nước 3 chữ cái.', 'Collect every card to light a whole country up 💎. Tap a colored country to open it; drag to pan, scroll or pinch to zoom, and zoom in to see 3-letter country codes.')}</small></div>`; }
 function mapLegend() { return `<div class="pp-legend"><span><i class="lg t0"></i>${t('Chưa có dấu', 'No stamp')}</span>${RANKS.map((r, i) => `<span><i class="lg t${i + 1}"></i>${r.ic} ${rname(r)} ${r.pct}%</span>`).join('')}</div>`; }
-function fillMap(M) {
+async function fillMap(M) {
   const box = $('#ppMapBox', root); if (!box) return;
-  const tiers = {}; for (const c of Object.keys(CC)) if (M.MAPC[c]) tiers[c] = tierOf(c);
-  const cv = document.createElement('canvas'); cv.className = 'pp-mapcv'; cv.setAttribute('aria-hidden', 'true');
-  M.paintMap(cv, tiers, { land: '#565c92', tier: ['#d9c8ef', '#cd7f32', '#c9d1e2', '#ffd84d', '#5be0ff'] });
-  box.innerHTML = ''; box.append(cv);
-  for (const c of Object.keys(CC)) {
-    if (!M.MAPC[c]) continue; const [x, y] = M.pinPos(c), k = tiers[c], b = document.createElement('button');
-    b.className = `pp-pin t${k}`; b.dataset.cc = c; b.style.left = x + '%'; b.style.top = y + '%';
-    b.title = `${CC[c][uiLang === 'vi' ? 0 : 1]} · ${cown(c)}/${ctot(c)}`; b.setAttribute('aria-label', b.title); b.innerHTML = `<i>${k ? RANKS[k - 1].ic : ''}</i>`;
-    box.append(b);
-  }
+  const tiers = {}, byIso = {}; for (const c of Object.keys(CC)) { const iso = CC2ISO[c]; if (iso) { tiers[iso] = tierOf(c); byIso[iso] = c; } }
+  const info = $('#ppMapInfo', root), nm = c => (byIso[c.iso] ? CC[byIso[c.iso]][uiLang === 'vi' ? 0 : 1] : c.name);
+  const show = (c, hover) => {
+    if (!info) return; if (!c) { if (!hover) info.textContent = ''; return; }
+    const cc = byIso[c.iso], k = cc ? tierOf(cc) : 0;
+    info.textContent = `${nm(c)}${c.iso ? ' · ' + c.iso : ''} — ${cc ? `${cown(cc)}/${ctot(cc)} ${t('thẻ', 'cards')} · ${pctOf(cc)}%${k ? ' · ' + RANKS[k - 1].ic + ' ' + rname(RANKS[k - 1]) : ''}` : t('sắp có', 'coming soon')}`;
+  };
+  try { await M.createMap(box, { tiers, colors: { land: '#565c92', border: 'rgba(18,14,46,.65)', glow: '#5be0ff', tier: ['#d9c8ef', '#cd7f32', '#c9d1e2', '#ffd84d', '#5be0ff'] }, onInfo: show, onPick: iso => openCountry(byIso[iso]) }); }
+  catch { box.innerHTML = `<div class="dim pp-maploading">${t('Không tải được dữ liệu bản đồ. Hãy kiểm tra mạng rồi thử lại.', 'Could not load the map data. Check your connection and try again.')}</div>`; }
 }
+function openCountry(cc) { if (!CC[cc]) return; S.cc = cc; S.cont = CC_CONT[cc]; S.reg = CC_REG[cc]; S.group = 1; S.lv = 'ctry'; go(); window.scrollTo(0, 0); }
 function passHtml() {
   const ccs = Object.keys(CC), have = ccs.reduce((n, c) => n + tierOf(c), 0);
   return `<div class="pp-mapsum"><b>🛂 ${t('Hộ chiếu của bạn', 'Your passport')}: ${have}/${ccs.length * 4} ${t('dấu', 'stamps')}</b><small class="dim">${t(`Đã nhận ${rankCoins()} xu từ dấu hạng. Mỗi nước có 4 dấu: Đồng 25%, Bạc 50%, Vàng 75%, Kim cương 100%.`, `${rankCoins()} coins earned from rank stamps. Each country has 4 stamps: Bronze 25%, Silver 50%, Gold 75%, Diamond 100%.`)}</small></div>
@@ -575,7 +576,7 @@ export function init() {
     if (b.dataset.rg) { // chọn khu vực: nếu đang xem nước ở khu vực khác thì chuyển sang nước đầu tiên của khu vực này
       S.reg = b.dataset.rg; S.lv = 'reg'; draw(); window.scrollTo(0, 0); return;
     }
-    if (b.dataset.cc) { S.cc = b.dataset.cc; S.cont = CC_CONT[S.cc]; S.reg = CC_REG[S.cc]; S.group = 1; S.lv = 'ctry'; go(); window.scrollTo(0, 0); return; }
+    if (b.dataset.cc) { openCountry(b.dataset.cc); return; }
     if (b.dataset.nav) { S.lv = b.dataset.nav; draw(); window.scrollTo(0, 0); return; }
     if (b.dataset.g) { S.group = +b.dataset.g; draw(); return; }
     if (b.dataset.story) { openStory(b.dataset.story); return; }

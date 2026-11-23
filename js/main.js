@@ -1,4 +1,4 @@
-﻿import { $, $$, bus, LANGS, getLang, setLang, toast, loadSimplifier } from './util.js';
+import { $, $$, bus, LANGS, getLang, setLang, toast, loadSimplifier } from './util.js';
 import * as store from './store.js';
 import { loadPrefs, prefs, savePrefs } from './prefs.js';
 import * as player from './player.js';
@@ -12,6 +12,7 @@ import * as speak from './speak.js';
 import * as shadowrec from './shadowrec.js';
 import * as review from './review.js';
 import * as backup from './backup.js';
+import * as prompts from './prompts.js';
 import * as subedit from './subedit.js';
 import * as subpaste from './subpaste.js';
 import * as segments from './segments.js';
@@ -179,7 +180,7 @@ loadPrefs();
 syncSfx();
 bus.on('store', c => { if (c === 'prefs' || c === '*') { loadPrefs(); bus.emit('prefs'); } });
 renderLangs();
-player.init(); side.init(); library.init(); notes.init(); quests.init(); alignui.init(); dictation.init(); speak.init(); shadowrec.init(); review.init(); backup.init(); subedit.init(); subpaste.init(); segments.init(); trash.init(); lookup.init(); vocab.init(); find.init(); shortcuts.init(); offline.init(); readaloud.init(); world.init(); cueedit.init(); music.init(); focusmode.init(); videx.init(); passport.init(); lame.init(); skin.init(); lbl.init();
+player.init(); side.init(); library.init(); notes.init(); quests.init(); alignui.init(); dictation.init(); speak.init(); shadowrec.init(); review.init(); backup.init(); subedit.init(); subpaste.init(); segments.init(); trash.init(); lookup.init(); vocab.init(); find.init(); shortcuts.init(); offline.init(); readaloud.init(); world.init(); cueedit.init(); music.init(); focusmode.init(); videx.init(); passport.init(); lame.init(); skin.init(); lbl.init(); prompts.init();
 show('library');
 initFirebase();
 loadSimplifier(); // sẵn sàng đổi phồn thể → giản thể (chỉ ~100 KB)

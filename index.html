@@ -213,7 +213,7 @@
       <div id="lessonBox" hidden></div>
       <div id="pronBox" hidden></div>
       <div id="libMain">
-      <div class="row"><button class="btn primary" id="libAdd">＋ Thêm video</button><button class="btn" id="libLink">🔗 Thêm bằng link</button><button class="btn" id="newFolder" title="Tạo một mục (thư mục) mới để gom video, tài liệu hoặc ghi chú">📁 Mục mới</button><button class="btn" id="libFind" title="Tìm một từ hay một câu trong mọi phụ đề, ghi chú và thẻ">🔎 Tìm câu</button><input id="libSearch" type="search" placeholder="🔍 Tìm theo tên…" style="flex:1;min-width:120px;max-width:260px"><span class="grow"></span><span id="libUsage" class="dim"></span></div>
+      <div class="row"><button class="btn primary" id="libAdd">＋ Thêm video</button><button class="btn" id="libLink">🔗 Thêm bằng link</button><button class="btn" id="newFolder" title="Tạo một mục (thư mục) mới để gom video, tài liệu hoặc ghi chú">📁 Mục mới</button><button class="btn" id="libFind" title="Tìm một từ hay một câu trong mọi phụ đề, ghi chú và thẻ">🔎 Tìm câu</button><input id="libSearch" type="search" placeholder="🔍 Tìm theo tên…" style="flex:1;min-width:120px;max-width:260px"></div>
       <div id="libItems" class="lbs"></div>
       </div>
     </div>
@@ -579,12 +579,28 @@
     <div class="dim" id="offStat"></div>
     <div class="row"><button id="offGo" class="btn primary">⬇ Tải mục đã chọn</button></div>
     </div></details>
-    <details class="uigrp"><summary>💾 Dữ liệu & tài khoản</summary><div class="uigb"><h4>Tài khoản video</h4>
+    <details class="uigrp"><summary>🧠 Prompt tổng</summary><div class="uigb">
+    <small class="dim">Một chỗ chứa mọi prompt để nhờ ChatGPT / Claude soạn nội dung đúng cú pháp của app. Chọn loại, điền các ô, sửa nội dung prompt theo ý bạn (tự lưu, đồng bộ khi đã đăng nhập), rồi bấm “Chép prompt”.</small>
+    <div class="uirow"><span>Loại nội dung</span><select id="pgType"></select></div>
+    <div class="uirow"><span>Ngôn ngữ</span><select id="pgLang"></select></div>
+    <div class="uirow"><span>Trình độ</span><input id="pgLevel" type="text" placeholder="vd: sơ cấp, HSK3, trung cấp"></div>
+    <div class="uirow"><span>Chủ đề</span><input id="pgTopic" type="text" placeholder="vd: ẩm thực, du lịch, công nghệ"></div>
+    <div class="uirow"><span>Số lượng</span><input id="pgN" type="number" min="1" max="60" style="width:72px"></div>
+    <div class="uirow"><span>Số bài</span><input id="pgPosts" type="number" min="1" max="30" style="width:72px"></div>
+    <div class="uirow" id="pgPassOnly" hidden><span>Nước / châu</span><span class="row"><input id="pgCountry" type="text" placeholder="Tên nước" style="width:48%"><input id="pgCont" type="text" placeholder="Châu" style="width:48%"></span></div>
+    <label class="dim">Nguồn (tùy chọn): dán văn bản, phụ đề hoặc tài liệu</label><textarea id="pgSrc" rows="3" spellcheck="false"></textarea>
+    <label class="dim">Dặn riêng của bạn (thêm vào đầu mọi prompt, ví dụ “luôn dùng chữ giản thể, giọng thân mật”)</label><textarea id="pgCommon" rows="2" spellcheck="false"></textarea>
+    <label class="dim">Nội dung prompt (sửa được). Biến dùng được: <span id="pgVars"></span></label><textarea id="pgTpl" class="mono" rows="12" spellcheck="false"></textarea>
+    <small class="dim" id="pgNote"></small>
+    <div class="row"><button id="pgCopy" class="btn primary">📋 Chép prompt</button><button id="pgShow" class="btn">👁 Xem bản đã điền</button><button id="pgReset" class="btn">↩ Mặc định</button></div>
+    <textarea id="pgOut" class="mono" rows="8" readonly hidden spellcheck="false"></textarea>
+    </div></details>    <details class="uigrp"><summary>💾 Dữ liệu & tài khoản</summary><div class="uigb"><h4>Tài khoản video</h4>
     <div class="uirow"><span>YouTube / TikTok</span><button class="btn" id="loginOpen">🔑 Đăng nhập…</button></div>
 <h4>Dữ liệu</h4>
     <div class="row"><button id="btnData" class="btn">💾 Sao lưu và khôi phục…</button><button id="btnTrash" class="btn">🗑 Thùng rác</button></div>
     <div class="uirow"><span>Nhắc sao lưu</span><div class="seg uiseg" data-k="bk"><button data-v="0">Tắt</button><button data-v="7">Mỗi tuần</button><button data-v="14">2 tuần</button><button data-v="30">Mỗi tháng</button></div></div>
     <small class="dim" id="bkLast"></small>
+    <small class="dim" id="setUsage"></small>
     <div class="row"><button id="uiReset" class="btn danger">Đặt lại giao diện</button></div>
     <small class="dim">Cài đặt giao diện lưu riêng trên từng thiết bị. Mục tiêu và số thẻ mới được đồng bộ khi đã đăng nhập.</small>
     </div></details>

@@ -866,8 +866,8 @@ body.vx-on #cueList { display: none; }
 .pp-rb { display: block; height: 10px; background: rgba(0, 0, 0, .3); border: 2px solid var(--line); }
 .pp-rb b { display: block; height: 100%; background: linear-gradient(90deg, #cd7f32, #ffd84d, #5be0ff); }
 .pp-mapsum { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 8px; }
-.pp-map { position: relative; width: 100%; aspect-ratio: 288 / 114; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #1c2a78, #0d1240 75%); border: 4px solid var(--line); }
-.pp-mapcv { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.pp-map { position: relative; width: 100%; min-height: 120px; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #1c2a78, #0d1240 75%); border: 4px solid var(--line); cursor: grab; touch-action: none; user-select: none; }
+.pp-mapcv { display: block; touch-action: none; }
 .pp-maploading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .pp-pin { position: absolute; transform: translate(-50%, -50%); width: 16px; height: 16px; padding: 0; border-radius: 50%; border: 3px solid #fff; background: #d9c8ef; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 0 rgba(0, 0, 0, .4); animation: ppPinPulse 2.4s ease-in-out infinite; }
 .pp-pin::after { content: ''; position: absolute; inset: -9px; }
@@ -914,3 +914,15 @@ body.vx-on #cueList { display: none; }
 @keyframes lmBubble { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.8); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; transform: translate(-50%, -4px); } 100% { opacity: 0; transform: translate(-50%, -10px); } }
 :root[data-motion=off] .lameBubble { animation: none; opacity: 1; }
 :root[data-motion=off] .lameBubble { transform: translateX(-50%); }
+
+.pp-mapctl { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 4px; z-index: 2; }
+.pp-mapctl button { width: 34px; height: 34px; font: inherit; font-size: 18px; line-height: 1; cursor: pointer; color: var(--text); background: var(--panel); border: 3px solid var(--line); padding: 0; }
+.pp-mapctl button:hover { border-color: var(--hl, #ffd84d); }
+.pp-mapinfo { min-height: 22px; margin: 6px 0 2px; font-size: 14px; }
+.pp-map:active { cursor: grabbing; }
+/* Cài đặt → Prompt tổng */
+.uigb textarea { width: 100%; box-sizing: border-box; font: inherit; color: var(--text); background: var(--panel2, rgba(0, 0, 0, .25)); border: 3px solid var(--line); padding: 6px 8px; resize: vertical; }
+.uigb textarea.mono { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; line-height: 1.45; }
+.uigb .uirow input[type=text], .uigb .uirow input[type=number], .uigb .uirow select { font: inherit; color: var(--text); background: var(--panel2, rgba(0, 0, 0, .25)); border: 3px solid var(--line); padding: 4px 8px; min-width: 0; }
+.uigb .uirow input[type=text] { flex: 1; max-width: 62%; }
+.uigb .uirow[hidden] { display: none; }

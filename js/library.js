@@ -76,7 +76,6 @@ function render() {
     if (!a) { b.textContent = none; return; }
     store.hasAsset(a).then(ok => { b.textContent = ok ? '✓ có trên máy' : none; });
   });
-  store.usage().then(u => { $('#libUsage').textContent = u ? `Bộ nhớ app: ${fmtMB(u.used)} / ${fmtMB(u.quota)}` : ''; });
 }
 
 function card(i) {
