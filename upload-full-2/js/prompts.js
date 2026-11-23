@@ -5,7 +5,9 @@
 // Bản mặc định tự đổi theo ngôn ngữ đang chọn chừng nào bạn chưa sửa.
 import { $, toast, bus, LANGS } from './util.js';
 import * as store from './store.js';
-import { setPrompt, newsPrompt, socialPrompt, vocabBankPrompt, KIND_ORDER, KIND_INFO, EX } from './exprompts.js';
+import * as EP from './exprompts.js'; // nhập theo không gian tên: nếu máy chủ còn bản exprompts.js cũ (chưa tải lên đủ gói) thì thiếu một prompt chứ app không bị chết khi khởi động
+const { setPrompt, newsPrompt, socialPrompt, KIND_ORDER, KIND_INFO, EX } = EP;
+const vocabBankPrompt = EP.vocabBankPrompt || (() => 'Chưa có prompt này: file exprompts.js trên máy chủ còn bản cũ, hãy tải lên đủ các gói cập nhật.');
 
 // Biến dùng được trong mọi prompt (viết trong dấu { }): sẽ được thay bằng giá trị bạn nhập ở các ô phía trên
 const VARS = ['chung', 'ngôn_ngữ', 'trình_độ', 'chủ_đề', 'số_lượng', 'số_bài', 'nguồn', 'tên_nước', 'châu'];
