@@ -1,7 +1,7 @@
-// SCM: game luyện kỹ năng chuỗi cung ứng. 4 lĩnh vực × 3 độ khó = 12 case thực chiến chạy theo đồng hồ thật.
+// SCM: game luyện kỹ năng chuỗi cung ứng. 6 lĩnh vực × 3 độ khó = 18 case thực chiến chạy theo đồng hồ thật.
 // Mỗi case có hồ sơ (bảng, hình), kế hoạch thời gian với các mốc khóa bước, form nhiều bước (tick, số, chọn, ma trận),
 // sự kiện cập nhật giữa chừng ở case Khó, chấm điểm theo từng ô, chất lượng quyết định và 1–3 sao.
-// Nội dung case: js/scm-cases.json (trích từ SC_Case_Bank.docx bằng tools/scm/extract-cases.ps1); đáp án: js/scm-keys.js.
+// Nội dung case: js/scm-cases.json và js/scm-cases2.json (trích từ SC_Case_Bank.docx và SC_Case_Bank_2_Analytics_Planning.docx bằng tools/scm/extract-cases.ps1); đáp án: js/scm-keys.js.
 import { $, $$, esc, toast, bus } from './util.js';
 import * as sfx from './sfx.js';
 import * as store from './store.js';
@@ -13,11 +13,15 @@ const FIELDS = {
   B: { vi: 'Thanh toán quốc tế', en: 'International payment', ic: 'f-pay', blurb: 'Chuyển tiền, thư tín dụng L/C, chọn điều khoản thanh toán.' },
   C: { vi: 'Mua hàng & tìm nguồn', en: 'Procurement & sourcing', ic: 'f-buy', blurb: 'So báo giá, TCO, hợp đồng chỉ số giá, nhiều nguồn cung.' },
   D: { vi: 'Khởi nghiệp & tài chính', en: 'Start-up & finance', ic: 'f-fin', blurb: 'Chọn mặt bằng, hình thức kinh doanh, kho lạnh và cấu trúc vốn.' },
+  E: { vi: 'Phân tích chuỗi cung ứng', en: 'Supply chain analytics', ic: 'f-data', blurb: 'Làm sạch dữ liệu, KPI giao hàng, dự báo có kiểm soát lệch, giải thích chênh lệch cước phí.' },
+  F: { vi: 'Lập kế hoạch & tối ưu', en: 'Planning & optimization', ic: 'f-plan', blurb: 'Xếp hàng lên xe, cỡ lô đặt hàng MRP, xếp lịch cầu bến dưới các ràng buộc cứng.' },
 };
 const LEVELS = { 1: { vi: 'Dễ', ic: 'lv-easy', steps: 4 }, 2: { vi: 'Trung bình', ic: 'lv-med', steps: 5 }, 3: { vi: 'Khó', ic: 'lv-hard', steps: 6 } };
 const SPEEDS = { real: ['⏱ Thời gian thực', 1, 'Đồng hồ chạy đúng giờ thật: 3 ngày trong case là 3 ngày ngoài đời.'], fast: ['⏩ Nhanh ×24', 24, '1 giờ thật bằng 1 ngày trong case. Hợp để chơi trọn một case trong buổi.'], free: ['🧘 Tự do (không giới hạn giờ)', 0, 'Không khóa bước, không hết hạn. Luyện tập thoải mái nhưng vẫn được chấm sao.'] };
-const ORDER = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3', 'D1', 'D2', 'D3'];
-const SKEY = 'scm:v1', STAR_COINS = [0, 20, 45, 80];
+const ORDER = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3', 'D1', 'D2', 'D3', 'E1', 'E2', 'E3', 'F1', 'F2', 'F3'];
+const FIELD_IDS = 'ABCDEF';
+const SKEY = 'scm:v1', LV_COINS = { 1: [0, 200, 500, 1000], 2: [0, 400, 1000, 2000], 3: [0, 800, 2000, 4000] }; // xu cộng dồn theo số sao đạt được, nhân theo độ khó (Easy / Medium / Hard)
+const reward = (code, s) => (LV_COINS[+String(code).charAt(1)] || LV_COINS[1])[s] || 0;
 let DATA = null, S = { code: '', tab: 'file', home: true }, root = null, active = false, timer = 0, saveT = 0, dirty = false;
 let DOC = load();
 
@@ -32,23 +36,26 @@ function pull() { // gộp với máy khác: mỗi case lấy lượt chơi mớ
   if ((r.t || 0) > (DOC.t || 0) && r.speed) { DOC.speed = r.speed; DOC.all = !!r.all; }
   if (ch) { try { localStorage.setItem(SKEY, JSON.stringify(DOC)); } catch { /* bỏ qua */ } }
 }
-export const coins = () => Object.values(DOC.best).reduce((n, s) => n + (STAR_COINS[s] || 0), 0); // xu thưởng từ sao (Passport cộng vào số xu)
+export const coins = () => Object.entries(DOC.best).reduce((n, [c, s]) => n + reward(c, s), 0); // xu thưởng từ sao (Passport cộng vào số xu)
 
 // ---------- dữ liệu case ----------
 async function data() {
   if (DATA) return DATA;
-  const j = await (await fetch(new URL('./scm-cases.json', import.meta.url))).json(); DATA = {};
+  const [j1, j2] = await Promise.all(['./scm-cases.json', './scm-cases2.json'].map(async f => (await fetch(new URL(f, import.meta.url))).json())); const j = { cases: { ...j1.cases, ...j2.cases } }; DATA = {};
   for (const code of ORDER) {
     const c = j.cases[code]; if (!c) continue;
     const meta = (c.head.find(b => b.t === 'table') || { rows: [[], []] }).rows[1] || [], days = +(/(\d+)\s*days?/.exec(meta[2] || '') || [0, 3])[1];
     const brief = (c.head.find(b => b.t === 'p' && /^Brief\./.test(b.x)) || { x: '' }).x.replace(/^Brief\.\s*/, '');
     const pt = (c.plan.find(b => b.t === 'table') || { rows: [] }).rows.slice(1), ms = []; let updIdx = 0;
+    const d0 = +((/\(\w{3}\s+(\d+)/.exec(meta[2] || '') || [0, 0])[1]); // ngày bắt đầu của case (dùng khi mốc ghi bằng ngày giờ cụ thể)
     for (const r of pt) {
-      const h = /\+(\d+)\s*(h|days?)/.exec(r[1] || ''), st = /Steps?\s+(\d)(?:\s*[–-]\s*(\d))?/.exec(r[2] || ''), id = /^(M\d)/.exec(r[0] || '');
+      let h = /\+(\d+)\s*(h|days?)/.exec(r[1] || ''), hours = h ? +h[1] * (h[2][0] === 'h' ? 1 : 24) : 0;
+      if (!h) { const ab = /\w{3}\s+(\d+)\s+\w{3}\s+(\d{1,2}):(\d\d)/.exec(r[1] || ''); if (ab && d0) { h = ab; hours = (+ab[1] - d0) * 24 + +ab[2] + +ab[3] / 60; } }
+      const st = /Steps?\s+(\d)(?:\s*[–-]\s*(\d))?/.exec(r[2] || ''), id = /^(M\d)/.exec(r[0] || '');
       if (!h || !st || !id) continue;
       const steps = []; for (let k = +st[1]; k <= +(st[2] || st[1]); k++) steps.push(k);
-      ms.push({ id: id[1], name: r[0].replace(/^M\d\s*[–-]\s*/, ''), h: +h[1] * (h[2][0] === 'h' ? 1 : 24), steps });
-      const u = /Update released at M(\d)/.exec((r[2] || '') + ' ' + (r[0] || '')); if (u) updIdx = +u[1];
+      ms.push({ id: id[1], name: r[0].replace(/^M\d\s*[–-]\s*/, ''), h: hours, steps });
+      const txt = (r[2] || '') + ' ' + (r[0] || ''), u = /Update released at M(\d)/.exec(txt); if (u) updIdx = +u[1]; else if (/released/i.test(txt)) updIdx = +id[1].slice(1) + 1; // "Exhibit 4 released" ở mốc Mk: hiện từ khi mốc Mk hết hạn
     }
     const updH = updIdx ? (updIdx >= 2 ? (ms[updIdx - 2] || { h: 0 }).h : 0) : -1; // cập nhật phát hành khi mốc liền trước hết hạn (đầu cửa sổ của mốc nêu tên)
     const stars = (c.stars.find(b => b.t === 'table') || { rows: [] }).rows.map(r => r.join(' ')).join('\n');
@@ -73,8 +80,8 @@ function okVal(spec, raw) {
   if (raw == null || String(raw).trim() === '') return false;
   if (spec.nums) { const got = (String(raw).match(/-?[\d.,]+/g) || []).map(parseNum).filter(Number.isFinite); return spec.nums.every(n => got.some(g => Math.abs(g - n) <= (spec.tol ?? 1))); }
   if (spec.v != null) { const n = parseNum(raw); if (!Number.isFinite(n)) return false; const tol = spec.tol != null ? spec.tol : Math.abs(spec.v) * (spec.rel ?? 0.01); return Math.abs(n - spec.v) <= tol + 1e-9; }
-  if (spec.set) { const a = new Set(String(raw).toUpperCase().split(/[^A-Z0-9+]+/).filter(Boolean)), b = new Set(spec.set); return a.size === b.size && [...a].every(x => b.has(x)); }
-  if (spec.s != null) { const p = nsStrong(raw), k = nsStrong(spec.s); return p === k || (k.length >= 5 && p.includes(k)) || (k === 'EQUITYCAP' && p.includes('EQUITY')); }
+  if (spec.set) { const a = new Set(String(raw).toUpperCase().split(spec.set.some(x => x.includes('+')) ? /[^A-Z0-9+]+/ : /[^A-Z0-9]+/).filter(Boolean)), b = new Set(spec.set); return a.size === b.size && [...a].every(x => b.has(x)); }
+  if (spec.s != null) { const p = nsStrong(raw), k = nsStrong(spec.s); return p === k || (k.length >= 5 && p.includes(k)) || (k === 'EQUITYCAP' && p.includes('EQUITY')) || (/^W\d$/.test(k) && p === k.slice(1)); } // "W5" nhận cả "5"
   return false;
 }
 // chấm toàn bộ một lượt chơi
@@ -94,7 +101,7 @@ function grade(cs, run) {
       for (let [k, v] of specs) {
         const share = (v.w ?? 1) / W * P, raw = A(k); let part = 0;
         if (v.eng) { try { const x = v.eng({ a, s }); if (typeof x === 'string') v = { ...v, s: x, v: undefined }; else if (Number.isFinite(x)) v = { ...v, v: x }; } catch { /* dùng giá trị mặc định */ } } // đáp án tính lại từ lựa chọn của người chơi
-        if (okVal(v, raw)) part = 1; else if (v.ft) { try { const fv = new Function('a', 's', 'return ' + v.ft)(a, s); if (Number.isFinite(fv) && okVal({ v: fv, tol: v.tol, rel: v.rel ?? 0.01 }, raw)) part = 0.6; } catch { /* bỏ qua */ } }
+        if (okVal(v, raw)) part = 1; else if (v.pf) { try { part = Math.max(0, Math.min(1, v.pf({ a, s }) || 0)); } catch { part = 0; } } else if (v.ft) { try { const fv = new Function('a', 's', 'return ' + v.ft)(a, s); if (Number.isFinite(fv) && okVal({ v: fv, tol: v.tol, rel: v.rel ?? 0.01 }, raw)) part = 0.6; } catch { /* bỏ qua */ } }
         got += share * part; detail.push({ lab: k, ok: part === 1, part, raw });
         if (run.cert[k] && part < 1 && raw != null && String(raw).trim() !== '') certWrong++;
       }
@@ -140,11 +147,11 @@ function drawHome(D) {
   clearInterval(timer); timer = 0;
   const done = ORDER.filter(c => DOC.best[c]).length, st = Object.values(DOC.best).reduce((n, v) => n + v, 0);
   let h = `<div class="scm-hero"><canvas id="scmBanner" class="scm-banner" aria-label="Cảng biển"></canvas><div class="scm-title"><h2>📦 SCM · Chuỗi cung ứng thực chiến</h2>
-    <p>12 tình huống thật từ hải quan, thanh toán quốc tế, mua hàng đến tài chính. Mỗi case chạy theo <b>đồng hồ thật</b>: đọc hồ sơ, làm từng bước, bị khóa theo mốc, đối mặt cập nhật giữa chừng rồi nhận 1–3 sao.</p></div></div>
-    <div class="scm-sum"><span>⭐ ${st}/36</span><span>✅ ${done}/12 ${'case có sao'}</span><span>🪙 +${coins()} ${'xu từ SCM'}</span><span class="grow"></span>
+    <p>18 tình huống thật từ hải quan, thanh toán quốc tế, mua hàng, tài chính đến phân tích dữ liệu và lập kế hoạch. Mỗi case chạy theo <b>đồng hồ thật</b>: đọc hồ sơ, làm từng bước, bị khóa theo mốc, đối mặt cập nhật giữa chừng rồi nhận 1–3 sao.</p></div></div>
+    <div class="scm-sum"><span>⭐ ${st}/${ORDER.length * 3}</span><span>✅ ${done}/${ORDER.length} ${'case có sao'}</span><span>🪙 +${coins()} ${'xu từ SCM'}</span><span class="grow"></span>
       <label class="scm-opt">${'Tốc độ mặc định'} <select id="scmSpeed">${Object.entries(SPEEDS).map(([k, v]) => `<option value="${k}" ${DOC.speed === k ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label>
       <label class="scm-opt"><input type="checkbox" id="scmAll" ${DOC.all ? 'checked' : ''}> ${'Mở hết case'}</label></div>`;
-  for (const f of 'ABCD') {
+  for (const f of FIELD_IDS) {
     h += `<section class="scm-field"><header>${`<span class="scm-fi" data-art="${FIELDS[f].ic}" data-sc="4"></span>`}<div><b>${FIELDS[f].vi}</b><small class="dim">${FIELDS[f].en} · ${FIELDS[f].blurb}</small></div></header><div class="scm-cards">`;
     for (let l = 1; l <= 3; l++) {
       const code = f + l, cs = D[code]; if (!cs) continue; const run = DOC.runs[code], open = unlocked(code), best = DOC.best[code] || 0;
@@ -160,7 +167,7 @@ function drawIntro(cs) {
   clearInterval(timer); timer = 0;
   root.innerHTML = `<div class="scm-top"><button class="btn" data-go="home">← Danh sách case</button><b class="grow">${cs.code} · ${esc(cs.name)}</b></div>
     <div class="scm-intro"><span class="scm-ci big" data-art="${cs.code}" data-sc="8"></span><div><div class="scm-cc">${FIELDS[cs.f].vi} · <span data-art="${LEVELS[cs.lv].ic}" data-sc="1"></span>${LEVELS[cs.lv].vi}</div><h3>${esc(cs.name)}</h3>
-      <p class="gt">${esc(cs.brief)}</p><p class="dim">Thời gian: <b>${cs.days} ngày</b> · ${cs.steps.length} bước · ${cs.ms.length} mốc khóa${cs.updH >= 0 ? ' · <b>có cập nhật giữa chừng</b>' : ''}</p></div></div>
+      <p class="gt">${esc(cs.brief)}</p><p class="dim">Thời gian: <b>${cs.days} ngày</b> · ${cs.steps.length} bước · ${cs.ms.length} mốc khóa${cs.updH >= 0 ? ' · <b>có cập nhật giữa chừng</b>' : ''}</p><p class="scm-rw">🪙 Thưởng xu: ${[1, 2, 3].map(s => `<b>${'★'.repeat(s)} +${reward(cs.code, s) - reward(cs.code, s - 1)}</b>`).join(' · ')} <small class="dim">(mỗi mức sao chỉ nhận một lần, chơi lại để lên sao thì nhận phần chênh)</small></p></div></div>
     <div class="scm-spd"><b>Chọn nhịp thời gian</b>${Object.entries(SPEEDS).map(([k, v]) => `<label class="scm-sp"><input type="radio" name="scmSp" value="${k}" ${DOC.speed === k ? 'checked' : ''}> <span><b>${v[0]}</b><small class="dim">${v[2]}${v[1] ? ` Hết hạn sau ${fmtD(realMs({ speed: k }, cs.hours)).replace(/:\d\d$/, '')}.` : ''}</small></span></label>`).join('')}</div>
     <div class="row"><button class="btn primary" data-act="start">▶ Bắt đầu case</button></div>`;
   paintIcons(root);
@@ -169,8 +176,8 @@ function fileHtml(cs, run) {
   const vis = updVisible(cs, run); let hide = false, h = '';
   for (let i = 0; i < cs.file.length; i++) {
     const b = cs.file[i];
-    if (b.t === 'p' && /^Exhibit \d+\s*[–-].*[Uu]pdate/.test(b.x)) hide = true; else if (b.t === 'p' && /^(Exhibit|Figure) \d+/.test(b.x) && hide) hide = false;
-    if (hide && !vis) { if (b.t === 'p' && /Update/.test(b.x)) h += `<div class="scm-upd locked">🔔 Cập nhật sẽ phát hành khi bước tiếp theo mở. Hãy hoàn thành phần trước.</div>`; continue; }
+    if (b.t === 'p' && /^Exhibit \d+\s*[–-].*([Uu]pdate|correction|released)/.test(b.x)) hide = true; else if (b.t === 'p' && /^(Exhibit|Figure) \d+/.test(b.x) && hide) hide = false;
+    if (hide && !vis) { if (b.t === 'p' && /Update|correction|released/i.test(b.x)) h +=`<div class="scm-upd locked">🔔 Cập nhật sẽ phát hành khi bước tiếp theo mở. Hãy hoàn thành phần trước.</div>`; continue; }
     h += blockHtml(b, cs.file[i + 1]);
     if (b.t === 'img' && cs.file[i + 1] && /^Figure/.test(cs.file[i + 1].x || '')) i++;
   }
@@ -272,7 +279,7 @@ function submit(auto) {
   const cs = DATA[S.code], run = DOC.runs[S.code]; if (!run || run.sub) return;
   if (!auto) { const un = cs.steps.filter(st => !stepAnswered(st, run)).length; if (!confirm(un ? `Còn ${un} bước chưa điền. Nộp bài ngay? (ô trống tính 0 điểm)` : 'Nộp bài và chấm điểm? Sau khi nộp không sửa được.')) return; }
   const res = grade(cs, run); run.res = res; run.sub = true; run.t = Date.now();
-  const old = DOC.best[cs.code] || 0; if (res.stars > old) { DOC.best[cs.code] = res.stars; const gain = (STAR_COINS[res.stars] || 0) - (STAR_COINS[old] || 0); toast(`${'⭐'.repeat(res.stars)} ${cs.code}: ${res.stars} sao! +${gain} xu`, 4500); sfx.play('reward'); }
+  const old = DOC.best[cs.code] || 0; if (res.stars > old) { DOC.best[cs.code] = res.stars; const gain = reward(cs.code, res.stars) - reward(cs.code, old); toast(`${'⭐'.repeat(res.stars)} ${cs.code}: ${res.stars} sao! +${gain} xu`, 4500); sfx.play('reward'); }
   save(); bus.emit('lamefx', res.stars >= 2 ? 'cheer' : res.stars === 1 ? 'ok' : 'bad'); S.sol = false; draw();
 }
 function onInput(e) {

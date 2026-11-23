@@ -4,6 +4,7 @@
 //   dq(g) trả về { dq: 0..100, valid: true/false } — chất lượng quyết định và quyết định có hợp lệ không. g.s(khóa) = chữ đã chuẩn hóa, g.a(khóa) = số.
 //   ft dùng a('bước.bảng.dòng') để lấy số người chơi đã gõ.
 import { b3Decision, d3Decision, c3Eval, c3Optimum, c3Decision, a3Eval, a3Decision } from './scm-engines.js';
+import { KEYS2 } from './scm-keys2.js';
 const c3m = g => [1, 2, 3, 4].map(r => [1, 2, 3].map(c => g.a(`6.0.${r}.${c}`) || 0)); // ma trận phân bổ C3 người chơi nhập
 export const KEYS = {
   A1: {
@@ -138,3 +139,4 @@ export const KEYS = {
     dq: g => d3Decision(g.s('6.0.1'), g.s('6.0.2'), g.s('6.0.3')), // engine duyệt 18 tổ hợp, 3 giới hạn, dữ liệu đã cập nhật
   },
 };
+Object.assign(KEYS, KEYS2); // ngân hàng case 2: E1–E3 (Phân tích), F1–F3 (Lập kế hoạch)

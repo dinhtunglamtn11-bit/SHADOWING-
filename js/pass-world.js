@@ -25,7 +25,7 @@ export const WORLD = [
   { k: 'am', vi: 'Châu Mỹ', en: 'Americas', regions: [
     R('nca', 'Bắc Mỹ & Trung Mỹ', 'North & Central America', 'Hoa Kỳ|United States|us; Canada|Canada; México|Mexico; Guatemala|Guatemala; Belize|Belize; Honduras|Honduras; El Salvador|El Salvador; Nicaragua|Nicaragua; Costa Rica|Costa Rica; Panamá|Panama'),
     R('car', 'Ca-ri-bê', 'Caribbean', 'Cuba|Cuba; Jamaica|Jamaica; Haiti|Haiti; Cộng hòa Dominica|Dominican Republic; Bahamas|Bahamas; Barbados|Barbados; Trinidad và Tobago|Trinidad and Tobago; Saint Lucia|Saint Lucia; Saint Vincent và Grenadines|Saint Vincent and the Grenadines; Grenada|Grenada; Antigua và Barbuda|Antigua and Barbuda; Dominica|Dominica; Saint Kitts và Nevis|Saint Kitts and Nevis'),
-    R('sam', 'Nam Mỹ', 'South America', 'Brasil|Brazil; Argentina|Argentina; Colombia|Colombia; Peru|Peru; Venezuela|Venezuela; Chile|Chile; Ecuador|Ecuador; Bolivia|Bolivia; Paraguay|Paraguay; Uruguay|Uruguay; Guyana|Guyana; Suriname|Suriname'),
+    R('sam', 'Nam Mỹ', 'South America', 'Brasil|Brazil|br; Argentina|Argentina; Colombia|Colombia; Peru|Peru; Venezuela|Venezuela; Chile|Chile; Ecuador|Ecuador; Bolivia|Bolivia; Paraguay|Paraguay; Uruguay|Uruguay; Guyana|Guyana; Suriname|Suriname'),
   ] },
   { k: 'oc', vi: 'Châu Đại Dương', en: 'Oceania', regions: [
     R('oce', 'Châu Đại Dương (Úc)', 'Oceania (Australia)', 'Úc|Australia|au; New Zealand|New Zealand|nz; Papua New Guinea|Papua New Guinea; Fiji|Fiji; Quần đảo Solomon|Solomon Islands; Vanuatu|Vanuatu; Samoa|Samoa; Tonga|Tonga; Kiribati|Kiribati; Micronesia|Micronesia; Quần đảo Marshall|Marshall Islands; Palau|Palau; Nauru|Nauru; Tuvalu|Tuvalu'),

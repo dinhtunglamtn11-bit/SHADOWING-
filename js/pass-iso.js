@@ -18,4 +18,4 @@ export const ISO3 = {
   'United States of America': 'USA', 'Burkina Faso': 'BFA', 'Uruguay': 'URY', 'Uzbekistan': 'UZB', 'Venezuela': 'VEN', 'Yemen': 'YEM', 'Zambia': 'ZMB', 'Kosovo': 'XKX', 'N. Cyprus': '', 'Somaliland': '',
 };
 // mã nước của Passport -> mã ISO 3 chữ cái
-export const CC2ISO = { jp: 'JPN', kr: 'KOR', cn: 'CHN', vn: 'VNM', fr: 'FRA', eg: 'EGY', us: 'USA', nz: 'NZL', in: 'IND', my: 'MYS', ch: 'CHE', ly: 'LBY', au: 'AUS' };
+export const CC2ISO = { jp: 'JPN', kr: 'KOR', cn: 'CHN', vn: 'VNM', fr: 'FRA', eg: 'EGY', us: 'USA', nz: 'NZL', in: 'IND', my: 'MYS', ch: 'CHE', ly: 'LBY', au: 'AUS', br: 'BRA' };

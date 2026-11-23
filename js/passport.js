@@ -314,6 +314,10 @@ function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
     c.fillStyle = '#ce1126'; c.fillRect(0, 0, 64, 16); c.fillStyle = '#fff'; c.fillRect(0, 16, 64, 16); c.fillStyle = '#000'; c.fillRect(0, 32, 64, 16);
     c.fillStyle = '#c09300'; c.fillRect(29, 18, 6, 11); c.fillRect(24, 20, 5, 4); c.fillRect(35, 20, 5, 4); c.fillRect(26, 25, 12, 3); c.fillRect(30, 15, 4, 4); return;
   }
+  if (cc === 'br') { // cờ Brasil: nền lục, hình thoi vàng, vòng tròn xanh có dải trắng
+    c.fillStyle = '#009c3b'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#ffdf00'; c.beginPath(); c.moveTo(32, 5); c.lineTo(59, 24); c.lineTo(32, 43); c.lineTo(5, 24); c.closePath(); c.fill();
+    c.fillStyle = '#002776'; c.beginPath(); c.arc(32, 24, 11, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2.4; c.beginPath(); c.arc(32, 50, 28, Math.PI * 1.17, Math.PI * 1.83); c.stroke(); return;
+  }
   if (cc === 'fr') { c.fillStyle = '#0055a4'; c.fillRect(0, 0, 22, 48); c.fillStyle = '#fff'; c.fillRect(22, 0, 21, 48); c.fillStyle = '#ef4135'; c.fillRect(43, 0, 21, 48); return; }
   if (cc === 'vn') {
     c.fillStyle = '#da251d'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#ffff00'; c.beginPath();
@@ -468,7 +472,7 @@ const RANKS = [{ pct: 25, k: 'bronze', ic: '🥉', coins: 15, vi: 'Đồng', en:
 const pctOf = c => { const tt = ctot(c); return tt ? Math.floor(100 * cown(c) / tt) : 0; };
 const tierNow = c => { const p = pctOf(c); return ctot(c) ? RANKS.filter(r => p >= r.pct).length : 0; };
 const tierOf = c => Math.max((P.rk || {})[c] || 0, tierNow(c)); // hạng không bao giờ tụt, kể cả khi nước thêm thẻ mới
-const scmCoins = () => { try { const o = JSON.parse(localStorage.getItem('scm:v1') || 'null'); return Object.values((o && o.best) || {}).reduce((n, v) => n + ([0, 20, 45, 80][v] || 0), 0); } catch { return 0; } }; // xu thưởng từ sao của mục SCM
+const scmCoins = () => { try { const o = JSON.parse(localStorage.getItem('scm:v1') || 'null'); return Object.entries((o && o.best) || {}).reduce((n, [c, v]) => n + (({ 1: [0, 200, 500, 1000], 2: [0, 400, 1000, 2000], 3: [0, 800, 2000, 4000] }[+String(c).charAt(1)] || [0])[v] || 0), 0); } catch { return 0; } }; // xu thưởng từ sao của mục SCM
 const rankCoins = () => Object.values(P.rk || {}).reduce((n, k) => n + RANKS.slice(0, k).reduce((m, r) => m + r.coins, 0), 0);
 const rname = r => t(r.vi, r.en);
 function checkRanks() {
