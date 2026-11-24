@@ -10,14 +10,15 @@ import * as store from './store.js';
 import { say } from './tts.js';
 import { zhText } from './prefs.js';
 import { flat } from './exparse.js';
-import { socialPrompt, SOCIAL_SYNTAX, FOCUS_SYNTAX } from './exprompts.js';
+import * as EP from './exprompts.js'; // nhập theo không gian tên để thiếu một mục (máy chủ còn bản cũ) không làm app chết khi khởi động
+const { socialPrompt, SOCIAL_SYNTAX, FOCUS_SYNTAX } = EP, KEYWORD_SYNTAX = EP.KEYWORD_SYNTAX || '# Lĩnh vực\n@thuật ngữ: Tên thuật ngữ\n@tác giả: Tên tác giả (không bắt buộc)\nPhần giải thích.';
 import { pix } from './pixicons.js';
 
 const COLORS = ['#ff8f3a', '#5fd068', '#ff8fc0', '#7ec3ff', '#a98bff', '#ffd84d', '#ff7b88', '#4fd1c5'];
 const hash = s => [...String(s || '')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 const colorOf = p => COLORS[hash(p.field || p.name) % COLORS.length];
-export const KINDS = { flash: { icon: '⚡', name: 'Flash' }, focus: { icon: '🔍', name: 'Focus' } };
-let kind = 'flash'; // Flash = bài ngắn (fact hay ho); Focus = bài dài (thông tin sâu). Bài cũ chưa có trường kind thuộc Flash.
+export const KINDS = { flash: { icon: '⚡', name: 'Flash' }, focus: { icon: '🔍', name: 'Focus' }, keyword: { icon: '🔑', name: 'Keyword' } };
+let kind = 'flash'; // Flash = bài ngắn (fact hay ho); Focus = bài dài (thông tin sâu); Keyword = giải thích một thuật ngữ (tên tác giả của thuật ngữ là tùy chọn). Bài cũ chưa có trường kind thuộc Flash.
 const postsOf = lang => store.list('posts').filter(p => (p.lang || 'zh') === lang && (p.kind || 'flash') === kind);
 
 const PAGE = 8, MAX_DOM = 40; // mỗi lượt rút 8 bài; trên trang chỉ giữ tối đa ~40 bài gần nhất
@@ -26,15 +27,16 @@ let root = null, ctx = null, view = 'feed', fld = '';
 const openC = new Set(); // các bài đang mở khung bình luận
 
 // ---------- cú pháp nhập nhiều bài ----------
-const META = { 'tieu de': 'title', title: 'title', ten: 'name', name: 'name', 'nguoi dang': 'name', 'bieu tuong': 'emoji', bieutuong: 'emoji', icon: 'emoji', emoji: 'emoji', tag: 'tags', hashtag: 'tags', the: 'tags' };
-export function parseSocial(text) {
+const META = { 'tieu de': 'title', title: 'title', 'thuat ngu': 'title', 'tu khoa': 'title', keyword: 'title', term: 'title', ten: 'name', name: 'name', 'tac gia': 'name', author: 'name', 'nguoi dang': 'name', 'bieu tuong': 'emoji', bieutuong: 'emoji', icon: 'emoji', emoji: 'emoji', tag: 'tags', hashtag: 'tags', the: 'tags' };
+export function parseSocial(text, k0 = kind) {
   const posts = [], errors = [];
   let field = '', cur = null;
   const fresh = () => ({ name: '', emoji: '', title: '', tags: [], body: [] });
   const flush = () => {
     if (!cur) return;
     const body = cur.body.join('\n').replace(/\n{3,}/g, '\n\n').trim();
-    if (body) posts.push({ field, name: cur.name, emoji: cur.emoji, title: cur.title, tags: cur.tags, body });
+    if (k0 === 'keyword' && body && !cur.title) errors.push({ msg: `lĩnh vực “${field || 'Chung'}”: có thuật ngữ chưa có tên (thiếu dòng @thuật ngữ:), mục này bị bỏ qua` });
+    else if (body) posts.push({ field, name: cur.name, emoji: cur.emoji, title: cur.title, tags: cur.tags, body });
     else if (cur.name || cur.emoji || cur.title || cur.tags.length) errors.push({ msg: `lĩnh vực “${field || 'Chung'}”: có bài chưa có nội dung` });
     cur = null;
   };
@@ -56,11 +58,11 @@ export function parseSocial(text) {
 
 function importPosts(list) {
   const lang = getLang(), z = s => (lang === 'zh' ? zhText(s, 'zh') : s);
-  const have = new Set(postsOf(lang).map(p => (p.field || '') + '\n' + p.body));
+  const have = new Set(postsOf(lang).map(p => (p.field || '') + '\n' + (kind === 'keyword' ? (p.title || '') + '\n' : '') + p.body));
   let n = 0;
   const base = Date.now(); // cùng một mốc cho cả lượt nhập: bài viết trước nằm trên bài viết sau
   list.forEach((p, i) => {
-    const body = z(p.body), field = z(p.field), key = field + '\n' + body;
+    const body = z(p.body), field = z(p.field), key = field + '\n' + (kind === 'keyword' ? z(p.title || '') + '\n' : '') + body;
     if (have.has(key)) return;
     have.add(key);
     store.put('posts', uid(), { lang, kind, field, name: z(p.name), title: z(p.title || ''), emoji: p.emoji, tags: p.tags, body, created: base - i, saved: 0, comments: [], deleted: false });
@@ -201,6 +203,54 @@ It is often said that the Great Wall is the only human-made structure visible fr
 It is very long but only a few metres wide, and its colour is close to the hills around it. From hundreds of kilometres up, it is like a thin thread. City lights at night are actually easier to see.`,
 };
 
+// Bài mẫu cho Keyword (giải thích thuật ngữ; @tác giả là tên người đặt ra / phát biểu thuật ngữ, không bắt buộc)
+const KW_SAMPLES = {
+  zh: `# 供应链
+@thuật ngữ: 供应链
+@biểu tượng: 🚚
+@tag: #物流
+从原材料采购到把产品送到消费者手里，所有相关的企业、仓库、运输和信息组成的一整条网络。
+---
+@thuật ngữ: 帕累托法则
+@tác giả: 维尔弗雷多·帕累托
+@biểu tượng: 📊
+@tag: #二八定律
+也叫“二八定律”：大约百分之八十的结果，往往来自百分之二十的原因。例如少数客户带来大部分利润。`,
+  en: `# Supply chain
+@keyword: Supply chain
+@icon: 🚚
+@tag: #logistics
+The whole network of companies, warehouses, transport and information that moves a product from raw materials to the customer.
+---
+@keyword: Pareto principle
+@author: Vilfredo Pareto
+@icon: 📊
+@tag: #80_20
+Also called the 80/20 rule: roughly 80% of the results often come from 20% of the causes, for example a few customers bringing most of the profit.
+---
+@keyword: Kanban
+@author: Taiichi Ohno
+@icon: 🗂️
+A visual signalling system from Toyota that tells a process what to make and when, so work is pulled by real demand instead of pushed.`,
+  vi: `# Chuỗi cung ứng
+@thuật ngữ: Chuỗi cung ứng
+@biểu tượng: 🚚
+@tag: #logistics
+Toàn bộ mạng lưới doanh nghiệp, kho bãi, vận tải và thông tin đưa một sản phẩm từ nguyên liệu thô đến tay khách hàng.
+---
+@thuật ngữ: Nguyên lý Pareto
+@tác giả: Vilfredo Pareto
+@biểu tượng: 📊
+@tag: #80_20
+Còn gọi là quy tắc 80/20: khoảng 80% kết quả thường đến từ 20% nguyên nhân, ví dụ một số ít khách hàng mang lại phần lớn lợi nhuận.
+---
+@thuật ngữ: Kanban
+@tác giả: Taiichi Ohno
+@biểu tượng: 🗂️
+Hệ thống tín hiệu trực quan của Toyota cho biết công đoạn nào cần làm gì và khi nào, để công việc được kéo theo nhu cầu thật thay vì bị đẩy dồn lên.`,
+};
+const sampleSet = () => (kind === 'focus' ? FOCUS_SAMPLES : kind === 'keyword' ? KW_SAMPLES : SAMPLES);
+const sampleFor = lang => { const s = sampleSet(); return s[lang] || (kind === 'keyword' ? s.en : s.zh); };
 // ---------- trang lướt ----------
 const ago = t => {
   const m = Math.floor((Date.now() - (t || 0)) / 6e4);
@@ -219,7 +269,7 @@ function postHtml(p) {
   const bcp = langInfo(p.lang || 'zh').bcp, n = (p.comments || []).length;
   const long = kind === 'focus' && String(p.body).length > 520, clamp = long && !openX.has(p.id); // bài dài chỉ hiện đoạn đầu cho tới khi bấm “Đọc tiếp”
   return `<article class="sp" data-id="${p.id}" style="--cc:${colorOf(p)}"><div class="sp-in">
-    <header class="sp-h"><span class="sp-av">${esc(p.emoji || '🙂')}</span><div class="sp-who"><b class="gt">${esc(p.name || '·')}</b>${p.field ? `<span class="nw-tag gt">${esc(p.field)}</span>` : ''}</div></header>
+    <header class="sp-h"><span class="sp-av">${esc(p.emoji || (kind === 'keyword' ? '🔑' : '🙂'))}</span><div class="sp-who">${kind === 'keyword' ? (p.name ? `<b class="gt sp-by">✍ ${esc(p.name)}</b>` : '<b class="sp-by dim">Thuật ngữ</b>') : `<b class="gt">${esc(p.name || '·')}</b>`}${p.field ? `<span class="nw-tag gt">${esc(p.field)}</span>` : ''}</div></header>
     ${p.title ? `<h3 class="sp-title gt" lang="${bcp}">${esc(p.title)}</h3>` : ''}
     <div class="sp-text ${clamp ? 'clamp' : ''}" lang="${bcp}">${textHtml(p.body)}</div>
     ${long ? `<button class="btn sp-more-btn" data-a="expand">${clamp ? '📖 Đọc tiếp ▾' : '▴ Thu gọn'}</button>` : ''}
@@ -274,7 +324,7 @@ function drawFeed() {
   setFull(false);
   const bar = ctx.bar();
   if (!all.length) {
-    root.innerHTML = `${bar}<div class="empty"><div class="emptyart">${pix('a_world')}</div>${kind === 'focus' ? `Chưa có bài Focus ${esc(langInfo().name)} nào.<br><span>Focus là nơi đọc các bài dài, thông tin sâu.</span>` : `Chưa có bài Flash ${esc(langInfo().name)} nào.<br><span>Flash là nơi lướt các mẩu thông tin ngắn, đơn giản mà hay.</span>`} Nhập nhiều bài một lúc bằng cú pháp (kèm prompt nhờ AI), tự đăng một bài, hoặc thêm vài bài mẫu để xem thử.
+    root.innerHTML = `${bar}<div class="empty"><div class="emptyart">${pix('a_world')}</div>${kind === 'focus' ? `Chưa có bài Focus ${esc(langInfo().name)} nào.<br><span>Focus là nơi đọc các bài dài, thông tin sâu.</span>` : kind === 'keyword' ? `Chưa có thuật ngữ Keyword ${esc(langInfo().name)} nào.<br><span>Keyword là nơi giải thích các thuật ngữ, kèm tên tác giả của thuật ngữ nếu có.</span>` : `Chưa có bài Flash ${esc(langInfo().name)} nào.<br><span>Flash là nơi lướt các mẩu thông tin ngắn, đơn giản mà hay.</span>`} Nhập nhiều bài một lúc bằng cú pháp (kèm prompt nhờ AI), tự đăng một bài, hoặc thêm vài bài mẫu để xem thử.
       <div class="row c" style="margin-top:12px"><button class="btn primary" id="spImport">📥 Nhập nhiều bài</button><button class="btn" id="spNew">＋ Đăng bài</button><button class="btn" id="spSample">✨ Thêm bài mẫu</button></div></div>`;
     bind(); return;
   }
@@ -362,9 +412,9 @@ function act(e) {
     const old = $('.sp-mv', card);
     if (old) { old.remove(); return; }
     const to = LANGS.filter(l => l.id !== (p.lang || 'zh')).map(l => `<button class="chip" data-a="mvto" data-to="${l.id}">${l.short}<small class="lname"> ${l.name.replace('Tiếng ', '')}</small></button>`).join('');
-    const other = kind === 'flash' ? 'focus' : 'flash';
-    $('.sp-act', card).insertAdjacentHTML('afterend', `<div class="sp-mv"><span class="dim">Chuyển bài này sang:</span> ${to}<button class="chip" data-a="mvkind" data-to="${other}">${KINDS[other].icon} ${KINDS[other].name}</button></div>`);
-  } else if (a === 'mvkind') { // chuyển giữa Flash (ngắn) và Focus (dài)
+    const others = Object.keys(KINDS).filter(k => k !== kind).map(k => `<button class="chip" data-a="mvkind" data-to="${k}">${KINDS[k].icon} ${KINDS[k].name}</button>`).join('');
+    $('.sp-act', card).insertAdjacentHTML('afterend', `<div class="sp-mv"><span class="dim">Chuyển bài này sang:</span> ${to}${others}</div>`);
+  } else if (a === 'mvkind') { // chuyển giữa Flash (ngắn), Focus (dài) và Keyword (thuật ngữ)
     store.put('posts', id, { kind: b.dataset.to });
     toast(`Đã chuyển sang ${KINDS[b.dataset.to].name} ✓`, 1800);
     openC.delete(id); bag = bag.filter(x => x !== id);
@@ -406,7 +456,7 @@ function bind() {
   $('#spImport')?.addEventListener('click', () => { view = 'import'; drawImport(); scrollTo(0, 0); });
   $('#spNew')?.addEventListener('click', () => { view = 'compose'; drawCompose(); scrollTo(0, 0); });
   $('#spMove')?.addEventListener('click', () => { view = 'move'; drawMove(); scrollTo(0, 0); });
-  $('#spSample')?.addEventListener('click', () => { const set = kind === 'focus' ? FOCUS_SAMPLES : SAMPLES, n = importPosts(parseSocial(set[getLang()] || set.zh).posts); toast(`Đã thêm ${n} bài mẫu`); drawFeed(); });
+  $('#spSample')?.addEventListener('click', () => { const n = importPosts(parseSocial(sampleFor(getLang())).posts); toast(`Đã thêm ${n} bài mẫu`); drawFeed(); });
   $$('.sp-fl [data-f]', root).forEach(c => { c.onclick = () => { fld = c.dataset.f; open.topics = false; drawFeed(); }; });
   for (const [k, btn, box] of [['topics', '#spTopics', '.sp-fl'], ['more', '#spMore', '.sp-more']]) { // mở / đóng nhóm nút tại chỗ, không xáo lại bài
     $(btn, root)?.addEventListener('click', e => {
@@ -430,20 +480,21 @@ function bind() {
 
 // ---------- đăng một bài ----------
 function drawCompose() {
-  const lang = getLang(), fields = [...new Set(postsOf(lang).map(p => p.field || '').filter(Boolean))];
-  root.innerHTML = `<div class="row"><button class="btn" id="cpBack">← Quay lại</button><b>＋ Đăng một bài</b><span class="nw-tag">${KINDS[kind].icon} ${KINDS[kind].name}</span></div>
+  const lang = getLang(), kw = kind === 'keyword', fields = [...new Set(postsOf(lang).map(p => p.field || '').filter(Boolean))];
+  root.innerHTML = `<div class="row"><button class="btn" id="cpBack">← Quay lại</button><b>${kw ? '＋ Thêm một thuật ngữ' : '＋ Đăng một bài'}</b><span class="nw-tag">${KINDS[kind].icon} ${KINDS[kind].name}</span></div>
     <div class="qcard">
-      <div class="row"><label class="dim grow">Lĩnh vực<input id="cpField" type="text" list="cpFields" placeholder="Đời sống, Công nghệ, Du lịch…"></label><datalist id="cpFields">${fields.map(f => `<option value="${esc(f)}">`).join('')}</datalist>
-        <label class="dim grow">Tên người đăng<input id="cpName" type="text" placeholder="(không bắt buộc)"></label><label class="dim">Biểu tượng<input id="cpEmoji" type="text" maxlength="4" value="🙂" style="width:64px"></label></div>
-      <label class="dim">Tiêu đề<input id="cpTitle" type="text" placeholder="(không bắt buộc, nên có với bài dài)"></label>
-      <label class="dim">Nội dung<textarea id="cpBody" rows="${kind === 'focus' ? 14 : 7}" lang="${langInfo(lang).bcp}" placeholder="Viết bài đăng bằng ${esc(langInfo(lang).name)}…"></textarea></label>
+      <div class="row"><label class="dim grow">Lĩnh vực<input id="cpField" type="text" list="cpFields" placeholder="${kw ? 'Kinh doanh, Logistics, Công nghệ…' : 'Đời sống, Công nghệ, Du lịch…'}"></label><datalist id="cpFields">${fields.map(f => `<option value="${esc(f)}">`).join('')}</datalist>
+        <label class="dim grow">${kw ? 'Tác giả của thuật ngữ' : 'Tên người đăng'}<input id="cpName" type="text" placeholder="${kw ? '(không bắt buộc, bỏ trống nếu không có)' : '(không bắt buộc)'}"></label><label class="dim">Biểu tượng<input id="cpEmoji" type="text" maxlength="4" value="${kw ? '🔑' : '🙂'}" style="width:64px"></label></div>
+      <label class="dim">${kw ? 'Thuật ngữ' : 'Tiêu đề'}<input id="cpTitle" type="text" lang="${langInfo(lang).bcp}" placeholder="${kw ? 'Tên thuật ngữ (bắt buộc)' : '(không bắt buộc, nên có với bài dài)'}"></label>
+      <label class="dim">${kw ? 'Giải thích' : 'Nội dung'}<textarea id="cpBody" rows="${kind === 'focus' ? 14 : 7}" lang="${langInfo(lang).bcp}" placeholder="${kw ? 'Giải thích thuật ngữ bằng ' : 'Viết bài đăng bằng '}${esc(langInfo(lang).name)}…"></textarea></label>
       <label class="dim">Hashtag<input id="cpTags" type="text" placeholder="#a #b (không bắt buộc)"></label>
       <div class="row"><button class="btn primary" id="cpGo">📤 Đăng</button></div>
     </div>`;
   $('#cpBack').onclick = () => { view = 'feed'; drawFeed(); };
   $('#cpGo').onclick = () => {
     const body = $('#cpBody').value.trim();
-    if (!body) { toast('Hãy viết nội dung bài đăng'); return; }
+    if (kind === 'keyword' && !$('#cpTitle').value.trim()) { toast('Hãy nhập tên thuật ngữ'); return; }
+    if (!body) { toast(kind === 'keyword' ? 'Hãy viết phần giải thích' : 'Hãy viết nội dung bài đăng'); return; }
     const tags = $('#cpTags').value.split(/[\s,，]+/).filter(Boolean).map(t => (t.startsWith('#') ? t : '#' + t));
     const n = importPosts([{ field: $('#cpField').value.trim(), name: $('#cpName').value.trim(), emoji: $('#cpEmoji').value.trim(), title: $('#cpTitle').value.trim(), tags, body }]);
     toast(n ? 'Đã đăng bài ✓' : 'Bài này đã có rồi');
@@ -514,8 +565,8 @@ function drawImport() {
   root.innerHTML = `<div class="row"><button class="btn" id="imBack">← Quay lại</button><b>📥 Nhập nhiều bài</b><span class="nw-tag">${K.icon} ${K.name}</span></div>
     <div class="qcard">
       <details class="help"><summary>📖 Cú pháp bài viết</summary>
-        <pre class="mono nw-syn">${esc(kind === 'focus' ? FOCUS_SYNTAX : SOCIAL_SYNTAX)}</pre>
-        <p>Dòng bắt đầu bằng “# ” là tên một lĩnh vực mới. Các bài trong cùng lĩnh vực cách nhau bằng một dòng chỉ có “---”. Các dòng “@tiêu đề:”, “@tên:”, “@biểu tượng:”, “@tag:” không bắt buộc và nằm ngay đầu bài. Không có câu hỏi.</p></details>
+        <pre class="mono nw-syn">${esc(kind === 'focus' ? FOCUS_SYNTAX : kind === 'keyword' ? KEYWORD_SYNTAX : SOCIAL_SYNTAX)}</pre>
+        ${kind === 'keyword' ? '<p>Dòng bắt đầu bằng “# ” là tên một lĩnh vực mới. Mỗi thuật ngữ cần dòng “@thuật ngữ:” (tên thuật ngữ), rồi đến phần giải thích. Dòng “@tác giả:” là tên người đặt ra / phát biểu thuật ngữ: CÓ HOẶC KHÔNG đều được, không có thì bỏ dòng đó. “@biểu tượng:” và “@tag:” cũng không bắt buộc. Các thuật ngữ cách nhau bằng một dòng chỉ có “---”. Các dòng “@…” phải nằm ngay đầu mỗi thuật ngữ.</p>' : '<p>Dòng bắt đầu bằng “# ” là tên một lĩnh vực mới. Các bài trong cùng lĩnh vực cách nhau bằng một dòng chỉ có “---”. Các dòng “@tiêu đề:”, “@tên:”, “@biểu tượng:”, “@tag:” không bắt buộc và nằm ngay đầu bài. Không có câu hỏi.</p>'}</details>
       <details class="help"><summary>🤖 Nhờ AI viết bài (prompt)</summary><div id="sgHost"></div></details>
       <label class="dim">Nội dung nhập<textarea id="imText" class="mono" rows="14" spellcheck="false" placeholder="Dán kết quả của AI (hoặc tự viết theo cú pháp) vào đây…"></textarea></label>
       <div id="imCheck" class="dim"></div>
@@ -530,7 +581,7 @@ function drawImport() {
   ta.addEventListener('input', check); check();
   promptBox($('#sgHost'), text => { ta.value = ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n\n' + text : text; check(); toast('Đã dán vào ô nội dung ✓'); });
   $('#imBack').onclick = () => { view = 'feed'; drawFeed(); };
-  $('#imEx').onclick = () => { if (!ta.value.trim() || confirm('Thay nội dung đang có bằng ví dụ?')) { const set = kind === 'focus' ? FOCUS_SAMPLES : SAMPLES; ta.value = set[lang] || set.zh; check(); } };
+  $('#imEx').onclick = () => { if (!ta.value.trim() || confirm('Thay nội dung đang có bằng ví dụ?')) { ta.value = sampleFor(lang); check(); } };
   $('#imFile').onclick = () => pickFile('.txt,text/plain').then(async ([f]) => { if (f) { ta.value = await f.text(); check(); } });
   $('#imGo').onclick = () => {
     const p = parseSocial(ta.value);

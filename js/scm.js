@@ -43,7 +43,8 @@ export const coins = () => Object.entries(DOC.best).reduce((n, [c, s]) => n + re
 // ---------- dữ liệu case ----------
 async function data() {
   if (DATA) return DATA;
-  const [j1, j2] = await Promise.all(['./scm-cases.json', './scm-cases2.json'].map(async f => (await fetch(new URL(f, import.meta.url))).json())); const j = { cases: { ...j1.cases, ...j2.cases } }; DATA = {};
+  const get = async f => { try { const r = await fetch(new URL(f, import.meta.url)); if (!r.ok) throw new Error(f); return await r.json(); } catch (e) { if (f === './scm-cases.json') throw e; return { cases: {} }; } }; // bộ case 2 chưa tải lên thì bỏ qua, không làm hỏng 12 case đầu
+  const [j1, j2] = await Promise.all([get('./scm-cases.json'), get('./scm-cases2.json')]); try { Object.assign(KEYS, (await import('./scm-keys2.js')).KEYS2); } catch { /* thiếu scm-keys2.js: chỉ mất 6 case E, F */ } const j = { cases: { ...j1.cases, ...j2.cases } }; DATA = {};
   for (const code of ORDER) {
     const c = j.cases[code]; if (!c) continue;
     const meta = (c.head.find(b => b.t === 'table') || { rows: [[], []] }).rows[1] || [], days = +(/(\d+)\s*days?/.exec(meta[2] || '') || [0, 3])[1];
