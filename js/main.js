@@ -13,7 +13,6 @@ import * as shadowrec from './shadowrec.js';
 import * as review from './review.js';
 import * as backup from './backup.js';
 import * as prompts from './prompts.js';
-import * as scm from './scm.js';
 import * as subedit from './subedit.js';
 import * as subpaste from './subpaste.js';
 import * as segments from './segments.js';
@@ -36,7 +35,6 @@ import * as find from './find.js';
 import * as shortcuts from './shortcuts.js';
 import * as offline from './offline.js';
 import * as readaloud from './readaloud.js';
-import * as world from './world.js';
 import * as cueedit from './cueedit.js';
 
 const firebaseConfig = {
@@ -176,21 +174,37 @@ emojify(); // emoji trong giao diện -> biểu tượng pixel (nội dung của
 settings.init();
 sfx.init();
 fx.init();
-await store.initStore();
+await store.initStore(); performance.mark('store-ready');
 loadPrefs();
 syncSfx();
 bus.on('store', c => { if (c === 'prefs' || c === '*') { loadPrefs(); bus.emit('prefs'); } });
 renderLangs();
 // Mỗi mục tự khởi động trong khối try riêng: một mục lỗi (ví dụ thiếu file sau khi tải bản mới lên) không làm các mục còn lại ngừng chạy; lỗi được ghi lại để thanh báo lỗi hiển thị
-for (const [name, mod] of Object.entries({ player, side, library, notes, quests, alignui, dictation, speak, shadowrec, review, backup, subedit, subpaste, segments, trash, lookup, vocab, find, shortcuts, offline, readaloud, world, cueedit, music, focusmode, videx, passport, lame, skin, lbl, prompts, scm })) {
+for (const [name, mod] of Object.entries({ player, side, library, notes, quests, alignui, dictation, speak, shadowrec, review, backup, subedit, subpaste, segments, trash, lookup, vocab, find, shortcuts, offline, readaloud, cueedit, music, focusmode, videx, passport, lame, skin, lbl, prompts })) {
   try { mod.init(); } catch (e) { console.error('Lỗi khởi động mục ' + name, e); (window.__bootErrors ||= []).push('init ' + name + ': ' + (e && e.message || e)); }
 }
+// ---------- nạp muộn các mục lớn không cần ngay lúc mở app (SCM, Thế giới): app mở nhanh hơn, vào mục đó lần đầu vẫn tức thì vì được nạp ngầm sau vài giây ----------
+const lazyMod = (name, path, view) => {
+  const st = { p: null, ok: false };
+  const load = () => (st.p ||= import(path).then(m => { try { m.init(); } catch (e) { console.error('Lỗi khởi động mục ' + name, e); (window.__bootErrors ||= []).push('init ' + name + ': ' + (e && e.message || e)); } st.ok = true; return m; })
+    .catch(e => { st.p = null; console.error('Không nạp được mục ' + name, e); (window.__bootErrors ||= []).push('nạp ' + name + ': ' + (e && e.message || e)); toast('Không tải được mục ' + name + ': kiểm tra mạng rồi thử lại', 5000); }));
+  bus.on('show', v => { if (v === view && !st.ok) load().then(m => { if (m && document.body.dataset.view === view) bus.emit('show', view); }); }); // vào mục khi chưa nạp xong: nạp rồi báo “show” lại để mục tự vẽ
+  return load;
+};
+const loadWorld = lazyMod('Thế giới', './world.js', 'world'), loadScm = lazyMod('SCM', './scm.js', 'scm');
+const idle = f => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 6000 }) : setTimeout(f, 3000));
+idle(() => { loadWorld(); idle(loadScm); });
 show('library');
 initFirebase();
 import('./contentstats.js').then(m => m.init()).catch(e => console.warn('Thống kê nội dung không tải được:', e)); // nạp riêng: thiếu file này thì chỉ mất bảng thống kê, app vẫn chạy
-document.documentElement.dataset.booted = '1'; // đã khởi động xong: tắt thanh báo lỗi khởi động trong index.html
+performance.mark('booted'); document.documentElement.dataset.booted = '1'; // đã khởi động xong: tắt thanh báo lỗi khởi động trong index.html
 loadSimplifier(); // sẵn sàng đổi phồn thể → giản thể (chỉ ~100 KB)
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSW) toast('Đã cập nhật app: mở lại app để dùng bản mới', 7000); });
+  setTimeout(async () => { // máy chủ đã có bản mới mà chưa cài được (thường do chưa tải lên đủ file): báo để bạn biết, app vẫn chạy bản cũ nhất quán
+    try { const v = ((await (await fetch('sw.js', { cache: 'no-store' })).text()).match(/CACHE = '([^']+)'/) || [])[1]; if (v && !((await caches.has(v)) && await (await caches.open(v)).match('__installed'))) toast('Có bản cập nhật nhưng chưa cài xong (máy chủ có thể còn thiếu file). Hãy thử mở lại sau vài phút.', 9000); } catch { /* offline */ }
+  }, 30000);
 }
 
