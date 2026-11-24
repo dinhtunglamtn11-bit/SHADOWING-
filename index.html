@@ -605,9 +605,12 @@
     <div class="uirow" id="pgPassOnly" hidden><span>Nước / châu</span><span class="row"><input id="pgCountry" type="text" placeholder="Tên nước" style="width:48%"><input id="pgCont" type="text" placeholder="Châu" style="width:48%"></span></div>
     <label class="dim">Nguồn (tùy chọn): dán văn bản, phụ đề hoặc tài liệu</label><textarea id="pgSrc" rows="3" spellcheck="false"></textarea>
     <label class="dim">Dặn riêng của bạn (thêm vào đầu mọi prompt, ví dụ “luôn dùng chữ giản thể, giọng thân mật”)</label><textarea id="pgCommon" rows="2" spellcheck="false"></textarea>
-    <label class="dim">Nội dung prompt (sửa được). Biến dùng được: <span id="pgVars"></span></label><textarea id="pgTpl" class="mono" rows="12" spellcheck="false"></textarea>
+    <label class="dim">Nội dung prompt. Biến dùng được: <span id="pgVars"></span></label>
+    <div class="seg" id="ptVer"><button data-v="mine">✏️ Bản sửa của tôi</button><button data-v="orig">📌 Bản gốc</button></div>
+    <textarea id="pgTpl" class="mono" rows="12" spellcheck="false"></textarea>
     <small class="dim" id="pgNote"></small>
-    <div class="row"><button id="pgCopy" class="btn primary">📋 Chép prompt</button><button id="pgShow" class="btn">👁 Xem bản đã điền</button><button id="pgReset" class="btn">↩ Mặc định</button></div>
+    <div class="row"><button id="ptCopyMine" class="btn primary">📋 Chép bản sửa</button><button id="ptCopyOrig" class="btn">📋 Chép bản gốc</button></div>
+    <div class="row"><button id="ptShow" class="btn">👁 Xem bản đã điền</button><button id="ptRaw" class="btn">📄 Chép mẫu chưa điền</button><button id="ptReset" class="btn">↩ Đặt bản sửa = bản gốc</button></div>
     <textarea id="pgOut" class="mono" rows="8" readonly hidden spellcheck="false"></textarea>
     </div></details>    <details class="uigrp"><summary>💾 Dữ liệu & tài khoản</summary><div class="uigb"><h4>Tài khoản video</h4>
     <div class="uirow"><span>YouTube / TikTok</span><button class="btn" id="loginOpen">🔑 Đăng nhập…</button></div>

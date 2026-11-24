@@ -86,21 +86,75 @@ function drawBrowse() {
     const st = tree.statsOf(f.id, l), pr = progressOf(f.id, l), hasKids = st.folders > 0;
     return `<div class="lf ${pr.total && pr.done === pr.total ? 'full' : ''}" data-lf="${f.id}" tabindex="0"><div class="lfart">${pix(hasKids ? 'a_books' : 'a_book')}</div><div class="lfb"><b class="gt">${esc(f.name)}</b><span class="dim">${esc(statLine(st))}</span>${pbar(pr)}</div></div>`;
   };
-  const row = (art, id, title, meta, btns, done, extra = '') => `<div class="lrow ${done ? 'done' : ''}"><span class="lart">${pix(art)}</span><div class="ci" data-open="${id}"><b class="gt">${esc(title)}</b><span class="dim">${done ? '✓ ' : ''}${esc(meta)}</span></div><span class="lbtns">${extra}${btns}</span></div>`;
+  const row = (art, id, title, meta, btns, done, extra = '', kind = '') => `<div class="lrow ${done ? 'done' : ''}"><span class="lart">${pix(art)}</span><div class="ci" data-open="${id}"><b class="gt">${esc(title)}</b><span class="dim">${done ? '✓ ' : ''}${esc(meta)}</span></div><span class="lbtns">${extra}${btns}${kind ? `<button class="btn" data-mv="${kind}:${id}" title="Chuyển sang thư mục khác">📁</button>` : ''}</span></div>`;
   const rootPr = progressOf('', l);
+  const loose = cur ? '' : looseHtml(l, row);
   box.innerHTML = `${crumbs()}
     <div class="row">${cur ? `<button class="btn primary" id="lsNewSub">＋ Tạo thư mục con</button><button class="btn" id="lsRen">✎ Đổi tên</button><button class="btn" id="lsDel">🗑 Xóa thư mục</button>` : '<button class="btn primary" id="lsNewSub">＋ Mục lớn mới (ví dụ HSK1)</button>'}</div>
     ${!cur && !subs.length ? `<div class="empty"><div class="emptyart">${pix('a_books')}</div>Chưa có mục bài học nào.<br>Tạo một mục lớn (ví dụ <b>HSK1</b>), bên trong tạo các thư mục nhỏ (<b>HSK bài 1</b>, <b>HSK bài 2</b>…), rồi thêm bài học, video, bài tập và bài kiểm tra vào từng thư mục nhỏ.</div>` : ''}
     ${!cur && subs.length ? `<div class="dim" style="margin:4px 2px">Tiến độ toàn bộ:</div>${pbar(rootPr)}` : ''}
     ${cur || subs.length ? nextBar(l) : ''}
+    ${loose}
     ${subs.length ? `<div class="nw-sec">${cur ? 'Thư mục con' : 'Các mục lớn'}</div><div class="lfs">${subs.map(folderCard).join('')}</div>` : ''}
     ${cur ? `<div class="nw-sec gt">${pix('a_folder')} ${esc(here?.name || '')}</div>
       <div class="dim">${esc(statLine(tree.statsOf(cur, l)))}</div>${pbar(progressOf(cur, l))}
       <div class="row addbar"><span class="dim">Thêm vào thư mục này:</span><button class="btn" id="lsVideo">🎬 Video</button><button class="btn" id="lsLink">🔗 Link video</button><button class="btn" id="lsDoc">📄 Tài liệu</button><button class="btn" id="lsNote">📝 Bài học mới (ghi chú)</button><button class="btn" id="lsSet">🧩 Bài tập mới</button><button class="btn" id="lsTest">📋 Bài kiểm tra mới</button></div>
-      ${items.length ? `<div class="nw-sec">Bài học và video</div>${items.map(i => row(iconOf(i), i.id, i.title || 'Không tên', i.type === 'video' ? `${i.cueCount || 0} câu phụ đề` : i.type === 'note' ? ((i.body || '').replace(/\s+/g, ' ').trim().slice(0, 50) || 'Ghi chú trống') : i.type === 'pdf' ? 'PDF' : 'Văn bản', `<button class="btn more" data-itedit="${i.id}" title="Sửa">⋯</button>`, doneItem(i), `<button class="btn tg ${doneItem(i) ? 'on' : ''}" data-tgi="${i.id}" title="Đánh dấu đã học xong / chưa">${doneItem(i) ? '☑' : '☐'}</button>`)).join('')}` : ''}
-      ${sets.length ? `<div class="nw-sec">Bài tập</div>${sets.map(s => row('a_exercise', s.id, s.title || 'Bộ bài tập', `${parseSet(s.text || '').qs.length + parseSet(s.text || '').vocab.length} câu hỏi${s.tries ? ' · đã làm ' + s.tries + ' lần · cao nhất ' + s.best + '%' : ''}`, `<button class="btn primary" data-srun="${s.id}">▶ Làm</button><button class="btn" data-sedit="${s.id}">✎</button><button class="btn" data-sdel="${s.id}">🗑</button>`, doneSet(s))).join('')}` : ''}
-      ${tests.length ? `<div class="nw-sec">Bài kiểm tra</div>${tests.map(t => row('a_test', t.id, t.title || 'Bài kiểm tra', `${t.mode === 'group' ? 'theo nhóm' : 'ngẫu nhiên'}${t.count ? ' · ' + t.count + ' câu hỏi' : ' · tất cả câu hỏi'}${t.time ? ' · ⏱ ' + t.time + ' phút' : ''}${t.best != null ? ' · cao nhất ' + t.best + '%' : ''}${t.tries ? ' · đã làm ' + t.tries + ' lần' : ''}`, `<button class="btn primary" data-trun="${t.id}">▶ Làm bài</button><button class="btn" data-tedit="${t.id}">✎</button><button class="btn" data-tdel="${t.id}">🗑</button>`, doneTest(t))).join('')}` : ''}` : ''}`;
+      ${items.length ? `<div class="nw-sec">Bài học và video</div>${items.map(i => row(iconOf(i), i.id, i.title || 'Không tên', i.type === 'video' ? `${i.cueCount || 0} câu phụ đề` : i.type === 'note' ? ((i.body || '').replace(/\s+/g, ' ').trim().slice(0, 50) || 'Ghi chú trống') : i.type === 'pdf' ? 'PDF' : 'Văn bản', `<button class="btn more" data-itedit="${i.id}" title="Sửa">⋯</button>`, doneItem(i), `<button class="btn tg ${doneItem(i) ? 'on' : ''}" data-tgi="${i.id}" title="Đánh dấu đã học xong / chưa">${doneItem(i) ? '☑' : '☐'}</button>`, 'item')).join('')}` : ''}
+      ${sets.length ? `<div class="nw-sec">Bài tập</div>${sets.map(s => row('a_exercise', s.id, s.title || 'Bộ bài tập', `${parseSet(s.text || '').qs.length + parseSet(s.text || '').vocab.length} câu hỏi${s.tries ? ' · đã làm ' + s.tries + ' lần · cao nhất ' + s.best + '%' : ''}`, `<button class="btn primary" data-srun="${s.id}">▶ Làm</button><button class="btn" data-sedit="${s.id}">✎</button><button class="btn" data-sdel="${s.id}">🗑</button>`, doneSet(s), '', 'set')).join('')}` : ''}
+      ${tests.length ? `<div class="nw-sec">Bài kiểm tra</div>${tests.map(t => row('a_test', t.id, t.title || 'Bài kiểm tra', `${t.mode === 'group' ? 'theo nhóm' : 'ngẫu nhiên'}${t.count ? ' · ' + t.count + ' câu hỏi' : ' · tất cả câu hỏi'}${t.time ? ' · ⏱ ' + t.time + ' phút' : ''}${t.best != null ? ' · cao nhất ' + t.best + '%' : ''}${t.tries ? ' · đã làm ' + t.tries + ' lần' : ''}`, `<button class="btn primary" data-trun="${t.id}">▶ Làm bài</button><button class="btn" data-tedit="${t.id}">✎</button><button class="btn" data-tdel="${t.id}">🗑</button>`, doneTest(t), '', 'test')).join('')}` : ''}` : ''}`;
   bindBrowse();
+}
+
+// ---------- “Chưa xếp mục”: thêm video / link / tài liệu / ghi chú / bài tập trước, xếp vào thư mục sau ----------
+const looseOf = l => {
+  const ok = new Set(tree.allFolders(l).map(f => f.id)), un = x => !x.folder || !ok.has(x.folder);
+  return {
+    items: store.list('items').filter(i => (i.lang || 'zh') === l && un(i)).sort((a, b) => (b.created || b.u || 0) - (a.created || a.u || 0)),
+    sets: store.list('sets').filter(s => (s.lang || 'zh') === l && un(s)).sort(nat),
+    tests: store.list('tests').filter(t => (t.lang || 'zh') === l && un(t)).sort(nat),
+  };
+};
+function looseHtml(l, row) {
+  const { items, sets, tests } = looseOf(l), n = items.length + sets.length + tests.length;
+  const ck = (k, id) => `<input type="checkbox" class="lspk" data-pk="${k}:${id}" title="Chọn để xếp nhiều mục cùng lúc">`;
+  const rows = [
+    ...items.map(i => row(iconOf(i), i.id, i.title || 'Không tên', i.type === 'video' ? `${i.cueCount || 0} câu phụ đề${i.src ? ' · link' : ''}` : i.type === 'note' ? ((i.body || '').replace(/\s+/g, ' ').trim().slice(0, 50) || 'Ghi chú trống') : i.type === 'pdf' ? 'PDF' : 'Văn bản', `<button class="btn more" data-itedit="${i.id}" title="Sửa">⋯</button>`, doneItem(i), ck('item', i.id), 'item')),
+    ...sets.map(s => row('a_exercise', s.id, s.title || 'Bộ bài tập', `${parseSet(s.text || '').qs.length + parseSet(s.text || '').vocab.length} câu hỏi`, `<button class="btn primary" data-srun="${s.id}">▶ Làm</button><button class="btn" data-sedit="${s.id}">✎</button><button class="btn" data-sdel="${s.id}">🗑</button>`, doneSet(s), ck('set', s.id), 'set')),
+    ...tests.map(t => row('a_test', t.id, t.title || 'Bài kiểm tra', 'bài kiểm tra', `<button class="btn primary" data-trun="${t.id}">▶ Làm bài</button><button class="btn" data-tedit="${t.id}">✎</button><button class="btn" data-tdel="${t.id}">🗑</button>`, doneTest(t), ck('test', t.id), 'test')),
+  ];
+  return `<div class="nw-sec">📂 Chưa xếp mục${n ? ` (${n})` : ''}</div>
+    <div class="dim">Thêm video, link, tài liệu, bài học hay bài tập vào đây trước, chưa cần tạo thư mục. Sau đó bấm 📁 ở từng dòng (hoặc tick nhiều dòng rồi bấm “Xếp các mục đã chọn”) để xếp vào thư mục bạn tạo.</div>
+    <div class="row addbar"><button class="btn" id="lsVideo">🎬 Video</button><button class="btn" id="lsLink">🔗 Link video</button><button class="btn" id="lsDoc">📄 Tài liệu</button><button class="btn" id="lsNote">📝 Bài học mới (ghi chú)</button><button class="btn" id="lsSet">🧩 Bài tập mới</button></div>
+    ${n ? `<div class="row"><button class="btn" id="lsPkAll">☑ Chọn tất cả</button><button class="btn primary" id="lsPkMove" disabled>📁 Xếp các mục đã chọn…</button></div>${rows.join('')}` : '<div class="empty">Chưa có gì ở đây. Mọi thứ đã được xếp vào thư mục, hoặc bạn chưa thêm gì.</div>'}`;
+}
+const COLL = { item: 'items', set: 'sets', test: 'tests' };
+// hộp chọn thư mục đích; trả về id thư mục (''= chưa xếp mục) hoặc null nếu hủy
+function pickFolder(l, title) {
+  return new Promise(res => {
+    const d = document.createElement('dialog');
+    d.innerHTML = `<div class="hd"><span class="grow">${esc(title)}</span><button class="btn" data-x>✕</button></div><div class="bd form"><label>Thư mục đích<select id="mvSel">${tree.options(l, '', '📂 Chưa xếp mục')}</select></label><div class="row"><button class="btn primary" id="mvOk">Xếp vào đây</button><button class="btn" id="mvNew">＋ Thư mục mới</button></div></div>`;
+    document.body.appendChild(d);
+    let done = false;
+    const finish = v => { if (done) return; done = true; try { d.close(); } catch { /* đã đóng */ } d.remove(); res(v); }; // không phụ thuộc sự kiện “close” (có trình duyệt báo trễ)
+    const sel = $('#mvSel', d);
+    $('[data-x]', d).onclick = () => finish(null);
+    $('#mvOk', d).onclick = () => finish(sel.value);
+    $('#mvNew', d).onclick = () => {
+      const name = (prompt('Tên thư mục mới (ví dụ: HSK1, Phim, TikTok):') || '').trim(); if (!name) return;
+      const id = uid(); store.put('folders', id, { name, lang: l, parent: '', created: Date.now() });
+      sel.innerHTML = tree.options(l, id, '📂 Chưa xếp mục');
+    };
+    d.addEventListener('close', () => finish(null)); // Esc / bấm ra ngoài
+    d.showModal();
+  });
+}
+async function moveMany(keys) {
+  if (!keys.length) return;
+  const l = L(), to = await pickFolder(l, keys.length > 1 ? `Xếp ${keys.length} mục vào…` : 'Chuyển sang thư mục…');
+  if (to == null) return;
+  for (const k of keys) { const [kind, id] = k.split(':'); if (COLL[kind]) store.put(COLL[kind], id, { folder: to }); }
+  toast(to ? `Đã xếp vào “${tree.pathLabel(to, l)}” ✓` : 'Đã đưa về “Chưa xếp mục”');
+  drawBrowse();
 }
 
 // mở một việc trong danh sách “tiếp theo”
@@ -138,6 +192,12 @@ function bindBrowse() {
     const up = f?.parent || '';
     tree.removeFolder(cur, l, true); cur = up; drawBrowse();
   });
+  $$('[data-mv]', box).forEach(b => b.onclick = e => { e.stopPropagation(); moveMany([b.dataset.mv]); });
+  const pkd = () => $$('.lspk:checked', box).map(c => c.dataset.pk);
+  const pkSync = () => { const b = $('#lsPkMove', box); if (b) { const n = pkd().length; b.disabled = !n; b.textContent = n ? `📁 Xếp ${n} mục đã chọn…` : '📁 Xếp các mục đã chọn…'; } };
+  $$('.lspk', box).forEach(c => c.onchange = pkSync);
+  $('#lsPkAll', box)?.addEventListener('click', () => { const all = $$('.lspk', box), on = !all.every(c => c.checked); all.forEach(c => { c.checked = on; }); pkSync(); });
+  $('#lsPkMove', box)?.addEventListener('click', () => moveMany(pkd()));
   $('#lsVideo', box)?.addEventListener('click', () => pickAndAdd(cur).then(drawBrowse));
   $('#lsLink', box)?.addEventListener('click', () => H.addLink?.(cur));
   $('#lsDoc', box)?.addEventListener('click', () => H.addDocs?.(cur).then(drawBrowse));
