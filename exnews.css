@@ -1044,3 +1044,9 @@ body.vx-on #cueList { display: none; }
 .vq-fb.good { border-color: #5fd068; }
 .vq-fb.bad { border-color: #ff7b88; }
 .sp-who b.sp-by { font-size: 18px; }
+
+/* Cài đặt → Thống kê nội dung */
+.stat-tb { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.stat-tb th, .stat-tb td { padding: 6px 8px; border: 2px solid var(--line); text-align: left; vertical-align: top; }
+.stat-tb td:nth-child(n+2), .stat-tb thead th:nth-child(n+2) { text-align: right; white-space: nowrap; }
+.stat-tb .stat-g th { background: var(--panel2, var(--panel)); font-size: .9em; }

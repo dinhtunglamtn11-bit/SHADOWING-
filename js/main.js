@@ -187,6 +187,7 @@ for (const [name, mod] of Object.entries({ player, side, library, notes, quests,
 }
 show('library');
 initFirebase();
+import('./contentstats.js').then(m => m.init()).catch(e => console.warn('Thống kê nội dung không tải được:', e)); // nạp riêng: thiếu file này thì chỉ mất bảng thống kê, app vẫn chạy
 document.documentElement.dataset.booted = '1'; // đã khởi động xong: tắt thanh báo lỗi khởi động trong index.html
 loadSimplifier(); // sẵn sàng đổi phồn thể → giản thể (chỉ ~100 KB)
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
