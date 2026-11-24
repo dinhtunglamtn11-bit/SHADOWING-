@@ -91,7 +91,7 @@ body[data-view="tealab"] #views { padding-bottom: 0; }
 .cd.empty { border: 0; background: transparent; } .cd b { font-family: var(--pf); font-size: 18px; line-height: 1; } .cd.past { opacity: .55; } .cd.today { border-color: #ff9a3c; background: #fff0c8; } .cd.hol { background: #ffe1e4; } .cd.sel { outline: 3px solid #5ab4ff; } .cd u { position: absolute; top: 0; right: 2px; color: #d9a41c; font-size: 12px; border: 0; }
 .cal-leg { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; } .cal-leg .hol { background: #ffe1e4; padding: 0 4px; }
 .cal-d { background: #fff; border: 2px solid var(--line); padding: 8px; display: grid; gap: 4px; font-size: 16px; }
-.tl-ml { display: grid; gap: 4px; } .tl-mail { display: flex; gap: 8px; align-items: center; text-align: left; min-height: 52px; padding: 4px 8px; background: #fff; border: 2px solid var(--line); color: inherit; font: inherit; cursor: pointer; } .tl-mail span { display: grid; line-height: 1.15; } .tl-mail small { font-size: 12px; }
+.tl-ml { display: grid; gap: 4px; } .tl-mail { display: flex; gap: 8px; align-items: center; text-align: left; min-height: 52px; padding: 4px 8px; background: #fff; border: 2px solid var(--line); color: inherit; font: inherit; cursor: pointer; } .tl-mail > span { display: grid; line-height: 1.15; } .tl-mail small { font-size: 12px; }
 .tl-mail.unread { border-color: #5ab4ff; background: #eaf6ff; } .tl-mail.urgent { border-color: #ff9a3c; background: #fff0d6; }
 .tl-md { background: #fff; border: 2px solid var(--tlc); padding: 8px; display: grid; gap: 6px; } .tl-md p { margin: 0; line-height: 1.4; } .tl-md .btn { text-align: left; min-height: 48px; height: auto; white-space: normal; }
 .tl-sum { display: flex; gap: 12px; flex-wrap: wrap; font-family: var(--pf); font-size: 21px; } .tl-sum span { display: inline-flex; align-items: center; gap: 4px; }
@@ -190,3 +190,20 @@ body[data-view="tealab"] #lameEdge { display: none !important; }
 #vTealab.view { padding-bottom: 0; } /* thanh công cụ dính sát đáy màn hình */
 .cd.empty { background: transparent; border-color: transparent; box-shadow: none; }
 @media (max-width: 899px) { .tl-sheet { min-height: min(62vh, 480px); } }
+
+/* ---- giao diện tối (theme night): mọi thẻ nền sáng đều phải có chữ tối, và ngược lại ---- */
+.tl { --tl-card: #ffffff; --tl-card-t: #34224d; --tl-info: #eaf6ff; --tl-warnbg: #fff0d6; --tl-badbg: #ffe1e4; --tl-goodbg: #e5f7e0; --tl-sel: #fff0c8; --tl-chip: #e4dff7; --tl-tut: #e8f4ff; --tl-lowbg: #fff0b8; --tl-bad: #d2364c; --tl-good: #2f9a4a; --tl-warn: #c2701a; }
+:root[data-theme=night] .tl { --tl-card: #3a3670; --tl-card-t: #f4ecff; --tl-info: #22407a; --tl-warnbg: #5a4320; --tl-badbg: #62283a; --tl-goodbg: #1f5a3a; --tl-sel: #5a4a20; --tl-chip: #4a4590; --tl-tut: #22407a; --tl-lowbg: #5a4a20; --tl-bad: #ff8fa0; --tl-good: #7be08a; --tl-warn: #ffc266; }
+.tl .bad { color: var(--tl-bad); } .tl .good { color: var(--tl-good); } .tl .warn { color: var(--tl-warn); }
+.tl-kpis .bad b, .tl-feed .bad { color: var(--tl-bad); } .tl-kpis .good b, .tl-feed .good { color: var(--tl-good); }
+.tl-stats > div, .tl-kpis > div, .tl-chart, .tl-dg, .cd, .cal-d, .tl-mail, .tl-md, .tl-mg, .tl-bd, .tc-t, .tl-svg { background: var(--tl-card); color: var(--tl-card-t); }
+.tl-arr { background: var(--tl-goodbg); color: var(--tl-card-t); } .tl-arr.bad { background: var(--tl-badbg); color: var(--tl-card-t); }
+.tl-tut { background: var(--tl-tut); color: var(--tl-card-t); }
+.cd.today { background: var(--tl-sel); } .cd.hol, .cal-leg .hol { background: var(--tl-badbg); }
+.tl-mail.unread { background: var(--tl-info); } .tl-mail.urgent { background: var(--tl-warnbg); }
+.tl-unl span { background: var(--tl-chip); color: var(--tl-card-t); } .tl-unl span.on { background: #ffd84d; color: #2d1f47; }
+.tl-hud .hc.bad { background: var(--tl-badbg); } .tl-hud .hc.low { background: var(--tl-lowbg); }
+.tl-dg.bad { border-color: #ff5a5f; } .tl .tl-dg small, .tl-mail small, .tl-mg small, .tl-ms small { color: var(--dim); }
+.stars span { color: var(--dim); opacity: .6; } .stars span.on { color: #ffd84d; opacity: 1; }
+.tl-bar { background: var(--tl-chip); }
+:root[data-theme=night] .tl-svg text { fill: var(--tl-card-t); }
