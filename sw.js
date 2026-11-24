@@ -1,5 +1,6 @@
-// Service worker: ưu tiên mạng (luôn lấy bản mới), mất mạng thì dùng bản đã lưu.
-const CACHE = 'shadowing-v135';
+// Service worker: vỏ app (đúng danh sách SHELL) lấy từ bộ nhớ đệm ngay (mở app tức thì, không chờ mạng) và luôn cùng MỘT phiên bản (bộ nhớ đệm được tạo nguyên khối khi cài;
+// thiếu một file trên máy chủ thì bản mới không cài, app giữ nguyên bản cũ nhất quán). Các yêu cầu còn lại ưu tiên mạng, mất mạng thì dùng bản đã lưu.
+const CACHE = 'shadowing-v138';
 const DICT_CACHE = 'shadowing-dict'; // từ điển ~9 MB: giữ riêng để không bị xóa mỗi lần cập nhật app
 const SHELL = [
   './', 'index.html', 'styles.css', 'pixel.css', 'exnews.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
@@ -7,8 +8,13 @@ const SHELL = [
   'js/media.js', 'js/align.js', 'js/alignui.js', 'js/dictation.js', 'js/speak.js', 'js/cards.js', 'js/clip.js', 'js/quiz.js', 'js/review.js', 'js/tts.js', 'js/sets.js', 'js/exparse.js', 'js/videx.js', 'js/passport.js', 'js/pass-world.js', 'js/pass-kit.js', 'js/pass-jp1.js', 'js/pass-jp2.js', 'js/pass-jp3.js', 'js/pass-jp4.js', 'js/pass-jp5.js', 'js/pass-story.js', 'js/pass-kr1.js', 'js/pass-kr2.js', 'js/pass-kr3.js', 'js/pass-cn1.js', 'js/pass-cn2.js', 'js/pass-cn3.js', 'js/pass-cn4.js', 'js/pass-cn5.js', 'js/pass-cn6.js', 'js/pass-vn1.js', 'js/pass-vn2.js', 'js/pass-vn3.js', 'js/pass-vn4.js', 'js/pass-vn5.js', 'js/pass-vn6.js', 'js/pass-fr1.js', 'js/pass-fr2.js', 'js/pass-fr3.js', 'js/pass-fr4.js', 'js/pass-fr5.js', 'js/pass-fr6.js', 'js/pass-eg1.js', 'js/pass-eg2.js', 'js/pass-eg3.js', 'js/pass-eg4.js', 'js/pass-eg5.js', 'js/pass-eg6.js', 'js/pass-us1.js', 'js/pass-us2.js', 'js/pass-us3.js', 'js/pass-us4.js', 'js/pass-us5.js', 'js/pass-us6.js', 'js/pass-story-us.js', 'js/pass-skins.js', 'js/skin.js', 'js/pass-sh8.js', 'js/pass-sh1.js', 'js/pass-sh2.js', 'js/pass-sh3.js', 'js/pass-sh4.js', 'js/pass-sh5.js', 'js/pass-sh6.js', 'js/pass-sh7.js', 'js/pass-my1.js', 'js/pass-my2.js', 'js/pass-my3.js', 'js/pass-my4.js', 'js/pass-my5.js', 'js/pass-my6.js', 'js/pass-story-my.js', 'js/pass-ch1.js', 'js/pass-ch2.js', 'js/pass-ch3.js', 'js/pass-ch4.js', 'js/pass-ch5.js', 'js/pass-ch6.js', 'js/pass-story-ch.js', 'js/pass-ly1.js', 'js/pass-ly2.js', 'js/pass-ly3.js', 'js/pass-ly4.js', 'js/pass-ly5.js', 'js/pass-ly6.js', 'js/pass-story-ly.js', 'js/pass-map.js', 'js/prompts.js', 'js/scm.js', 'js/scm-keys.js', 'js/scm-engines.js', 'js/scm-engines2.js', 'js/scm-events.js', 'js/vocabbank.js', 'js/contentstats.js', 'js/scm-keys2.js', 'js/scm-cases2.json', 'js/scm-img/b2-image1.png', 'js/scm-img/b2-image2.png', 'js/scm-img/b2-image3.png', 'js/scm-img/b2-image4.png', 'js/scm-img/b2-image5.png', 'js/scm-img/b2-image6.png', 'js/scm-img/b2-image7.png', 'js/scm-img/b2-image8.png', 'js/scm-img/b2-image9.png', 'js/scm-img/b2-image10.png', 'js/scm-img/b2-image11.png', 'js/scm-img/b2-image12.png', 'js/scm-art.js', 'js/scm-cases.json', 'js/scm-img/image1.png', 'js/scm-img/image10.png', 'js/scm-img/image11.png', 'js/scm-img/image12.png', 'js/scm-img/image13.png', 'js/scm-img/image14.png', 'js/scm-img/image15.png', 'js/scm-img/image16.png', 'js/scm-img/image17.png', 'js/scm-img/image18.png', 'js/scm-img/image19.png', 'js/scm-img/image2.png', 'js/scm-img/image20.png', 'js/scm-img/image21.png', 'js/scm-img/image3.png', 'js/scm-img/image4.png', 'js/scm-img/image5.png', 'js/scm-img/image6.png', 'js/scm-img/image7.png', 'js/scm-img/image8.png', 'js/scm-img/image9.png', 'js/pass-iso.js', 'js/world-110m.json', 'js/lamefx.js', 'js/pass-au1.js', 'js/pass-au2.js', 'js/pass-au3.js', 'js/pass-au4.js', 'js/pass-au5.js', 'js/pass-au6.js', 'js/pass-story-au.js', 'js/pass-br1.js', 'js/pass-br2.js', 'js/pass-br3.js', 'js/pass-br4.js', 'js/pass-br5.js', 'js/pass-br6.js', 'js/pass-story-br.js', 'js/pass-in1.js', 'js/pass-in2.js', 'js/pass-in3.js', 'js/pass-in4.js', 'js/pass-in5.js', 'js/pass-in6.js', 'js/pass-story-in.js', 'js/pass-count.js', 'js/pass-nz1.js', 'js/pass-nz2.js', 'js/pass-nz3.js', 'js/pass-nz4.js', 'js/pass-nz5.js', 'js/pass-nz6.js', 'js/pass-story-nz.js', 'js/pass-story-eg.js', 'js/pass-story-fr.js', 'js/pass-story-vn.js', 'js/pass-story-cn.js', 'js/pass-kr4.js', 'js/pass-kr5.js', 'js/pass-story-kr.js', 'js/pass-lame.js', 'js/lame.js', 'js/exrun.js', 'js/exprompts.js', 'js/world.js', 'js/social.js', 'js/story.js', 'js/richtext.js', 'js/sfx.js', 'js/music.js', 'js/lbl.js', 'js/focusmode.js', 'js/pylab.js', 'js/pylab-rad.js', 'js/pylab-data.js', 'js/pylab-data2.js', 'js/pylab-data3.js', 'js/fx.js', 'js/shadowrec.js', 'js/asrworker.js', 'js/cuehtml.js', 'js/cueedit.js', 'js/tree.js', 'js/mistakes.js', 'js/wvocab.js', 'js/mistakeui.js', 'js/achieve.js', 'js/lessons.js', 'js/exsheet.js', 'js/dnd.js', 'js/writing.js', 'js/backup.js', 'js/subedit.js', 'js/subpaste.js', 'js/strokes.js', 'js/writeset.js', 'js/segments.js', 'js/player.js', 'js/library.js', 'js/notes.js', 'js/side.js', 'js/quests.js',
 ];
 
+const DEV = ['localhost', '127.0.0.1'].includes(self.location.hostname); // khi phát triển trên máy: luôn lấy file mới nhất, không dùng bộ nhớ đệm ưu tiên
+const SHELL_PATHS = new Set(SHELL.map(u => new URL(u, self.location.href).pathname));
+const netFirst = (req, url) => fetch(req, url.origin === location.origin ? { cache: 'no-cache' } : undefined)
+  .then(res => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); } return res; })
+  .catch(() => caches.match(req).then(r => r || caches.match('index.html')));
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => Promise.allSettled(SHELL.map(u => c.add(u))))); // thiếu một file (chưa tải lên đủ) không làm hỏng cả bản cài; các file có mặt vẫn được lưu
+  e.waitUntil(caches.open(CACHE).then(c => Promise.all(SHELL.map(u => c.add(new Request(u, { cache: 'no-cache' })))).then(() => c.put('__installed', new Response('1'))))); // dấu hiệu cài đủ: trang dùng nó để biết bản mới đã cài xong; // hỏi lại máy chủ từng file (ETag: file không đổi chỉ tốn một phản hồi 304); thiếu một file thì cả lần cài thất bại và bản cũ vẫn chạy
   self.skipWaiting();
 });
 
@@ -34,14 +40,12 @@ self.addEventListener('fetch', e => {
     e.respondWith(caches.open(DICT_CACHE).then(c => c.match(req).then(r => r || fetch(req).then(res => { if (res.ok) c.put(req, res.clone()); return res; }))));
     return;
   }
-  e.respondWith(
-    fetch(req, url.origin === location.origin ? { cache: 'no-cache' } : undefined) // luôn hỏi lại máy chủ (ETag): sau khi tải bản mới lên không bị lẫn file cũ trong bộ nhớ đệm HTTP
-      .then(res => {
-        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
-        return res;
-      })
-      .catch(() => caches.match(req).then(r => r || caches.match('index.html')))
-  );
+  // vỏ app: lấy từ bộ nhớ đệm trước (cùng một phiên bản, mở tức thì); trang chính (điều hướng) luôn trả index.html đã lưu
+  if (!DEV && url.origin === location.origin && (req.mode === 'navigate' || SHELL_PATHS.has(url.pathname))) {
+    e.respondWith(caches.match(req.mode === 'navigate' ? 'index.html' : req, { ignoreSearch: true }).then(hit => hit || netFirst(req, url)));
+    return;
+  }
+  e.respondWith(netFirst(req, url));
 });
 
 

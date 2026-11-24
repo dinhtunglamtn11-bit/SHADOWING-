@@ -241,6 +241,7 @@ function folderTiles(all, folders) {
   return `<div class="wfs">${tile('', 'Tất cả', all.length, 'a_world', '#7ec3ff')}${folders.map(f => tile(f.id, f.name, all.filter(a => a.folder === f.id).length, 'a_folder', colorOfName(f.name), true)).join('')}${none && folders.length ? tile('_none', 'Chưa phân loại', none, 'a_folder', '#c9c3e6') : ''}<button class="wf add" id="wfNew"><span class="wfa">${pix('a_plus')}</span><b>Thư mục mới</b></button></div>`;
 }
 
+let feedN = 36, feedKey = ''; // thư viện bài đọc hàng trăm bài: chỉ dựng 36 thẻ đầu, bấm “Hiện thêm” mới dựng tiếp (đổi bộ lọc hoặc ngôn ngữ thì về 36)
 let nwMore = false; // nhóm nút phụ (viết bài, nhập, từ vựng, kiểm tra) mặc định thu gọn
 function drawFeed() {
   leaveFull();
@@ -257,7 +258,9 @@ function drawFeed() {
       <div class="row c" style="margin-top:12px"><button class="btn primary" id="nwAdd">＋ Viết bài</button><button class="btn" id="nwImport">📥 Nhập nhiều bài</button><button class="btn" id="nwSample">✨ Thêm bài mẫu</button></div></div>`;
     bindFeed(); return;
   }
+  const fk = lang + '|' + filter.folder + '|' + filter.unread; if (fk !== feedKey) { feedKey = fk; feedN = 36; }
   const hero = !filter.folder && !filter.unread && list.length >= 3 ? list[Math.floor(Date.now() / DAY) % list.length] : null;
+  const rest = list.filter(a => a !== hero);
   const fsel = filter.folder && filter.folder !== '_none' ? folders.find(f => f.id === filter.folder) : null;
   root.innerHTML = `${head}
     <div class="row"><button class="btn primary big" id="nwRandom" title="Chọn ngẫu nhiên một chủ đề (thư mục) rồi mở một bài trong đó; chủ đề được phép lặp lại">🎲 Chủ đề ngẫu nhiên</button><button class="chip ${filter.unread ? 'on' : ''}" id="nwUnread">● Chưa đọc xong <small>${all.length - done}</small></button><button class="btn ${nwMore ? 'on' : ''}" id="nwMore">⋯ Thêm <span class="ar">${nwMore ? '▲' : '▼'}</span></button></div>
@@ -265,7 +268,7 @@ function drawFeed() {
     ${folderTiles(all, folders)}
     ${fsel ? `<div class="row"><b class="gt">${esc(fsel.name)}</b><button class="btn" id="wfRen">✎ Đổi tên</button><button class="btn" id="wfDel">🗑 Xóa thư mục</button></div>` : ''}
     ${hero ? `<div class="nw-sec">⭐ Bài nổi bật hôm nay</div>${card(hero, true)}` : ''}
-    ${list.length ? `<div class="nw-sec">${filter.folder || filter.unread ? 'Kết quả' : 'Mới nhất'}</div><div class="nw-grid">${list.filter(a => a !== hero).map(a => card(a)).join('')}</div>` : '<div class="empty">Không có bài nào khớp bộ lọc.</div>'}`;
+    ${list.length ? `<div class="nw-sec">${filter.folder || filter.unread ? 'Kết quả' : 'Mới nhất'}</div><div class="nw-grid">${rest.slice(0, feedN).map(a => card(a)).join('')}</div>${rest.length > feedN ? `<div class="row c"><button class="btn" id="nwMoreCards">▼ Hiện thêm ${Math.min(36, rest.length - feedN)} bài (còn ${rest.length - feedN})</button></div>` : ''}` : '<div class="empty">Không có bài nào khớp bộ lọc.</div>'}`;
   bindFeed();
 }
 
@@ -298,6 +301,7 @@ function bindFeed() {
     store.list('articles').filter(a => a.folder === filter.folder).forEach(a => store.put('articles', a.id, { folder: '' }));
     store.del('wfolders', filter.folder); filter.folder = ''; drawFeed();
   });
+  $('#nwMoreCards', root)?.addEventListener('click', () => { const sc = root.closest('.view'), top = sc ? sc.scrollTop : 0; feedN += 36; drawFeed(); if (sc) sc.scrollTop = top; });
   $$('[data-open]', root).forEach(c => {
     c.onclick = () => openArticle(c.dataset.open);
     c.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openArticle(c.dataset.open); } };
