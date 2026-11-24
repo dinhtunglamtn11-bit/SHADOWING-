@@ -9,26 +9,27 @@ import { M } from './media.js';
 import { muted, setMuted } from './sfx.js';
 
 const LKEY = 'musicLists', CKEY = 'musicCfg', PRE = 'mus_';
-const LISTS = ['bg', 'world', 'story'];
+const LISTS = ['bg', 'world', 'story', 'game'];
 const jget = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v ?? d; } catch { return d; } };
 let lists = (() => {
   const l = jget(LKEY, null);
-  if (l) return { bg: l.bg || [], world: l.world || [], story: l.story || [] };
+  if (l) return { bg: l.bg || [], world: l.world || [], story: l.story || [], game: l.game || [] };
   const old = jget('musicList', []); // bản cũ chỉ có một danh sách: chuyển sang nhạc nền
-  return { bg: Array.isArray(old) ? old : [], world: [], story: [] };
+  return { bg: Array.isArray(old) ? old : [], world: [], story: [], game: [] };
 })();
-let cfg = { bgOn: true, worldOn: true, storyOn: true, vol: 0.4, worldMode: 'full', fallback: 'bg', resume: true, fade: 0.6, ...jget(CKEY, {}) };
+let cfg = { bgOn: true, worldOn: true, storyOn: true, gameOn: true, vol: 0.4, worldMode: 'full', fallback: 'bg', resume: true, fade: 0.6, ...jget(CKEY, {}) };
 const saveL = () => { try { localStorage.setItem(LKEY, JSON.stringify(lists)); } catch {} };
 const saveC = () => { try { localStorage.setItem(CKEY, JSON.stringify(cfg)); } catch {} };
 
-let aud = null, cur = null, curL = null, bags = { bg: [], world: [], story: [] }, forced = false, userPause = false, videoOn = false, hinted = false;
-const pos = { bg: null, world: null, story: null }; // bài và vị trí đang nghe của từng danh sách, để quay lại đúng chỗ sau khi chuyển danh sách
+let aud = null, cur = null, curL = null, bags = { bg: [], world: [], story: [], game: [] }, forced = false, userPause = false, videoOn = false, hinted = false;
+const pos = { bg: null, world: null, story: null, game: null }; // bài và vị trí đang nghe của từng danh sách, để quay lại đúng chỗ sau khi chuyển danh sách
 let lastCtx = 'bg', rampT = 0, rampG = 0;
 
 // Danh sách nhạc theo chỗ bạn đang đứng. Mặc định chỉ khi ĐỌC TOÀN MÀN HÌNH (body.sp-reading, dùng chung cho Article / Flash / Focus / Keyword / Story)
 // mới đổi sang nhạc Thế giới / Story; còn lại là nhạc nền, không bị ngắt. worldMode = 'enter' trả về cách cũ (vào Thế giới là đổi).
 const reading = () => document.body.classList.contains('sp-reading');
 const where = () => {
+  if (document.body.dataset.view === 'tealab') return 'game'; // đang chơi TeaLab: nhạc riêng của game (trống thì dùng nhạc nền)
   if (document.body.dataset.view !== 'world') return 'bg';
   if (cfg.worldMode !== 'enter' && !reading()) return 'bg';
   return document.body.dataset.wsec === 'story' ? 'story' : 'world';
@@ -121,7 +122,7 @@ function draw() {
   const playing = !!aud && !aud.paused;
   $('#muPlay').textContent = playing ? '⏸ Dừng' : '▶ Phát';
   const t = playing && curL ? lists[curL].find(x => x.id === cur) : null;
-  $('#muNow').innerHTML = t ? `${curL === 'world' ? '🌍' : curL === 'story' ? '📖' : '🎧'} Đang phát: <b class="gt mu-name">${esc(t.name)}</b>` : 'Đang dừng.';
+  $('#muNow').innerHTML = t ? `${curL === 'world' ? '🌍' : curL === 'story' ? '📖' : curL === 'game' ? '🍵' : '🎧'} Đang phát: <b class="gt mu-name">${esc(t.name)}</b>` : 'Đang dừng.';
   for (const l of LISTS) {
     const sec = $(`.mu-sec[data-l="${l}"]`, dlg), on = cfg[l + 'On'];
     const tg = $('[data-on]', sec); tg.classList.toggle('on', on); tg.textContent = on ? '☑ Bật' : '☐ Tắt';

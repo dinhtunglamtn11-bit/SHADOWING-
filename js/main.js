@@ -192,6 +192,8 @@ const lazyMod = (name, path, view) => {
   return load;
 };
 const loadWorld = lazyMod('Thế giới', './world.js', 'world'), loadScm = lazyMod('SCM', './scm.js', 'scm');
+lazyMod('TeaLab', './tealab.js', 'tealab'); // game: chỉ nạp khi bấm vào 🍵 TeaLab (không nằm trong gói tải đầu)
+$('#btnTeaLab').onclick = () => show('tealab');
 const idle = f => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 6000 }) : setTimeout(f, 3000));
 idle(() => { loadWorld(); idle(loadScm); });
 show('library');

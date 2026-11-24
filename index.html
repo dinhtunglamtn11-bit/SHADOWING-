@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="pixel.css">
 <link rel="stylesheet" href="exnews.css">
+<link rel="stylesheet" href="tealab.css">
 <script>
 // Áp dụng cài đặt giao diện sớm (tránh nháy màu): đọc 'ui' trong localStorage, cùng logic với js/settings.js
 (function () {
@@ -40,6 +41,7 @@
   <button id="btnBack" class="btn" title="Quay lại trang vừa xem" disabled>←</button>
   <b class="logo"><span data-ic="headphones"></span><span>SHADOW<i>ING</i></span></b>
   <div id="langs" class="chips"></div>
+  <button id="btnTeaLab" class="btn" title="TeaLab: game quản lý tiệm trà (chỉ còn game, ẩn các mục khác)">🍵 TeaLab</button>
   <span class="grow"></span>
   <span id="sync"></span>
   <button id="btnSound" class="btn" title="Tắt / bật toàn bộ âm thanh (nhạc nền và tiếng nút bấm)">🔊</button>
@@ -254,6 +256,7 @@
   <!-- ===== Soạn văn bản ===== -->
   <!-- ===== SCM: chuỗi cung ứng ===== -->
   <section id="vScm" class="view"><div class="wrap"><div id="scmRoot" class="scmroot"></div></div></section>
+  <section id="vTealab" class="view"><div id="tlHost"></div></section>
 
   <section id="vNotes" class="view">
     <div class="wrap">
@@ -566,6 +569,12 @@
       <div class="mu-sec" data-l="story">
         <div class="row"><b class="grow">📖 Nhạc khi đọc Story</b><button class="btn" data-on></button></div>
         <small class="dim">Phát khi bạn bấm 📺 đọc toàn màn hình ở Story (đọc sách); thoát ra thì quay lại nhạc nền.</small>
+        <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
+        <div class="mu-list"></div>
+      </div>
+      <div class="mu-sec" data-l="game">
+        <div class="row"><b class="grow">🍵 Nhạc TeaLab (game)</b><button class="btn" data-on></button></div>
+        <small class="dim">Phát riêng khi bạn đang chơi TeaLab; thoát game thì quay lại nhạc nền. Danh sách trống thì game dùng nhạc nền.</small>
         <div class="row"><button class="btn primary" data-add>＋ Thêm nhạc</button><button class="btn" data-clr>🗑 Xóa hết</button></div>
         <div class="mu-list"></div>
       </div>
