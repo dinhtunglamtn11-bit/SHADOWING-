@@ -5,7 +5,9 @@
 // Bản mặc định tự đổi theo ngôn ngữ đang chọn chừng nào bạn chưa sửa.
 import { $, toast, bus, LANGS } from './util.js';
 import * as store from './store.js';
-import { setPrompt, newsPrompt, socialPrompt, vocabBankPrompt, KIND_ORDER, KIND_INFO, EX } from './exprompts.js';
+import * as EP from './exprompts.js'; // nhập theo không gian tên: nếu máy chủ còn bản exprompts.js cũ (chưa tải lên đủ gói) thì thiếu một prompt chứ app không bị chết khi khởi động
+const { setPrompt, newsPrompt, socialPrompt, KIND_ORDER, KIND_INFO, EX } = EP;
+const vocabBankPrompt = EP.vocabBankPrompt || (() => 'Chưa có prompt này: file exprompts.js trên máy chủ còn bản cũ, hãy tải lên đủ các gói cập nhật.');
 
 // Biến dùng được trong mọi prompt (viết trong dấu { }): sẽ được thay bằng giá trị bạn nhập ở các ô phía trên
 const VARS = ['chung', 'ngôn_ngữ', 'trình_độ', 'chủ_đề', 'số_lượng', 'số_bài', 'nguồn', 'tên_nước', 'châu'];
@@ -49,7 +51,7 @@ const PASSPORT = `Làm thêm nước {tên_nước} (châu {châu}) cho tab Pass
 
 Nội dung: theo tài liệu "Sổ tay 5 nhóm" dán bên dưới. Mỗi nước có 5 nhóm lớn, mỗi nhóm có mục nhỏ rồi thẻ; mỗi thẻ có tên Việt, tên Anh, ghi chú 1–2 câu (rút gọn từ tài liệu, sửa lỗi chính tả). Mỗi mục lớn một câu chuyện dài lấy từ tài liệu, mỗi mục nhỏ một câu chuyện ngắn tự viết. Thẻ chỉ có tiếng Việt/Anh.
 
-Việc cần làm (mã nước xx): js/pass-xx1..5.js (thẻ pixel 16×16, mã thẻ ASCII có tiền tố xx-, d.l chỉ nhận số nguyên); trang phục và đồ cho Lame (OUTM, OUT_KEY, SLOT_OF, O); js/pass-story-xx.js (BIG và SUB, khóa phải khớp tên mục nhỏ); js/pass-xx6.js; pass-world.js (|xx); drawFlag trong passport.js; pass-count.js (COUNT); pass-iso.js (CC2ISO: mã ISO 3 chữ cái của nước); sw.js (tăng phiên bản, thêm file); chép sang upload và upload-capnhat (mỗi gói dưới 100 file; quá thì tách upload-capnhat-2, -3 và nói rõ thứ tự tải).
+Việc cần làm (mã nước xx): js/pass-xx1..5.js (thẻ pixel 16×16, mã thẻ ASCII có tiền tố xx-, d.l chỉ nhận số nguyên); trang phục và đồ cho Lame (OUTM, OUT_KEY, SLOT_OF, O); js/pass-story-xx.js (BIG và SUB, khóa phải khớp tên mục nhỏ); js/pass-xx6.js; pass-world.js (|xx); drawFlag trong passport.js; pass-count.js (COUNT); pass-iso.js (CC2ISO: mã ISO 3 chữ cái của nước); sw.js (tăng phiên bản, thêm file); chép sang upload rồi chia lại TOÀN BỘ upload thành upload-full-1, -2, -3… (mỗi gói dưới 100 file, các gói hợp lại phải giống hệt upload; người dùng tải đủ mọi gói, thứ tự nào cũng được). KHÔNG làm gói cập nhật lẻ vì dễ lẫn bản cũ và mới gây lỗi khởi động.
 Kiểm tra trước khi báo xong: số thẻ, không trùng mã, mọi mục nhỏ có truyện, mọi thẻ vẽ được, đồ ghép lên Lame không lỗi, mở thử trên trình duyệt, console không lỗi. Báo cáo ngắn bằng tiếng Việt.
 
 TÀI LIỆU:
@@ -66,7 +68,7 @@ VIỆC CẦN LÀM
 3. Đáp án trong js/scm-keysN.js (gộp vào KEYS bằng Object.assign). Khóa ô: "bước.bảng.dòng[.cột]", bảng tính theo thứ tự (kể cả bảng tick và bảng luật). Mỗi ô: ticks[bước] = các dòng đúng; f[khóa] = { v | s | set | nums, tol | rel, w, ft (tính tiếp), eng (tính lại từ lựa chọn của người chơi), pf (điểm từng phần 0..1) }; dq(g) trả { dq, valid, why }.
 4. Bài có tối ưu hóa phải viết ENGINE trong js/scm-engines*.js: tính lại chi phí / điều kiện hợp lệ từ lựa chọn của người chơi, duyệt mọi phương án để ra tối ưu; ĐỐI CHIẾU engine với MỌI con số trong lời giải của tài liệu trước khi dùng. Số liệu nằm trong hình thì đọc từ hình rồi đối chiếu với bảng lời giải.
 5. Sao: ★ ≥ 60 điểm và hợp lệ; ★★ ≥ 75 và chất lượng quyết định ≥ 80%; ★★★ ≥ 90 và chọn đúng tối ưu. Mốc khóa bước, cập nhật giữa chừng, hộp thư ngẫu nhiên, thưởng xu theo độ khó (mã case: chữ cái là lĩnh vực, chữ số là độ khó) đã có sẵn trong code.
-6. sw.js: tăng phiên bản shadowing-vNN, thêm mọi file mới (js, json, ảnh). Chép file đổi sang upload và upload-capnhat; mỗi gói phải dưới 100 file (quá thì tách upload-capnhat-2, -3 và nói rõ thứ tự tải, gói chứa sw.js mới nhất tải sau cùng).
+6. sw.js: tăng phiên bản shadowing-vNN, thêm mọi file mới (js, json, ảnh). Chép file đổi sang upload rồi chia lại TOÀN BỘ upload thành upload-full-1, -2, -3… (mỗi gói dưới 100 file, hợp lại giống hệt upload, người dùng tải đủ mọi gói). Không làm gói cập nhật lẻ vì dễ lẫn bản cũ và mới.
 
 KIỂM TRA TRƯỚC KHI BÁO XONG (trình duyệt http://localhost:8080, preview_start "shadowing"): mọi case điền đáp án chuẩn đạt 100/100; thử phương án sai và không hợp lệ cho đúng kết quả như lời giải; kiểm tra mốc khóa và cập nhật; mọi hình tải được; không lỗi console; các case cũ vẫn 100/100; dọn localStorage scm:v1 sau cùng. Báo cáo bằng tiếng Việt, ngắn gọn: phần nào do engine tính, phần nào dựng sẵn theo lời giải, cách đẩy bản mới.
 
