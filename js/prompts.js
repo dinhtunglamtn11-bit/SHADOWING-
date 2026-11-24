@@ -3,7 +3,7 @@
 // và hai prompt dành cho Claude Code: thêm bộ case SCM, thêm nước vào Passport).
 // Mỗi loại có bản mặc định; bạn sửa thoải mái, tự lưu (đồng bộ giữa các máy khi đã đăng nhập, có trong file sao lưu). "Mặc định" trả lại bản gốc.
 // Bản mặc định tự đổi theo ngôn ngữ đang chọn chừng nào bạn chưa sửa.
-import { $, toast, bus, LANGS } from './util.js';
+import { $, $$, toast, bus, LANGS } from './util.js';
 import * as store from './store.js';
 import * as EP from './exprompts.js'; // nhập theo không gian tên: nếu máy chủ còn bản exprompts.js cũ (chưa tải lên đủ gói) thì thiếu một prompt chứ app không bị chết khi khởi động
 const { setPrompt, newsPrompt, socialPrompt, KIND_ORDER, KIND_INFO, EX } = EP;
@@ -33,6 +33,25 @@ ${lang === 'zh' ? '- Chữ Hán dùng GIẢN THỂ.\n' : ''}- Không bịa thêm
 NGUỒN:
 {nguồn}`;
 };
+const TIMELINE = lang => `Bạn là biên tập viên phụ đề ${lname(lang)}. {chung}
+
+Nhiệm vụ: gắn giờ [mm:ss] vào đầu mỗi dòng của SCRIPT, dựa vào TRANSCRIPT (bản chép lời của video, có giờ).
+
+SCRIPT: các dòng theo cú pháp  chữ gốc | phiên âm | nghĩa tiếng Việt  (xem phần SCRIPT bên dưới).
+TRANSCRIPT: các dòng có giờ, ví dụ  0:12 nội dung nói  hoặc  [00:12] nội dung nói.
+
+QUY TẮC:
+- Giữ NGUYÊN thứ tự, nội dung và cú pháp 3 phần của từng dòng SCRIPT; chỉ thêm [mm:ss] ở đầu dòng:  [mm:ss] chữ gốc | phiên âm | nghĩa
+- Giờ = thời điểm câu đó bắt đầu được nói trong TRANSCRIPT (khớp theo nội dung, không theo số dòng). Giờ phải tăng dần.
+- Không bịa giờ: dòng nào không tìm được chỗ khớp thì dùng lại giờ của dòng liền trước (hoặc [00:00] nếu là dòng đầu).
+- Không sửa, không bỏ, không thêm dòng. Dùng định dạng mm:ss (video quá 1 giờ thì dùng [h:mm:ss]).
+- Chỉ trả về các dòng đã gắn giờ, đặt trong MỘT khối code, không giải thích.
+
+SCRIPT:
+{nguồn}
+
+TRANSCRIPT (dán bản chép lời có giờ của video vào đây, ngay dưới dòng này):
+`;
 const VOCAB = lang => `Bạn là giáo viên ${lname(lang)}. {chung}
 
 Từ NGUỒN ở cuối (hoặc chủ đề: {chủ_đề}), hãy lập danh sách khoảng {số_lượng} từ vựng quan trọng, trình độ {trình_độ}, theo ĐÚNG cú pháp, MỖI TỪ MỘT DÒNG:
@@ -83,12 +102,13 @@ const TYPES = [
   { id: 'focus', name: '🔭 Bài đọc dài (Social: Focus)', build: lang => head + socialPrompt({ lang, kind: 'focus', fields: '{chủ_đề}', posts: '{số_bài}', level: '{trình_độ}', source: '{nguồn}' }) },
   { id: 'keyword', name: '🔑 Thuật ngữ + tác giả (Thế giới → Keyword)', build: lang => head + socialPrompt({ lang, kind: 'keyword', fields: '{chủ_đề}', posts: '{số_bài}', level: '{trình_độ}', source: '{nguồn}' }) },
   { id: 'subs', name: '💬 Phụ đề / câu 3 phần (chữ gốc | phiên âm | nghĩa)', build: SUB_SYNTAX },
+  { id: 'timeline', name: '⏱ Gắn giờ [mm:ss] cho script (từ transcript YouTube)', build: TIMELINE },
   { id: 'vocabbank', name: '🔠 Kho từ vựng (Ôn tập → Từ vựng → Nhập từ)', build: lang => head + vocabBankPrompt({ lang, topic: '{chủ_đề}', n: '{số_lượng}', level: '{trình_độ}' }) + '\n\nNGUỒN (nếu có, chỉ lấy từ trong đây):\n{nguồn}' },
   { id: 'vocab', name: '🔤 Từ vựng cho bài tập (dòng T: từ | phiên âm | nghĩa)', build: VOCAB },
   { id: 'scmcase', name: '📦 Thêm bộ case mới vào SCM', build: () => SCMCASE },
   { id: 'passport', name: '🛂 Thêm nước mới vào Passport', build: () => PASSPORT },
 ];
-const DEF = { lang: 'zh', level: 'trung cấp', topic: '', n: 5, posts: 3, src: '', type: 'sets' };
+const DEF = { lang: 'zh', level: 'trung cấp', topic: '', n: 5, posts: 3, src: '', type: 'sets', ver: 'mine' }; // ver: đang xem “bản sửa của tôi” (mine) hay “bản gốc” (orig)
 
 let doc = { tpl: {}, common: '', vars: { ...DEF } }, built = false;
 const load = () => { const r = store.get('prefs', 'prompts'); if (r) doc = { tpl: r.tpl || {}, common: r.common || '', vars: { ...DEF, ...(r.vars || {}) } }; };
@@ -96,7 +116,13 @@ let saveT = 0;
 const save = () => { clearTimeout(saveT); saveT = setTimeout(() => store.put('prefs', 'prompts', { tpl: doc.tpl, common: doc.common, vars: doc.vars }), 600); };
 const typeOf = id => TYPES.find(x => x.id === id) || TYPES[0];
 const defaultText = () => typeOf(doc.vars.type).build(doc.vars.lang);
-const textNow = () => doc.tpl[doc.vars.type] ?? defaultText(); // chưa sửa thì luôn là bản mặc định theo ngôn ngữ đang chọn
+const textNow = () => doc.tpl[doc.vars.type] ?? defaultText(); // BẢN SỬA: chưa sửa thì trùng bản gốc (tự đổi theo ngôn ngữ đang chọn)
+const viewing = () => (doc.vars.ver === 'orig' ? 'orig' : 'mine');
+const shown = () => (viewing() === 'orig' ? defaultText() : textNow()); // BẢN GỐC luôn là bản dựng sẵn trong app, không bao giờ bị sửa
+async function copyText(text, okMsg) {
+  try { await navigator.clipboard.writeText(text); toast(okMsg); }
+  catch { const t = $('#pgOut'); t.hidden = false; t.value = text; t.select(); document.execCommand?.('copy'); toast('Đã chọn sẵn prompt: nhấn Ctrl+C để chép'); }
+}
 
 export function fill(text, v = doc.vars, common = doc.common) {
   const map = { chung: common, 'ngôn_ngữ': lname(v.lang), 'trình_độ': v.level, 'chủ_đề': v.topic, 'số_lượng': v.n, 'số_bài': v.posts, 'nguồn': v.src, 'tên_nước': v.country || '', 'châu': v.continent || '' };
@@ -116,9 +142,18 @@ function render() {
     built = true;
   }
   set('pgType', v.type); set('pgLang', v.lang); set('pgLevel', v.level); set('pgTopic', v.topic); set('pgN', v.n); set('pgPosts', v.posts); set('pgSrc', v.src); set('pgCommon', doc.common); set('pgCountry', v.country || ''); set('pgCont', v.continent || '');
-  $('#pgTpl').value = textNow(); note();
+  showTpl();
 }
-function note() { const custom = doc.tpl[doc.vars.type] != null; $('#pgNote').textContent = custom ? '✏️ Bạn đã sửa prompt này (bấm “Mặc định” để trả lại bản gốc).' : 'Đang dùng bản mặc định (tự đổi theo ngôn ngữ). Sửa bất kỳ chỗ nào là được lưu lại.'; $('#pgPassOnly').hidden = doc.vars.type !== 'passport'; }
+// hiện bản đang xem (bản sửa hoặc bản gốc) vào ô nội dung; bản gốc chỉ đọc
+function showTpl() { const t = $('#pgTpl'); t.value = shown(); t.readOnly = viewing() === 'orig'; note(); }
+function note() {
+  const custom = doc.tpl[doc.vars.type] != null, orig = viewing() === 'orig';
+  $$('#ptVer button').forEach(b => b.classList.toggle('on', b.dataset.v === viewing()));
+  $('#pgNote').textContent = orig ? '📌 Đang xem BẢN GỐC: luôn giữ nguyên (tự đổi theo ngôn ngữ), không sửa được. Muốn sửa hãy chuyển sang “Bản sửa của tôi”.'
+    : custom ? '✏️ Đây là BẢN SỬA của bạn (tự lưu, đồng bộ giữa các máy). Bản gốc vẫn còn nguyên ở nút bên cạnh; bấm “Đặt bản sửa = bản gốc” để làm lại từ đầu.'
+      : 'Bản sửa đang trùng bản gốc. Sửa bất kỳ chỗ nào là được lưu thành bản sửa riêng của bạn, bản gốc vẫn giữ nguyên.';
+  $('#ptReset').disabled = !custom; $('#pgPassOnly').hidden = doc.vars.type !== 'passport';
+}
 function read() {
   const v = doc.vars; v.type = $('#pgType').value; v.lang = $('#pgLang').value; v.level = $('#pgLevel').value; v.topic = $('#pgTopic').value; v.n = Math.max(1, Math.min(60, +$('#pgN').value || 5)); v.posts = Math.max(1, Math.min(30, +$('#pgPosts').value || 3)); v.src = $('#pgSrc').value; v.country = $('#pgCountry').value; v.continent = $('#pgCont').value;
   doc.common = $('#pgCommon').value;
@@ -129,18 +164,25 @@ export function init() {
   dlg.addEventListener('change', e => {
     if (!e.target.id?.startsWith('pg') || e.target.id === 'pgTpl') return;
     const before = doc.vars.type; read(); save();
-    if (e.target.id === 'pgType' || e.target.id === 'pgLang') { $('#pgTpl').value = textNow(); note(); } else if (before !== doc.vars.type) note();
+    if (e.target.id === 'pgType' || e.target.id === 'pgLang') showTpl(); else if (before !== doc.vars.type) note();
   });
   dlg.addEventListener('input', e => {
-    if (e.target.id === 'pgTpl') { doc.tpl[doc.vars.type] = e.target.value; save(); note(); }
+    if (e.target.id === 'pgTpl') { if (viewing() === 'orig') return; doc.tpl[doc.vars.type] = e.target.value; save(); note(); }
     else if (e.target.id?.startsWith('pg') && e.target.id !== 'pgType' && e.target.id !== 'pgLang') { read(); save(); }
   });
-  $('#pgReset')?.addEventListener('click', () => { delete doc.tpl[doc.vars.type]; save(); $('#pgTpl').value = textNow(); note(); toast('Đã trả lại prompt mặc định'); });
-  $('#pgCopy')?.addEventListener('click', async () => {
-    read(); const out = fill($('#pgTpl').value);
-    try { await navigator.clipboard.writeText(out); toast('Đã chép prompt ✓'); }
-    catch { const t = $('#pgOut'); t.hidden = false; t.value = out; t.select(); document.execCommand?.('copy'); toast('Đã chọn sẵn prompt: nhấn Ctrl+C để chép'); }
+  // chuyển giữa “Bản sửa của tôi” và “Bản gốc”
+  $('#ptVer')?.addEventListener('click', e => {
+    const b = e.target.closest('button[data-v]'); if (!b) return;
+    doc.vars.ver = b.dataset.v; save(); showTpl();
   });
-  $('#pgShow')?.addEventListener('click', () => { read(); const t = $('#pgOut'); t.hidden = !t.hidden; if (!t.hidden) t.value = fill($('#pgTpl').value); });
+  $('#ptReset')?.addEventListener('click', () => {
+    if (doc.tpl[doc.vars.type] == null) return;
+    if (!confirm('Bỏ bản sửa của loại prompt này và làm lại từ bản gốc?')) return;
+    delete doc.tpl[doc.vars.type]; save(); showTpl(); toast('Bản sửa đã trùng bản gốc');
+  });
+  $('#ptCopyMine')?.addEventListener('click', () => { read(); copyText(fill(textNow()), 'Đã chép BẢN SỬA ✓'); });
+  $('#ptCopyOrig')?.addEventListener('click', () => { read(); copyText(fill(defaultText()), 'Đã chép BẢN GỐC ✓'); });
+  $('#ptRaw')?.addEventListener('click', () => copyText(shown(), 'Đã chép mẫu chưa điền biến ✓'));
+  $('#ptShow')?.addEventListener('click', () => { read(); const t = $('#pgOut'); t.hidden = !t.hidden; if (!t.hidden) t.value = fill(shown()); });
 }
 export { TYPES, KIND_INFO };

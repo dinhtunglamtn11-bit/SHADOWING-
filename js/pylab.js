@@ -304,12 +304,12 @@ function head() {
   const fb = (k, label, val) => `<button class="btn plf ${o === k ? 'on' : ''}" data-f="${k}"><span class="dim">${label}</span> <b>${val}</b> <span class="ar">${o === k ? '▲' : '▼'}</span></button>`;
   return `<div class="plhead">
     <div class="row plbar"><button class="btn" id="plBack">← Thư viện</button><b class="grow">🔊 Luyện âm</b></div>
-    <div class="seg" id="plMode"><button data-m="type" class="${S.mode === 'type' ? 'on' : ''}" title="Nghe rồi gõ pinyin">🎧 Nghe &amp; gõ</button><button data-m="disc" class="${S.mode === 'disc' ? 'on' : ''}" title="Nghe rồi chọn đáp án để phân biệt âm gần giống">🔀 Phân biệt</button><button data-m="speak" class="${S.mode === 'speak' ? 'on' : ''}" title="Đọc theo mẫu, ghi âm và so sánh">🎙 Đọc &amp; nói</button><button data-m="rad" class="${S.mode === 'rad' ? 'on' : ''}" title="Học 214 bộ thủ: nét, pinyin, Hán Việt, ý nghĩa">🧩 Bộ thủ</button></div>
-    ${S.mode === 'rad' ? `<div class="seg" id="plRs">${Object.entries(RSUB).map(([k, [n, tip]]) => `<button data-r="${k}" class="${S.rsub === k ? 'on' : ''}" title="${tip}">${n}</button>`).join('')}</div>
+    <div class="seg" id="plMode"><button data-m="type" class="${S.mode === 'type' ? 'on' : ''}" title="Nghe rồi gõ pinyin">🎧 Nghe &amp; gõ</button><button data-m="disc" class="${S.mode === 'disc' ? 'on' : ''}" title="Nghe rồi chọn đáp án để phân biệt âm gần giống">🔀 Phân biệt</button><button data-m="speak" class="${S.mode === 'speak' ? 'on' : ''}" title="Đọc theo mẫu, ghi âm và so sánh">🎙 Đọc &amp; nói</button><button data-m="rad" class="${S.mode === 'rad' ? 'on' : ''}" title="Học 214 bộ thủ: nét, pinyin, Hán Việt, ý nghĩa">🧩 Bộ thủ</button><button data-m="pron" class="${S.mode === 'pron' ? 'on' : ''}" title="Lộ trình học phát âm: thanh mẫu, vận mẫu, thanh điệu, cặp dễ nhầm, tổng ôn">📚 Phát âm</button></div>
+    ${S.mode === 'pron' ? '' : S.mode === 'rad' ? `<div class="seg" id="plRs">${Object.entries(RSUB).map(([k, [n, tip]]) => `<button data-r="${k}" class="${S.rsub === k ? 'on' : ''}" title="${tip}">${n}</button>`).join('')}</div>
     <div class="row plfilters">${fb('rg', 'Số nét:', RG[S.rg][0])}</div>` : `<div class="row plfilters">${fb('set', 'Bộ:', SETNAME[S.set])}${fb('lv', 'Mức:', lvName(S.lv))}${fb('grp', 'Thanh mẫu:', GROUPS[S.grp][0])}</div>`}
-    ${filterOptions()}
+    ${S.mode === 'pron' ? '' : `${filterOptions()}
     ${covLine()}
-    <div class="dim plstat">Phiên này: ${S.n} câu${S.n ? ` · đúng ${S.ok} (${Math.round(100 * S.ok / S.n)}%)` : ''} · ${nWeak ? `${nWeak} mục hay sai (sẽ gặp nhiều hơn)` : 'chưa có mục hay sai'}</div>
+    <div class="dim plstat">Phiên này: ${S.n} câu${S.n ? ` · đúng ${S.ok} (${Math.round(100 * S.ok / S.n)}%)` : ''} · ${nWeak ? `${nWeak} mục hay sai (sẽ gặp nhiều hơn)` : 'chưa có mục hay sai'}</div>`}
   </div>`;
 }
 function refreshHead() { // chỉ vẽ lại phần đầu, giữ nguyên câu hỏi và chữ bạn đang gõ
@@ -408,8 +408,16 @@ function drawRad() {
     <button class="btn" id="plU" tabindex="-1" title="Chèn chữ ü">ü</button><button class="btn primary" id="plGo" ${S.done ? 'hidden' : ''}>Trả lời</button></div>
     <div class="dim">Gõ pinyin của bộ thủ kèm số thanh điệu (ví dụ: ren2, shan1). Có thể gõ v thay cho ü.</div>${fb}`;
 }
+// mục “Phát âm” (lộ trình bài học) nằm trong module riêng, nạp khi bấm vào lần đầu
+let pronP = null, pronMod = null;
+function drawPron() {
+  box.innerHTML = `${head()}<div id="pnBox"></div>`; bindHead();
+  (pronP ||= import('./pylab-pron.js').then(m => (pronMod = m)).catch(e => { pronP = null; toast('Không tải được mục Phát âm: kiểm tra mạng rồi thử lại', 4000); console.error(e); return null; }))
+    .then(m => { if (m && S.mode === 'pron' && box?.isConnected) { const t = $('#pnBox', box); if (t) m.render(t); } });
+}
 function draw() {
   if (!box) return;
+  if (S.mode === 'pron') { drawPron(); return; }
   const it = S.cur;
   if (!it) { box.innerHTML = head() + '<div class="empty">Không có mục nào khớp bộ lọc này. Hãy chọn nhóm khác.</div>'; bindHead(); return; }
   box.innerHTML = `${head()}<div class="qcard plcard">${S.mode === 'type' ? drawType() : S.mode === 'disc' ? drawDisc() : S.mode === 'rad' ? drawRad() : drawSpeak()}</div>`;
@@ -417,7 +425,7 @@ function draw() {
 }
 function bindHead() {
   $('#plBack', box)?.addEventListener('click', () => { leave(); backCb?.(); });
-  $$('#plMode [data-m]', box).forEach(b => b.onclick = () => { if (S.mode === b.dataset.m) return; S.mode = b.dataset.m; S.fopen = null; if (S.mode === 'disc' && S.lv === 3) S.lv = 0; S.bag = []; S.n = S.ok = 0; next(); });
+  $$('#plMode [data-m]', box).forEach(b => b.onclick = () => { if (S.mode === b.dataset.m) return; pronMod?.leave(); S.mode = b.dataset.m; S.fopen = null; if (S.mode === 'pron') { stopRec(true); draw(); return; } if (S.mode === 'disc' && S.lv === 3) S.lv = 0; S.bag = []; S.n = S.ok = 0; next(); });
   $$('.plf', box).forEach(b => b.onclick = () => { S.fopen = S.fopen === b.dataset.f ? null : b.dataset.f; refreshHead(); });
   $$('#plLv [data-l]', box).forEach(b => b.onclick = () => { S.lv = +b.dataset.l; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
   $$('#plSet [data-s]', box).forEach(b => b.onclick = () => { S.set = +b.dataset.s; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
@@ -492,7 +500,7 @@ export function render(el, opts = {}) {
     if (r === 'next') next(); else if (r) { draw(); toast('Tiếp tục phần đang học dở'); } else next();
   } else draw();
 }
-export function leave() { stopRec(true); try { speechSynthesis.cancel(); } catch { /* bỏ qua */ } }
+export function leave() { stopRec(true); pronMod?.leave(); try { speechSynthesis.cancel(); } catch { /* bỏ qua */ } }
 export function init() {
   bus.on('show', v => { if (v !== 'library') leave(); });
   bus.on('lang', () => { if (getLang() !== 'zh') leave(); });
