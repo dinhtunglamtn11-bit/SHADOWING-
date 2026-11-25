@@ -3,6 +3,7 @@
 // lịch / thư / thành tích / máy tính / báo cáo / menu là cửa sổ nổi (mỗi lúc một cái; máy tính được mở chồng lên ô đang nhập).
 import { $, $$, esc, toast, bus } from './util.js';
 import { HUD_HELP } from './tl-guide.js';
+import { archive, mergeLife, mergeProfile, ensureProfile } from './tl-hist.js';
 import * as store from './store.js';
 import * as E from './tl-engine.js';
 import * as D from './tl-data.js';
@@ -21,7 +22,7 @@ const pad = n => String(n).padStart(2, '0');
 // ---------- lưu / tải ----------
 function save(sync) {
   try {
-    const pf = G.profile; pf.live = G.st ? G.st.coins || 0 : 0;
+    const pf = G.profile; pf.live = G.st ? G.st.coins || 0 : 0; mergeLife(pf, G.st, D); // thành tích đã đạt luôn được giữ trong hồ sơ
     localStorage.setItem(KEY, JSON.stringify({ v: 1, profile: pf, st: G.st, S: G.S ? { ...G.S, snap: null, out: [] } : null }));
     localStorage.setItem('tealab:coins', String((pf.coinsPrev || 0) + (G.st ? G.st.coins || 0 : 0)));
   } catch (e) { toast('Không lưu được TeaLab: ' + (e.message || e), 3500); }
@@ -34,20 +35,19 @@ function load() {
     const o = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (o && o.v === 1) { G.profile = o.profile || PROFILE0(); G.st = o.st; G.S = o.S; }
   } catch { /* bỏ qua */ }
-  G.profile ||= PROFILE0();
-  if (G.st) E.ensure(G.st); // bản lưu cũ: bổ sung món / nguyên liệu / trường mới
+  G.profile ||= PROFILE0(); ensureProfile(G.profile);
+  if (G.st) { E.ensure(G.st); G.st.runId ||= Date.now(); G.st.t0 ||= G.st.runId; mergeLife(G.profile, G.st, D); } // bản lưu cũ: gắn mã lượt, gộp thành tích vào hồ sơ // bản lưu cũ: bổ sung món / nguyên liệu / trường mới
 }
 function pullRemote() { // bản lưu từ máy khác: lấy bản có nhiều ngày hơn
   const r = store.get('prefs', 'tealab'); if (!r || !r.json || G.alive && G.st && G.st.phase === 'LIVE') return;
-  try { const o = JSON.parse(r.json); if (o && o.st && (!G.st || (o.st.day > G.st.day))) { G.profile = o.profile || G.profile; G.st = E.ensure(o.st); G.S = o.S; if (G.root) render(); } } catch { /* bỏ qua */ }
+  try { const o = JSON.parse(r.json); if (o && o.st && (!G.st || (o.st.day > G.st.day))) { G.profile = mergeProfile(G.profile, o.profile); G.st = E.ensure(o.st); G.st.runId ||= Date.now(); G.st.t0 ||= G.st.runId; G.S = o.S; if (G.root) render(); } } catch { /* bỏ qua */ }
 }
 
 // ---------- vòng chơi ----------
 function newGame(diff = 'chuan') {
   if (G.st && G.st.season) { G.profile.runs++; G.profile.coinsPrev += G.st.coins || 0; G.profile.bestSeason = Math.max(G.profile.bestSeason, G.st.season.score); } else if (G.st && G.st.day > 1) { G.profile.coinsPrev += G.st.coins || 0; }
-  for (const [id, s] of Object.entries(G.st?.stars || {})) if (!/done|closed/.test(id)) G.profile.best[id] = Math.max(G.profile.best[id] || 0, s);
-  for (const id of Object.keys(G.st?.badges || {})) G.profile.badges[id] = 1;
-  G.st = E.newRun({ seed: 20261201, diff }); G.st.dayReps = []; E.beginSession(G.st); G.S = null; G.ord = {}; G.sec = 'prices'; G.win = null; G.feed = []; G.vis = [];
+  archive(G.profile, G.st, E, D); // ghi lượt vừa chơi vào lịch sử; kỷ lục (sao, huy hiệu) vẫn được giữ
+  G.st = E.newRun({ seed: 20261201, diff }); G.st.runId = Date.now(); G.st.t0 = G.st.runId; G.st.dayReps = []; E.beginSession(G.st); G.S = null; G.ord = {}; G.sec = 'prices'; G.win = null; G.feed = []; G.vis = [];
   save(true); render();
 }
 const st = () => G.st;
@@ -127,7 +127,7 @@ export function mount(root) {
   </div>`;
   bindRoot(root); G.cv = $('#tlCv'); G.g = G.cv.getContext('2d'); G.g.imageSmoothingEnabled = false; render();
 }
-function newGameSilent() { G.st = E.newRun({ seed: 20261201, diff: 'chuan' }); G.st.dayReps = []; E.beginSession(G.st); }
+function newGameSilent() { G.st = E.newRun({ seed: 20261201, diff: 'chuan' }); G.st.runId = Date.now(); G.st.t0 = G.st.runId; G.st.dayReps = []; E.beginSession(G.st); }
 export function render() { hud(); panel(); renderWin(); fade(); drawNow(); }
 function fade() { const f = $('#tlFade'); if (f) { f.hidden = !G.busy; f.innerHTML = G.busy ? `<div>${A.illus('sleep')}<p>Đi ngủ…</p><small>Các buổi còn lại chạy theo kế hoạch đứng.</small></div>` : ''; } }
 const clockText = () => { const s = st(), S = G.S; const k = s.k, base = SSTART[k]; if (s.phase === 'LIVE' && S) { const m = S.tick; return `${pad(base + Math.floor(m / 60))}:${pad(m % 60)}`; } if (s.phase === 'REVIEW') return `${pad(base + (k === 4 ? 2 : 4))}:00`; return `${pad(base)}:00`; };
@@ -187,7 +187,7 @@ function orderHtml(s) {
   let total = 0; for (const [g, q] of Object.entries(G.ord)) if (q > 0) total += E.marketPrice(s, g) * sd.mul * (q >= D.PARAMS.discountQty ? 0.9 : 1) * q;
   if (total) total += sd.fee;
   const brs = s.b2 ? `<div class="tl-sups"><button class="chip ${G.br !== 'B' ? 'on' : ''}" data-a="brsel" data-v="A">🏪 Chi nhánh 1</button><button class="chip ${G.br === 'B' ? 'on' : ''}" data-a="brsel" data-v="B">🏬 Chi nhánh 2</button></div>` : '';
-  return `${brs}<div class="dim tl-note">Không biết đặt bao nhiêu? <button class="btn" data-a="guidefm">📐 Công thức EOQ, ROP, NV</button></div><div class="tl-sups">${sups.map(x => `<button class="chip ${x === sup ? 'on' : ''}" data-a="sup" data-v="${x}">${A.ic('sup' + x, 16)} ${esc(D.SUPPLIERS[x].name)}</button>`).join('')}</div>
+  return `${brs}${pendingHtml(s)}<div class="dim tl-note">Không biết đặt bao nhiêu? <button class="btn" data-a="guidefm">📐 Công thức EOQ, ROP, NV</button></div><div class="tl-sups">${sups.map(x => `<button class="chip ${x === sup ? 'on' : ''}" data-a="sup" data-v="${x}">${A.ic('sup' + x, 16)} ${esc(D.SUPPLIERS[x].name)}</button>`).join('')}</div>
     <div class="dim tl-note">${esc(sd.note)} Phí giao ${kfmt(sd.fee)}${sd.express ? ' · giao khẩn khi mở cửa' : ''}. ≥150 phần: giảm 10%.</div>
     <div class="tl-arr ${arr.ok ? '' : 'bad'}">${arr.ok ? `${A.face('CO', 22)} Hàng đến: <b>${esc(arr.txt)}</b>` : `⚠ ${esc(sd.name)} đóng cửa vào ${esc(arr.txt)}: không đặt được.`}</div>
     <details class="tl-grp" open><summary>Nhóm tươi (hỏng nhanh)</summary>${rows('fresh') || '<div class="dim">Không có.</div>'}</details>
@@ -225,6 +225,7 @@ function prepHtml(s) {
   const up = s.stage < 4 ? sec('up', '🏪 Nâng cấp tiệm', upgradeHtml(s), E.upgradeStatus(s).ok ? 'sẵn sàng' : '') : '';
   const tut = D.TUTORIAL[s.day] && s.day <= 7 ? `<div class="tl-tut"><b>${A.ic('arrow', 14, 'tl-bob')} ${esc(D.TUTORIAL[s.day][0])}</b><span>${esc(D.TUTORIAL[s.day][1])}</span></div>` : '';
   return `<div class="tl-ph"><b>Chuẩn bị · ${D.SNAME[s.k]} ${D.SHOURS[s.k]}</b>${decs ? `<button class="btn tl-warnb" data-a="win" data-v="mail">${A.ic('warn', 16)} ${decs} thư cần quyết định</button>` : ''}</div>${tut}
+    ${shortageHtml(s)}
     ${sec('prices', '💲 Giá & thực đơn', `<div class="dim tl-note">Giá có thể đổi bất cứ lúc nào (khi mở cửa tốn 1 AP). Khách vượt ngưỡng giá sẽ bỏ đi hẳn.</div>${priceRows(s, false)}`)}
     ${sec('order', '📦 Đặt hàng', orderHtml(s))}
     ${sec('fc', '🔮 Dự đoán', forecastHtml(s))}
@@ -257,6 +258,26 @@ function subLive(s) {
   if (G.subLive === 'express') { const items = D.ING_ORDER.filter(g => D.ITEM_ORDER.some(i => s.menu[i] && D.ITEMS[i].ing.includes(g))); return `<div class="tl-subb"><b>Giao khẩn từ đại lý B (2 AP, giá ×1,3, hàng đến sau 60 phút)</b>${items.map(g => `<div class="tl-row"><span class="tl-ico">${A.ingIc(g, 22)}</span><div class="tl-nm"><b>${esc(D.ING[g].name)}</b><small class="dim">kho ${E.stockOf(s, g)}</small></div><div class="tl-step"><input class="tl-num" data-calc="qty" data-g="${g}" data-ex="1" type="text" inputmode="numeric" placeholder="0"></div></div>`).join('')}<div class="row"><button class="btn primary" data-a="exp">Gửi đơn khẩn</button><button class="btn" data-a="subx">Đóng</button></div></div>`; }
   return '';
 }
+// ---------- đơn hàng đang trên đường ----------
+// Quy tắc giao hàng: đơn đặt lúc nào cũng về ĐẦU BUỔI KẾ TIẾP (nhà cung cấp C: sau 2 ngày, vào S1). Giao khẩn (nhà B) về sau ~60 phút khi đang bán.
+const SLBL = k => `S${k + 1} ${pad(D.SSTART[k])}:00`;
+const itemsOf = p => (p.lines && p.lines.length ? p.lines : (p.lots || [])).map(l => ({ g: l.g, q: l.q }));
+function incoming(s) { return s.pending.filter(p => !p.done).map(p => ({ p, lab: p.at ? 'giao khẩn, về trong buổi' : `${E.dayLabel(Math.floor(p.t / 10))} ${SLBL(p.t % 10)}`, short: p.at ? 'sớm' : SLBL(p.t % 10).split(' ')[0] })); }
+const incomingFor = (s, g, key) => incoming(s).find(x => (x.p.br || 'A') === (key === 'b' ? 'B' : 'A') && itemsOf(x.p).some(l => l.g === g));
+function pendingHtml(s) {
+  const list = incoming(s);
+  if (!list.length) return '<div class="dim tl-note">📭 Chưa có đơn nào đang trên đường. Hàng đặt <b>bây giờ</b> chỉ về <b>đầu buổi kế tiếp</b>, nên cần đặt trước một buổi.</div>';
+  return `<div class="tl-arr"><b>🚚 Đơn đang trên đường (${list.length})</b>${list.map(({ p, lab }) => `<div class="tl-pend"><b>${p.transfer ? 'Chuyển kho' : 'NCC ' + p.sup}${p.br === 'B' ? ' → CN2' : ''}</b> · về <b>${esc(lab)}</b><small class="dim">${itemsOf(p).slice(0, 6).map(l => `${esc(D.ING[l.g].name)} ×${l.q}`).join(', ')}${itemsOf(p).length > 6 ? '…' : ''}</small></div>`).join('')}<div class="dim tl-note">Đơn đặt bây giờ sẽ về đầu buổi kế tiếp.</div></div>`;
+}
+function shortage(s) { // món đang bật nhưng thiếu nguyên liệu ngay lúc này
+  const items = D.ITEM_ORDER.filter(i => s.menu[i] && D.ITEMS[i].stage <= s.stage && !E.itemAvail(s, i, 1)), miss = [...new Set(items.flatMap(i => D.ITEMS[i].ing.filter(g => E.stockOf(s, g) < 1)))];
+  return { items, miss };
+}
+function shortageHtml(s) {
+  const { items, miss } = shortage(s); if (!miss.length) return '';
+  return `<div class="tl-arr bad">⚠ <b>Kho đang thiếu:</b> ${miss.map(g => { const c = incomingFor(s, g, 'a'); return `${esc(D.ING[g].name.toLowerCase())}${c ? ` (đang về ${c.short})` : ' (chưa đặt)'}`; }).join(', ')}.<br>Món không bán được lúc này: ${items.map(i => esc(D.ITEMS[i].name)).join(', ')}.<br><small>Hàng đặt bây giờ chỉ về đầu buổi kế tiếp, không kịp cho buổi này. Có thể dùng <b>Giao khẩn</b> khi đang bán (nhà cung cấp B).</small></div>`;
+}
+
 // ---------- theo dõi kho trực tiếp trong buổi bán ----------
 // Mẫu số lượng tồn từng nguyên liệu theo phút game để ước lượng tốc độ dùng (trong ~90 phút gần nhất) và thời gian còn đủ hàng.
 const liveIngs = s => D.ING_ORDER.filter(g => g === 'ly' || D.ITEM_ORDER.some(i => s.menu[i] && D.ITEMS[i].stage <= s.stage && D.ITEMS[i].ing.includes(g)));
@@ -298,7 +319,8 @@ function stockHtml(s, S) {
   const blk = (key, title) => {
     const rows = stockRows(s, S, key), bad = rows.filter(r => r.state !== 'ok').length;
     const items = D.ITEM_ORDER.filter(i => s.menu[i] && D.ITEMS[i].stage <= s.stage).map(i => ({ i, n: Math.min(...D.ITEMS[i].ing.map(g => qOf(s, g, key))) }));
-    const cell = r => `<div class="tl-sc ${r.state}" title="${esc(D.ING[r.g].name)}">${A.ingIc(r.g, 20)}<b>${r.q}</b><small>${esc(D.ING[r.g].name)}</small><i>${r.state === 'out' ? 'hết' : r.rate > 0 ? '~' + (r.eta > 240 ? '240+' : Math.round(r.eta)) + 'p' : '—'}</i><u style="width:${Math.min(100, Math.round(100 * r.q / r.max))}%"></u></div>`;
+    const incLbl = r => { const i = incomingFor(s, r.g, key); return i ? 'về ' + i.short : 'hết'; };
+    const cell = r => `<div class="tl-sc ${r.state}" title="${esc(D.ING[r.g].name)}">${A.ingIc(r.g, 20)}<b>${r.q}</b><small>${esc(D.ING[r.g].name)}</small><i>${r.state === 'out' ? incLbl(r) : r.rate > 0 ? '~' + (r.eta > 240 ? '240+' : Math.round(r.eta)) + 'p' : '—'}</i><u style="width:${Math.min(100, Math.round(100 * r.q / r.max))}%"></u></div>`;
     return `<div class="tl-stk"><div class="tl-stkh"><b>${title}</b><span class="tl-flag ${bad ? 'warn' : 'ok'}">${bad ? bad + ' cần chú ý' : 'Kho ổn'}</span>${bad && s.phase === 'LIVE' ? '<button class="btn" data-a="cmd" data-v="express">🚚 Giao khẩn</button>' : ''}</div>
       <div class="tl-stki">${items.map(x => `<span class="tl-pill ${x.n <= 0 ? 'out' : x.n < 10 ? 'low' : ''}">${A.cup(x.i, 14)} ${esc(D.ITEMS[x.i].name.replace(/^Trà /, ''))}: ${x.n <= 0 ? 'HẾT' : '~' + x.n}</span>`).join('')}</div>
       ${bad ? `<div class="tl-stkg">${rows.filter(r => r.state !== 'ok').map(cell).join('')}</div>` : ''}
@@ -398,7 +420,7 @@ function onAct(a, ev) {
     case 'expgo': { const it = $('#tlXi')?.value, pb = parseInt($('#tlXp')?.value); const r = res(E.cmd(s, G.S, { t: 'START_EXPERIMENT', item: it, pb, blocks: 12 })); if (r?.ok) { toast('🧪 Bắt đầu thử nghiệm giá', 1800); save(false); panel(); } break; }
     case 'expstop': res(E.cmd(s, G.S, { t: 'STOP_EXPERIMENT' })); save(false); panel(); break;
     case 'win': openWin(d.v); break;
-    case 'live': goLive(); break;
+    case 'live': { const sh = shortage(s); if (sh.miss.length && !confirm(`Đang thiếu: ${sh.miss.map(g => D.ING[g].name.toLowerCase()).join(', ')}.\nCác món dùng chúng sẽ KHÔNG bán được trong buổi này (hàng đặt bây giờ chỉ về đầu buổi sau).\nVẫn mở cửa?`)) break; goLive(); break; }
     case 'skip': if (confirm('Nghỉ buổi này? Vẫn trả thuê mặt bằng và lương.')) skipSession(); break;
     case 'openany': openAnyway(); break;
     case 'pause': G.paused = !G.paused; panel(); applyPause(); break;

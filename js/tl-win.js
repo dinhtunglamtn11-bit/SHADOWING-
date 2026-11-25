@@ -2,6 +2,7 @@
 import { esc } from './util.js';
 import { calcEval, fmt, roundFor, FUNCS } from './tl-calc.js';
 import { HOWTO, GLOSSARY, FORMULAS, TIPS } from './tl-guide.js';
+import { histHtml, histClick } from './tl-hist.js';
 const fold = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase(); // bỏ dấu để tìm kiếm tiếng Việt
 const hitQ = (text, q) => !q || new RegExp('(^|[^a-z0-9])' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(fold(text)); // khớp đầu từ: “ap” ra AP chứ không ra “hạp”
 
@@ -72,13 +73,13 @@ function achHtml(c) {
   const thTxt = M => M.th.map(x => (M.dir > 0 ? '≥ ' : '≤ ') + (M.k ? fmt(x) + 'k' : M.unit === '×' ? String(x).replace('.', ',') : x + (M.unit && M.unit !== 'ngày' ? M.unit : ''))).join(' · ');
   const groups = Object.entries(D.MG_NAME).map(([g, name]) => {
     const rs = rows.filter(r => r.M.g === g), s = rs.reduce((a, r) => a + r.stars, 0);
-    return `<details class="tl-mg" ${G.mgOpen === g ? 'open' : ''} data-mg="${g}"><summary>${A.ic('grp' + g, 18)}<b>${g}. ${name}</b><span class="stars">${star(Math.min(3, Math.round(s / rs.length)))}</span><small class="dim">${s}/${rs.length * 3}</small></summary>${rs.map(r => `<div class="tl-ms ${r.open ? '' : 'lockd'}"><span class="msn"><b>${r.M.id}</b> ${esc(r.M.name)}</span><span class="stars">${star(r.stars)}</span><small class="dim">${r.open ? `Hạn ngày ${r.M.dl} · hiện ${fmtV(r, r.v)} · ${thTxt(r.M)}` : `Mở từ ngày ${r.M.open}`}${r.closed && !r.stars ? ' · chưa đạt' : ''}</small></div>`).join('')}</details>`;
+    return `<details class="tl-mg" ${G.mgOpen === g ? 'open' : ''} data-mg="${g}"><summary>${A.ic('grp' + g, 18)}<b>${g}. ${name}</b><span class="stars">${star(Math.min(3, Math.round(s / rs.length)))}</span><small class="dim">${s}/${rs.length * 3}</small></summary>${rs.map(r => `<div class="tl-ms ${r.open ? '' : 'lockd'}"><span class="msn"><b>${r.M.id}</b> ${esc(r.M.name)}</span><span class="stars">${star(r.stars)}</span>${(G.profile?.best?.[r.M.id] || 0) > r.stars ? `<span class="tl-rec" title="Kỷ lục trong hồ sơ: đã đạt ở lượt trước, vẫn được giữ">🏅 kỷ lục ${G.profile.best[r.M.id]}★</span>` : ''}<small class="dim">${r.open ? `Hạn ngày ${r.M.dl} · hiện ${fmtV(r, r.v)} · ${thTxt(r.M)}` : `Mở từ ngày ${r.M.open}`}${r.closed && !r.stars ? ' · chưa đạt' : ''}</small></div>`).join('')}</details>`;
   }).join('');
   const soon = `<details class="tl-mg"><summary><b>Sắp ra mắt</b></summary>${A.illus('soon')}${A.illus('summer')}${D.SOON.map(([id, n]) => `<div class="tl-ms lockd"><span class="msn"><b>${id}</b> ${esc(n)}</span><small class="dim">${A.ic('lock', 12)} sắp ra mắt</small></div>`).join('')}</details>`;
-  const badges = D.BADGES.map(b => `<div class="tl-bd ${st.badges[b.id] ? 'on' : ''}" title="${esc(b.desc)}">${A.ic(st.badges[b.id] ? b.ic : 'lock', 28)}<small>${esc(b.name)}</small></div>`).join('');
+  const badges = D.BADGES.map(b => `<div class="tl-bd ${st.badges[b.id] ? 'on' : G.profile?.badges?.[b.id] ? 'rec' : ''}" title="${esc(b.desc)}">${A.ic(st.badges[b.id] || G.profile?.badges?.[b.id] ? b.ic : 'lock', 28)}<small>${esc(b.name)}</small>${!st.badges[b.id] && G.profile?.badges?.[b.id] ? '<small class="dim">đã có (hồ sơ)</small>' : ''}</div>`).join('');
   const IPI = { count: 'ipCount', survey: 'ipSurvey', supplier: 'ipSupplier', exp: 'flask', diag: 'ipDiag', shelf: 'ipShelf' };
   const tools = D.IP_TOOLS.map(t => `<div class="tl-row">${A.ic(IPI[t.id] || 'bolt', 22)}<div class="tl-nm"><b>${esc(t.name)}</b><small class="dim">${esc(t.desc)} · mở từ ngày ${t.day}</small></div>${st.tools[t.id] ? '<span class="chip on">Đã có</span>' : `<button class="btn" data-tool="${t.id}" ${st.ip < t.cost || st.day < t.day || (t.need && !st.tools[t.need]) ? 'disabled' : ''}>${t.cost} IP</button>`}</div>`).join('');
-  return `<div class="tl-sum"><span>${A.ic('star', 18)} <b>${tot}/${D.MILESTONES.length * 3}</b> sao</span><span>${A.ic('bolt', 18)} <b>${st.ip}</b> IP</span><span>${A.ic('coin', 18)} <b>${st.coins}</b> xu</span></div>
+  return `<div class="row"><button class="btn" data-m="hist">🏅 Hồ sơ và lịch sử các lượt</button></div><div class="dim tl-note">Sao và huy hiệu tính theo <b>lượt này</b>. Thành tích đạt ở lượt trước vẫn được giữ trong hồ sơ (thẻ “kỷ lục”).</div><div class="tl-sum"><span>${A.ic('star', 18)} <b>${tot}/${D.MILESTONES.length * 3}</b> sao</span><span>${A.ic('bolt', 18)} <b>${st.ip}</b> IP</span><span>${A.ic('coin', 18)} <b>${st.coins}</b> xu</span></div>
     ${tot >= 10 ? (() => { const ch = E.weeklyOf(st.day), done = (st.weekly || []).filter(w => w.ok).length; return `<div class="tl-arr"><b>🎯 Thử thách tuần ${Math.ceil(st.day / 7)}: ${esc(ch.name)}</b><br>${esc(ch.desc)} Thưởng ${ch.ip} IP + ${ch.xu} xu, chấm cuối tuần (đã đạt ${done}/${(st.weekly || []).length} tuần).</div>`; })() : '<div class="dim tl-note">🔒 Thử thách tuần mở khi có 10 sao.</div>'}
     <div class="tl-unlg">${D.UNLOCKS.map(([n, name, desc, ic]) => `<div class="tl-ul ${tot >= n ? 'on' : ''}">${A.ic(tot >= n ? ic : 'lock', 22)}<span><b>${n}★ · ${esc(name)}</b><small class="dim">${esc(desc)}</small>${n === 30 ? `<span class="tl-sps">${[1, 2, 3, 4, 5].map(i => A.ic('sp' + i, 20)).join('')}</span>` : ''}<i class="tl-bar"><b style="width:${Math.min(100, Math.round(100 * tot / n))}%"></b></i></span></div>`).join('')}</div>
     ${groups}${soon}<h4>Huy hiệu</h4><div class="tl-bds">${badges}</div><h4>Công cụ mua bằng IP</h4>${tools}
@@ -133,7 +134,7 @@ function menuHtml(c) {
   const { st, D, G } = c, s = st;
   return `<div class="tl-mn">
     <div class="tl-row"><div class="tl-nm"><b>Đi ngủ</b><small class="dim">Chạy các buổi còn lại theo kế hoạch đứng rồi sang ngày mới (phí 5%).</small></div><button class="btn primary" data-m="sleep" ${s.phase === 'LIVE' ? 'disabled' : ''}>😴 Đi ngủ</button></div>
-    <div class="row"><button class="btn primary" data-m="guide">📖 Hướng dẫn: cách chơi, ký hiệu, công thức</button></div>
+    <div class="row"><button class="btn primary" data-m="guide">📖 Hướng dẫn: cách chơi, ký hiệu, công thức</button><button class="btn primary" data-m="hist">🏅 Hồ sơ và lịch sử các lượt</button></div>
     <h4>Kế hoạch đứng (khi đi ngủ sớm)</h4>
     <div class="tl-step wrapx">${['S1', 'S2', 'S3', 'S4', 'S5'].map((n, k) => `<button class="btn ${s.autoPlan.open[k] ? 'on' : ''}" data-m="plan" data-k="${k}">${s.autoPlan.open[k] ? '☑' : '☐'} ${n}</button>`).join('')}</div>
     <div class="dim tl-note">Buổi đánh dấu sẽ mở cửa với giá và thực đơn hiện tại; hàng được đặt theo mức dùng 3 ngày gần nhất. Không có buổi nào miễn phí: phí 5% doanh thu và không tính điểm chất lượng.</div>
@@ -222,6 +223,7 @@ export function render(name, c) {
     case 'report': return wrap('📊 Báo cáo', reportHtml(c));
     case 'menu': return wrap('☰ Menu', menuHtml(c));
     case 'guide': return wrap('📖 Hướng dẫn', guideHtml(c));
+    case 'hist': return wrap('🏅 Hồ sơ', histHtml(c));
     default: return wrap('', '');
   }
 }
@@ -244,6 +246,7 @@ export function bind(name, box, c) {
     if ((b = x.closest('[data-mg]'))) { /* mở / đóng nhóm */ }
     if ((b = x.closest('[data-tool]'))) { const t = c.D.IP_TOOLS.find(q => q.id === b.dataset.tool); const r = E.cmd(st, G.S, { t: 'TOOL', tool: t }); if (!r.ok) c.toast(r.reason, 2200); else c.toast('Đã mở: ' + t.name, 1600); c.save(false); c.refresh(); return; }
     if ((b = x.closest('[data-rp]'))) { G.rpTab = b.dataset.rp; c.refresh(); return; }
+    if (histClick(x, c)) return;
     if ((b = x.closest('[data-gd]'))) { G.gdTab = b.dataset.gd; G.gdQ = ''; c.refresh(); return; }
     if ((b = x.closest('[data-ins]'))) { G.calcExpr = (G.calcExpr || '') + b.dataset.ins; c.openCalc(); c.toast('Đã đưa vào máy tính: ' + b.dataset.ins, 1600); return; }
     if ((b = x.closest('[data-svx]'))) { const hist = b.dataset.svx === 'cur' ? st.hist : (c.slots().find(q => q.id === +b.dataset.svx) || {}).hist || []; const csv = 'ngay,doanh_thu,gia_von,hang_hong,co_dinh,luong,lai,ly,het_hang,cho_lau,uy_tin,tien\n' + hist.map(h => [h.day, h.rev, h.cogs, h.spoil, h.fixed, h.wage, h.profit, h.cups, h.ls, h.lw, h.rep, h.cash].join(',')).join('\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = 'tealab-so-lieu.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return; }
@@ -260,6 +263,7 @@ function menuAct(b, c) {
   if (m === 'sleep') { if (confirm('Đi ngủ ngay? Các buổi còn lại chạy theo kế hoạch đứng (phí tự trông tiệm 5% doanh thu, không tính điểm chất lượng).')) { c.closeWin(); c.sleep(); } }
   else if (m === 'plan') { st.autoPlan.open[+b.dataset.k] = st.autoPlan.open[+b.dataset.k] ? 0 : 1; c.save(false); c.refresh(); }
   else if (m === 'auto') { G.noAutoMail = !G.noAutoMail; c.refresh(); }
+  else if (m === 'hist') { c.G.hsTab = c.G.hsTab || 'ov'; c.openWin('hist'); }
   else if (m === 'guide') { G.gdTab = G.gdTab || 'play'; c.openWin('guide'); }
   else if (m === 'zh') { G.profile.zh = !G.profile.zh; c.save(false); c.refresh(); }
   else if (m === 'savedata') { const x = c.saveData(); c.toast(`Đã lưu số liệu “${x.name}” (${x.hist.length} ngày)`, 2200); c.refresh(); }
