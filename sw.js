@@ -1,6 +1,6 @@
 // Service worker: vÃ¡Â»Â app (Ã„â€˜ÃƒÂºng danh sÃƒÂ¡ch SHELL) lÃ¡ÂºÂ¥y tÃ¡Â»Â« bÃ¡Â»â„¢ nhÃ¡Â»â€º Ã„â€˜Ã¡Â»â€¡m ngay (mÃ¡Â»Å¸ app tÃ¡Â»Â©c thÃƒÂ¬, khÃƒÂ´ng chÃ¡Â»Â mÃ¡ÂºÂ¡ng) vÃƒÂ  luÃƒÂ´n cÃƒÂ¹ng MÃ¡Â»ËœT phiÃƒÂªn bÃ¡ÂºÂ£n (bÃ¡Â»â„¢ nhÃ¡Â»â€º Ã„â€˜Ã¡Â»â€¡m Ã„â€˜Ã†Â°Ã¡Â»Â£c tÃ¡ÂºÂ¡o nguyÃƒÂªn khÃ¡Â»â€˜i khi cÃƒÂ i;
 // thiÃ¡ÂºÂ¿u mÃ¡Â»â„¢t file trÃƒÂªn mÃƒÂ¡y chÃ¡Â»Â§ thÃƒÂ¬ bÃ¡ÂºÂ£n mÃ¡Â»â€ºi khÃƒÂ´ng cÃƒÂ i, app giÃ¡Â»Â¯ nguyÃƒÂªn bÃ¡ÂºÂ£n cÃ…Â© nhÃ¡ÂºÂ¥t quÃƒÂ¡n). CÃƒÂ¡c yÃƒÂªu cÃ¡ÂºÂ§u cÃƒÂ²n lÃ¡ÂºÂ¡i Ã†Â°u tiÃƒÂªn mÃ¡ÂºÂ¡ng, mÃ¡ÂºÂ¥t mÃ¡ÂºÂ¡ng thÃƒÂ¬ dÃƒÂ¹ng bÃ¡ÂºÂ£n Ã„â€˜ÃƒÂ£ lÃ†Â°u.
-const CACHE = 'shadowing-v165';
+const CACHE = 'shadowing-v167';
 const DICT_CACHE = 'shadowing-dict'; // tÃ¡Â»Â« Ã„â€˜iÃ¡Â»Æ’n ~9 MB: giÃ¡Â»Â¯ riÃƒÂªng Ã„â€˜Ã¡Â»Æ’ khÃƒÂ´ng bÃ¡Â»â€¹ xÃƒÂ³a mÃ¡Â»â€”i lÃ¡ÂºÂ§n cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t app
 const SHELL = [
   './', 'index.html', 'styles.css', 'pixel.css', 'exnews.css', 'tealab.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',

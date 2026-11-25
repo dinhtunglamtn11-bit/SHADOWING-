@@ -41,14 +41,15 @@ function load() {
 function pullRemote() { // bản lưu từ máy khác: lấy bản có nhiều ngày hơn
   const r = store.get('prefs', 'tealab'); if (!r || !r.json || G.alive && G.st && G.st.phase === 'LIVE') return;
   try { const o = JSON.parse(r.json); const l = G.st, rt = o?.st?.t0 || o?.st?.runId || 0, lt = l?.t0 || 0; // lượt mới hơn thắng; cùng lượt thì lấy bản đi xa hơn (không để bản cũ đè lượt vừa chơi lại)
-    if (o && o.st && (!l || (l.silent && !l.sessionsPlayed && o.st.sessionsPlayed > 0) || (rt === lt ? o.st.day > l.day : rt > lt && !o.st.silent))) { G.profile = mergeProfile(G.profile, o.profile); G.st = E.ensure(o.st); G.st.runId ||= Date.now(); G.st.t0 ||= G.st.runId; G.S = o.S; if (G.root) render(); } } catch { /* bỏ qua */ }
+    const ri = o?.st?.imp || 0, li = l?.imp || 0; // bản vừa nhập tay (imp) được ưu tiên hơn bản đồng bộ cũ
+    if (o && o.st && (!l || (l.silent && !l.sessionsPlayed && o.st.sessionsPlayed > 0) || (ri !== li ? ri > li : rt === lt ? o.st.day > l.day : rt > lt && !o.st.silent))) { G.profile = mergeProfile(G.profile, o.profile); G.st = E.ensure(o.st); G.st.runId ||= Date.now(); G.st.t0 ||= G.st.runId; G.S = o.S; if (G.root) render(); } } catch { /* bỏ qua */ }
 }
 
 // ---------- vòng chơi ----------
 function newGame(diff = 'chuan') {
   if (G.st && G.st.season) { G.profile.runs++; G.profile.coinsPrev += G.st.coins || 0; G.profile.bestSeason = Math.max(G.profile.bestSeason, G.st.season.score); } else if (G.st && G.st.day > 1) { G.profile.coinsPrev += G.st.coins || 0; }
   archive(G.profile, G.st, E, D); // ghi lượt vừa chơi vào lịch sử; kỷ lục (sao, huy hiệu) vẫn được giữ
-  G.st = E.newRun({ seed: 20261201, diff }); G.st.runId = Date.now(); G.st.t0 = G.st.runId; G.st.dayReps = []; E.beginSession(G.st); G.S = null; G.ord = {}; G.sec = 'prices'; G.win = null; G.feed = []; G.vis = [];
+  const imp = G.st?.imp; G.st = E.newRun({ seed: 20261201, diff }); if (imp) G.st.imp = imp; G.st.runId = Date.now(); G.st.t0 = G.st.runId; G.st.dayReps = []; E.beginSession(G.st); G.S = null; G.ord = {}; G.sec = 'prices'; G.win = null; G.feed = []; G.vis = [];
   save(true); render();
 }
 const st = () => G.st;
@@ -162,7 +163,8 @@ function panel() {
   p.innerHTML = html; bindPanel(p);
 }
 const sec = (id, title, body, badge = '') => `<section class="tl-sec ${G.sec === id ? 'open' : ''}" data-sec="${id}"><button class="tl-sech" data-a="sec" data-v="${id}"><span>${title}</span>${badge ? `<em>${badge}</em>` : ''}<i>${G.sec === id ? '▲' : '▼'}</i></button>${G.sec === id ? `<div class="tl-secb">${body}</div>` : ''}</section>`;
-const menuItems = s => D.ITEM_ORDER.filter(i => D.ITEMS[i].stage <= s.stage && D.inSeason(i, s.day + 6)); // món theo mùa hiện trước 6 ngày để kịp chuẩn bị
+const inShop = (s, i) => D.inSeason(i, s.day) || D.inSeason(i, s.day + 6); // món theo mùa: hiện từ 6 ngày trước mùa đến hết mùa
+const menuItems = s => D.ITEM_ORDER.filter(i => D.ITEMS[i].stage <= s.stage && inShop(s, i));
 function priceRows(s, live) {
   const items = menuItems(s).filter(i => s.menu[i] || !live), maxOn = D.PARAMS.items[s.stage], on = D.ITEM_ORDER.filter(i => s.menu[i] && !D.ITEMS[i].seasonal).length, ex = s.exp && !s.exp.done ? s.exp.item : '';
   return items.map(i => {
@@ -181,7 +183,7 @@ function stockLine(s, g) { // kho kèm biểu tượng trạng thái: đủ, s�
 const ING_FRESH = g => D.ING[g].grp === 'fresh';
 function orderHtml(s) {
   const sups = Object.keys(D.SUPPLIERS).filter(x => D.SUPPLIERS[x].stage <= s.stage && (!D.SUPPLIERS[x].needFlag || s.flags[D.SUPPLIERS[x].needFlag])), sup = sups.includes(G.sup) ? G.sup : 'A', sd = D.SUPPLIERS[sup], arr = E.arrivalOf(s, sup);
-  const rows = grp => D.ING_ORDER.filter(g => D.ING[g].grp === grp && (!sd.fresh || grp === 'fresh') && (D.ITEM_ORDER.some(i => s.stage >= D.ITEMS[i].stage && D.inSeason(i, s.day + 6) && D.ITEMS[i].ing.includes(g)) || g === 'ly')).map(g => {
+  const rows = grp => D.ING_ORDER.filter(g => D.ING[g].grp === grp && (!sd.fresh || grp === 'fresh') && (D.ITEM_ORDER.some(i => s.stage >= D.ITEMS[i].stage && inShop(s, i) && D.ITEMS[i].ing.includes(g)) || g === 'ly')).map(g => {
     const price = E.unitPrice(s, sup, g), q = +(G.ord[g] || 0);
     return `<div class="tl-row"><span class="tl-ico">${A.ingIc(g, 22)}</span><div class="tl-nm"><b>${esc(D.ING[g].name)}</b>${G.profile?.zh ? `<span class="zh" lang="zh">${esc(D.ING_ZH[g] || '')}</span>` : ''}<small class="dim">kho ${stockLine(s, g)} · ${k1(price)}/phần</small></div><div class="tl-step"><input class="tl-num" data-calc="qty" data-g="${g}" type="text" inputmode="numeric" value="${q || ''}" placeholder="0" aria-label="Số phần ${esc(D.ING[g].name)}"><button class="btn" data-a="oq" data-g="${g}" data-d="10">+10</button><button class="btn" data-a="oq" data-g="${g}" data-d="50">+50</button></div></div>`;
   }).join('');

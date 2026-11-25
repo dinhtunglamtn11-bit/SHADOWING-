@@ -61,7 +61,7 @@ function mailHtml(c) {
   const sel = G.mailSel ? st.mails.find(m => m.id === G.mailSel) : null;
   const row = m => `<button class="tl-mail ${m.read ? '' : 'unread'} ${m.kind === 'DECISION' && !m.resolved ? 'urgent' : ''}" data-mail="${m.id}">${icon(m)}<span><b>${esc(m.title)}</b><small class="dim">${m.kind === 'DECISION' && !m.resolved ? A.ic('hourglass', 12) + ' cần quyết · ' : ''}${srcIc(m)} ${KIND[m.kind][1]} · ${SRC[m.src] || ''} · ngày ${m.day}</small></span></button>`;
   const ill = sel ? (D.ILL_BY_EVENT[sel.ev] || (sel.cal ? D.ILL_BY_DAY[sel.day] : '')) : '';
-  const detail = sel ? `<div class="tl-md">${ill ? A.illus(ill) : ''}<b>${esc(sel.title)}</b><small class="dim">${KIND[sel.kind][1]} · ${SRC[sel.src] || ''}${sel.auto ? ' · dùng lựa chọn mặc định' : ''}</small><p>${esc(sel.body)}</p>${sel.kind === 'DECISION' ? (sel.resolved ? `<div class="tl-arr">Đã chọn: <b>${esc(sel.choices.find(x => x.id === sel.chosen)?.label || '')}</b></div>` : sel.choices.map((ch, i) => `<button class="btn ${i ? '' : ''}" data-choice="${sel.id}:${ch.id}">${esc(ch.label)}${i === 0 ? ' <small>(mặc định)</small>' : ''}${ch.hint ? `<small class="dim"> · ${esc(ch.hint)}</small>` : ''}</button>`).join('') + `<div class="dim">Quá hạn (hết ngày) hoặc khi đi ngủ, game dùng lựa chọn mặc định.</div>`) : ''}</div>` : '';
+  const detail = sel ? `<div class="tl-md">${ill ? A.illus(ill) : ''}<b>${esc(sel.title)}</b><small class="dim">${KIND[sel.kind][1]} · ${SRC[sel.src] || ''}${sel.auto ? ' · dùng lựa chọn mặc định' : ''}</small><p>${esc(sel.body)}</p>${sel.kind === 'DECISION' ? (sel.resolved ? `<div class="tl-arr">Đã chọn: <b>${esc(sel.choices.find(x => x.id === sel.chosen)?.label || '')}</b></div>` : sel.choices.map((ch, i) => `<button class="btn ${i ? '' : ''}" data-choice="${sel.id}:${ch.id}">${esc(ch.label)}${i === 0 ? ' <small>(mặc định)</small>' : ''}${ch.hint ? `<small class="dim"> · ${esc(ch.hint)}</small>` : ''}</button>`).join('') + `<div class="dim">Chỉ chọn được trong ngày nhận thư. Hết ngày hoặc khi đi ngủ, game dùng lựa chọn mặc định.</div>`) : ''}</div>` : '';
   const shown = open.slice(0, 7), more = open.slice(7);
   return `${detail}<div class="tl-ml">${shown.map(row).join('') || '<div class="dim">Chưa có thư.</div>'}${more.length ? `<details><summary>Thư cũ hơn (${more.length})</summary>${more.map(row).join('')}</details>` : ''}${done.length ? `<details><summary>Đã quyết định (${done.length})</summary>${done.map(row).join('')}</details>` : ''}</div>`;
 }
@@ -272,7 +272,7 @@ function menuAct(b, c) {
 }
 function importSave(inp, c) {
   const f = inp.files[0]; if (!f) return;
-  f.text().then(t => { try { const o = JSON.parse(t); if (!o || o.v !== 1 || !o.st) throw new Error('Tệp không đúng định dạng'); localStorage.setItem('tealab:v1', t); location.reload(); } catch (e) { c.toast('Không nhập được: ' + e.message, 3000); } });
+  f.text().then(t => { try { const o = JSON.parse(t); if (!o || o.v !== 1 || !o.st) throw new Error('Tệp không đúng định dạng'); o.st.imp = Date.now(); delete o.st.silent; localStorage.setItem('tealab:v1', JSON.stringify(o)); location.reload(); } catch (e) { c.toast('Không nhập được: ' + e.message, 3000); } });
 }
 
 // ---------- máy tính ----------

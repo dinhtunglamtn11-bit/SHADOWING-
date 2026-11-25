@@ -57,7 +57,7 @@ function need(a, n) { if (a.length !== n && !(n === 1 && a.length >= 1)) throw n
 export const FUNCS = Object.keys(FN);
 
 export function calcEval(expr, vars = {}) {
-  const T = tokenize(expr); let i = 0;
+  let T = [], i = 0;
   const peek = () => T[i], eat = v => { const x = T[i]; if (x && x.k === 'op' && x.v === v) { i++; return true; } return false; };
   const fail = () => { throw new CalcError('SYNTAX', T[i] ? T[i].p : expr.length); };
   // trả về {v, pct}: pct = đó là số có hậu tố %, để áp quy ước phần trăm của máy tính văn phòng
@@ -96,6 +96,7 @@ export function calcEval(expr, vars = {}) {
     fail();
   }
   try {
+    T = tokenize(expr); // trong try: ký tự lạ (vd. dấu phẩy đứng một mình) phải báo “Cú pháp”, không làm hỏng máy tính
     if (!T.length) return { ok: false, error: 'SYNTAX', pos: 0, msg: ERR.SYNTAX };
     const r = addsub(); if (i < T.length) fail();
     if (!isFinite(r.v)) throw new CalcError('OVERFLOW');

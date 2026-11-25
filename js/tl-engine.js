@@ -165,7 +165,7 @@ function eventTick(st) { // phát manh mối và kích hoạt sự kiện đến
     }
   }
   // thư quyết định hết hạn: dùng lựa chọn mặc định
-  for (const m of st.mails) if (m.kind === 'DECISION' && !m.resolved && m.deadline <= at) applyChoice(st, m.id, m.defaultChoice, true);
+  for (const m of st.mails) if (m.kind === 'DECISION' && !m.resolved && (m.deadline <= at || m.day < st.day)) applyChoice(st, m.id, m.defaultChoice, true); // chỉ chọn được trong ngày nhận thư
 }
 // áp một hiệu ứng (Phụ lục C): đổi trạng thái ngay (tiền, danh tiếng, tâm trạng…) hoặc ghi hiệu ứng có hạn (nhân giá, nhân lưu lượng…)
 function applyFx(st, e, f, mag, from, to) {
@@ -190,9 +190,14 @@ export function applyChoice(st, mailId, choiceId, auto = false) {
   const m = st.mails.find(x => x.id === mailId); if (!m || m.resolved) return { ok: false, reason: 'Thư này đã xử lý.' };
   const e = EVENT_BY_ID[m.ev], c = e.choices.find(x => x.id === choiceId); if (!c) return { ok: false, reason: 'Lựa chọn không có.' };
   const need = c.ap || 0;
-  if (!auto && (st.phase === 'LIVE' || st.phase === 'PREP') && st.ap < need) return { ok: false, reason: 'Không đủ điểm hành động (AP).' };
+  if (!auto && st.ap < need) return { ok: false, reason: 'Không đủ điểm hành động (AP).' };
   if (c.cash && !auto && st.cash + c.cash < -5000 * K) return { ok: false, reason: 'Không đủ tiền.' };
-  if (!auto && need && (st.phase === 'LIVE' || st.phase === 'PREP')) st.ap -= need;
+  if (!auto && c.sp === 'fridgeSale' && (st.stage < 2 || st.equip.fridge || st.cash < 4800 * K)) return { ok: false, reason: st.equip.fridge ? 'Bạn đã có tủ mát.' : 'Không đủ tiền mua tủ (4.800k).' };
+  if (!auto && c.fx?.length && c.fx.every(f => /@\d/.test(f.ts || ''))) { // đơn đặt trước: buổi khách hẹn đã qua thì không nhận được nữa
+    const last = Math.max(...c.fx.map(f => +f.ts.split('@')[1]));
+    if (st.day > m.day || st.k > last || (st.k === last && st.phase !== 'PREP' && st.phase !== 'LIVE')) return { ok: false, reason: 'Buổi khách hẹn đã qua.' };
+  }
+  if (!auto && need) { st.ap -= need; if (st.phase !== 'PREP' && st.phase !== 'LIVE') st.apCarry = Math.min(st.apCarry || 0, st.ap); }
   if (c.cash) { st.cash += c.cash; ledger(st, e.name + ': ' + c.label, c.cash); }
   const at = tau(st.day, st.k), mag = P.difficulty[st.diff].mag;
   for (const f of c.fx || []) applyFx(st, e, f, 1, tau(st.day, 0), tau(st.day + Math.max(1, e.dur) - 1, 9));
@@ -300,7 +305,7 @@ export function beginSession(st) { // vào PREP của (ngày, buổi): nhận h�
 }
 const lotsOf = (st, br) => (br === 'B' && st.b2 ? st.b2.lots : st.lots);
 function deliver(st, p) {
-  if (p.transfer) { const L = lotsOf(st, p.br); for (const l of p.lots) L[l.g].push({ ...l }); p.done = true; p.status = 'chuyển kho'; return; } // chuyển hàng giữa hai chi nhánh: giao đủ, giữ nguyên hạn dùng
+  if (p.transfer) { const L = lotsOf(st, p.br); for (const l of p.lots) { L[l.g].push({ ...l }); L[l.g].sort((a, b) => a.last - b.last); } p.done = true; p.status = 'chuyển kho'; return; } // chuyển hàng giữa hai chi nhánh: giao đủ, giữ nguyên hạn dùng
   const day = st.day, rho = clamp(SUPPLIERS[p.sup].rho + fxVal(st, 'supplier.reliability', p.sup, tau(st.day, st.k), 'add') + (day === 35 ? -0.10 : 0), 0.05, 0.999);
   let frac = 1, status = 'đủ'; const r = u(st.seed, 'supplier', p.id * 3);
   if (!p.late && r > rho) { const r2 = u(st.seed, 'supplier', p.id * 3 + 1); if (r2 < 0.5) { p.late = 1; p.at = 0; const [nd, nk] = nextSess(st.day, st.k); p.t = tau(nd, nk); status = 'trễ'; st.supLog[p.sup].push([day, 'trễ']); return; } frac = 1 - (0.1 + 0.3 * u(st.seed, 'supplier', p.id * 3 + 2)); status = 'thiếu ' + Math.round((1 - frac) * 100) + '%'; }
@@ -342,10 +347,10 @@ export function cmd(st, S, c) {
     case 'CLOSE_EARLY': { if (!live) return fail('Chỉ dùng khi đang mở cửa.'); if (st.ap < 1) return fail('Cần 1 AP.'); st.ap -= 1; S.open = false; S.cmds.push({ tk: S.tick, t: 'CLOSE_EARLY' }); return { ok: true }; }
     case 'REOPEN': { if (!live) return fail('Chỉ dùng khi đang mở cửa.'); if (S.open) return { ok: true }; if (st.ap < 1) return fail('Cần 1 AP.'); st.ap -= 1; S.open = true; S.cmds.push({ tk: S.tick, t: 'REOPEN' }); return { ok: true }; }
     case 'SET_FORECAST': { if (st.phase !== 'PREP') return fail('Chỉ đặt dự đoán trước khi mở cửa.'); if (st.forecast) return fail('Mỗi buổi chỉ đặt một lần.'); const lo = +c.lo, hi = +c.hi; if (!(lo >= 0 && hi > lo)) return fail('Khoảng dự đoán không hợp lệ.'); st.forecast = { lo, hi }; return { ok: true }; }
-    case 'CHOOSE': return applyChoice(st, c.mail, c.choice, false);
+    case 'CHOOSE': { const r = applyChoice(st, c.mail, c.choice, false); if (r.ok && live && S) { S.lam = lamTable(st, S); if (S.B) S.B.lam = lamTable(st, S.B, P.branch); } return r; } // chọn khi đang bán: tính lại lượng khách ngay
     case 'UPGRADE': { if (st.phase !== 'REVIEW' && st.phase !== 'PREP') return fail('Nâng cấp ở pha xem lại hoặc chuẩn bị.'); const s = upgradeStatus(st); if (!s.to) return fail('Đã ở giai đoạn cao nhất của mùa này.'); if (!s.ok) return fail('Chưa đủ điều kiện nâng cấp.'); st.cash -= s.cost; ledger(st, 'Nâng cấp lên ' + s.name, -s.cost); st.stage = s.to; st.stageDay[s.to] = st.day; st.cand = genCandidates(st);
       for (const it of ITEM_ORDER) if (ITEMS[it].stage === s.to && !(it in st.menu)) st.menu[it] = false; for (const it of ITEM_ORDER) if (!(it in st.prices)) st.prices[it] = ITEMS[it].p;
-      const body = { 2: 'Bạn có chỗ ngồi, hai trạm làm việc, thêm 4 món (bật trong Thực đơn), nhà cung cấp C và thiết bị. Chi phí cố định tăng lên 1.750k mỗi ngày: hãy tuyển người và tăng lưu lượng.', 3: 'Cửa hàng: thêm 4 món, tối đa 6 nhân viên, máy POS và xe giao hàng (kênh giao hàng tận nơi, cần một nhân viên chuyên giao), chi phí cố định 4.100k mỗi ngày, lưu lượng ×3,4.', 4: 'Chuỗi: chi nhánh thứ hai khai trương (bản đơn giản: dùng chung kho và bếp). Chi nhánh 2 thêm lưu lượng khách lớn, chi phí cố định 6.700k mỗi ngày, tối đa 8 nhân viên, 9 AP mỗi buổi.' }[s.to];
+      const body = { 2: 'Bạn có chỗ ngồi, hai trạm làm việc, thêm 4 món (bật trong Thực đơn), nhà cung cấp C và thiết bị. Chi phí cố định tăng lên 1.750k mỗi ngày: hãy tuyển người và tăng lưu lượng.', 3: 'Cửa hàng: thêm 4 món, tối đa 6 nhân viên, máy POS và xe giao hàng (kênh giao hàng tận nơi, cần một nhân viên chuyên giao), chi phí cố định 4.100k mỗi ngày, lưu lượng ×3,4.', 4: 'Chuỗi: chi nhánh thứ hai khai trương với kho và nhân viên riêng (đặt hàng cho từng nơi, chuyển hàng qua lại tốn 40k). Chi nhánh 2 thêm lưu lượng khách lớn, chi phí cố định 6.700k mỗi ngày, tối đa 8 nhân viên, 9 AP mỗi buổi.' }[s.to];
       if (s.to === 4) { st.b2 = { lots: Object.fromEntries(ING_ORDER.map(g => [g, []])) }; for (const [g, q] of Object.entries({ ly: 200, tra: 200, duong: 200, da: 120, chanh: 60, sua: 80, tranchau: 60, dao: 60, gung: 40, matong: 60 })) st.b2.lots[g].push({ q, last: st.day + ING[g].shelf - 1, cost: rm(ING[g].c * K), qual: 0.97 }); }
       if (s.to === 2) st.badges.A08 = st.badges.A08 || st.day; if (s.to === 3) st.badges.A09 = st.badges.A09 || st.day;
       pushMail(st, { kind: 'REWARD', src: 'official', title: 'Chào mừng giai đoạn ' + s.to + ': ' + s.name, body }); return { ok: true }; }
@@ -542,7 +547,7 @@ export function nextSession(st) { // sau REVIEW “Xong”
   st.k = k; beginSession(st); return 'PREP';
 }
 function autoOrders(st) { // kế hoạch đứng: nhập về mức dùng trung bình 3 ngày gần nhất (nếu có), không phải chiến lược tối ưu
-  const h = st.hist.slice(-3), use = {}; for (const g of ING_ORDER) use[g] = 0;
+  const h = st.hist.filter(d => d.cups > 0).slice(-3), use = {}; for (const g of ING_ORDER) use[g] = 0; // ngày có bán: nghỉ / hết sạch hàng không làm kế hoạch đứng ngừng đặt mãi
   for (const d of h) for (const [it, q] of Object.entries(d.by || {})) if (st.menu[it] && inSeason(it, st.day)) for (const g of ITEMS[it].ing) use[g] += q / Math.max(1, h.length);
   const coming = (g, br) => st.pending.reduce((a, p) => a + ((p.br || 'A') === br && !p.done ? (p.lines.length ? p.lines : p.lots || []).reduce((s, l) => s + (l.g === g ? l.q : 0), 0) : 0), 0); // hàng đang trên đường, để không đặt trùng
   const sh = st.b2 ? 0.75 : 1, sup = supplierOpenOn('A', nextSess(st.day, st.k)[0]) ? 'A' : 'B';
@@ -576,6 +581,7 @@ export function closeDay(st) {
   for (const L of [st.lots, st.b2?.lots]) { if (!L) continue; for (const g of ING_ORDER) { const f = lossF[ING[g].grp]; if (f > 0) for (const l of L[g]) { const lost = Math.floor(l.q * f); if (lost) { l.q -= lost; spoil += lost * l.cost; sp[g] = (sp[g] || 0) + lost; } } } } // sự kiện làm hỏng một phần kho (cúp điện, hỏng tủ lạnh…)
   const dirty = ING_ORDER.some(g => g !== 'da' && st.lots[g].some(l => l.q > 0 && l.last <= day));
   for (const L of [st.lots, st.b2 ? st.b2.lots : null]) { if (!L) continue; for (const g of ING_ORDER) { const keep = []; for (const l of L[g]) { if (l.last <= day) { spoil += l.q * l.cost; sp[g] = (sp[g] || 0) + l.q; } else keep.push(l); } L[g] = keep; } }
+  for (const p of st.pending) if (p.transfer) p.lots = p.lots.filter(l => { if (l.last > day) return true; spoil += l.q * l.cost; sp[l.g] = (sp[l.g] || 0) + l.q; return false; }); // hàng đang chuyển kho cũng hết hạn như thường
   spoil = rm(spoil * (st.diff === 'nhan' ? 0.9 : 1)); // chỉ ghi vào sổ lãi lỗ: tiền hàng đã trả lúc đặt, không trừ tiền mặt lần nữa
   const fixed = rm(P.fixedDay[st.stage] * (fxVal(st, 'cost.fixed', '', tau(day, 0), 'mul'))); st.cash -= fixed;
   let interest = 0; if (st.debt > 0) { interest = rm(st.debt * 0.0005); st.cash -= interest; }
@@ -623,6 +629,8 @@ export function playOn(st) { st.flags.free = 1; st.phase = 'PREP'; beginSession(
 // ---------- cột mốc, điểm mùa, huy hiệu ----------
 const H = (st, d) => st.hist.find(x => x.day === d);
 const sumH = (st, a, b, f) => { let s = 0, n = 0; for (let d = a; d <= b; d++) { const x = H(st, d); if (x) { s += f(x); n++; } } return { s, n }; };
+// cột mốc "ít hụt hàng / ít hỏng" chỉ tính khi quán thật sự mở bán ít nhất 80% số ngày của giai đoạn đo
+const openedEnough = (st, a, b) => { const r = sumH(st, a, b, x => (x.buyers > 0 ? 1 : 0)); return r.n > 0 && r.s >= Math.floor(r.n * 0.8); };
 export function streakOf(st, upto = 999) { // chuỗi ngày dài nhất không ai nghỉ việc, đếm từ khi có nhân viên đầu tiên
   let best = 0, cur = 0, on = false;
   for (const h of st.hist) { if (h.day > upto) break; if ((h.staffN || 0) > 0) on = true; if (!on) continue; if (h.quit) cur = 0; else cur++; best = Math.max(best, cur); }
@@ -637,10 +645,10 @@ export function metricValue(st, M) {
     case 'profit_win': return sumH(st, M.a, M.b, x => x.profit).s;
     case 'rep': return g(M.at, x => x.rep);
     case 'loyal': return g(M.at, x => x.loyal);
-    case 'stockout': { const a = sumH(st, M.a, M.b, x => x.ls), b = sumH(st, M.a, M.b, x => x.buyers); return 1000 * a.s / Math.max(1, b.s); }
-    case 'spoil': return sumH(st, M.a, M.b, x => x.spoil).s;
+    case 'stockout': { if (!openedEnough(st, M.a, M.b)) return null; const a = sumH(st, M.a, M.b, x => x.ls), b = sumH(st, M.a, M.b, x => x.buyers); return 1000 * a.s / Math.max(1, b.s); }
+    case 'spoil': return openedEnough(st, M.a, M.b) ? sumH(st, M.a, M.b, x => x.spoil).s : null;
     case 'margin': { const p = sumH(st, M.a, M.b, x => x.profit).s, r = sumH(st, M.a, M.b, x => x.rev).s; return r ? 100 * p / r : null; }
-    case 'lowstock': return sumH(st, M.a, M.b, x => (x.ls <= 2 ? 1 : 0)).s;
+    case 'lowstock': return sumH(st, M.a, M.b, x => (x.buyers > 0 && x.ls <= 2 ? 1 : 0)).s;
     case 'cal': return st.cal.filter(c => c[0] >= M.a && c[0] <= M.b).length >= 10 ? st.cal.filter(c => c[0] >= M.a && c[0] <= M.b).reduce((a, c) => a + c[1], 0) / st.cal.filter(c => c[0] >= M.a && c[0] <= M.b).length : 0;
     case 'stage2': return st.stageDay[2] || null;
     case 'stage3': return st.stageDay[3] || null;
@@ -648,11 +656,12 @@ export function metricValue(st, M) {
     case 'exp': return (st.expList || []).filter(x => x.conclusive && x.day >= M.a && x.day <= M.b).length;
     case 'gift': { const g = sumH(st, M.a, M.b, x => x.gift || 0).s, r = sumH(st, M.a, M.b, x => x.rev).s; return r ? 100 * g / r : null; }
     case 'streak': return streakOf(st, M.dl);
-    case 'ratio_rev': { const x = H(st, M.at), b = sumH(st, M.ba, M.bb, y => y.rev); return x && b.n ? x.rev / (b.s / b.n) : null; }
-    case 'ratio_rev_avg': { const a = sumH(st, M.a, M.b, y => y.rev), b = sumH(st, M.ba, M.bb, y => y.rev); return a.n && b.n ? (a.s / a.n) / (b.s / b.n) : null; }
-    case 'ratio_profit': { const a = sumH(st, M.a, M.b, y => y.profit), b = sumH(st, M.ba, M.bb, y => y.profit); return a.n && b.n && b.s > 0 ? (a.s / a.n) / (b.s / b.n) : null; }
-    case 'ratio_profit3': { const a = sumH(st, M.a, M.b, y => y.profit), b = sumH(st, M.ba, M.bb, y => y.profit); return a.n && b.n && b.s > 0 ? a.s / b.s : null; }
-    case 'ratio_margin': { const m = (a, b) => { const p = sumH(st, a, b, y => y.profit).s, r = sumH(st, a, b, y => y.rev).s; return r ? p / r : null; }; const x = m(M.a, M.b), y = m(M.ba, M.bb); return x != null && y ? x / y : null; }
+    // các tỷ số so với kỳ gốc: kỳ gốc phải mở bán đủ ngày và có số dương, nếu không thì chưa chấm (đóng cửa kỳ gốc không được “vô cực”)
+    case 'ratio_rev': { const x = H(st, M.at), b = sumH(st, M.ba, M.bb, y => y.rev); return x && b.s > 0 && openedEnough(st, M.ba, M.bb) ? x.rev / (b.s / b.n) : null; }
+    case 'ratio_rev_avg': { const a = sumH(st, M.a, M.b, y => y.rev), b = sumH(st, M.ba, M.bb, y => y.rev); return a.n && b.s > 0 && openedEnough(st, M.ba, M.bb) ? (a.s / a.n) / (b.s / b.n) : null; }
+    case 'ratio_profit': { const a = sumH(st, M.a, M.b, y => y.profit), b = sumH(st, M.ba, M.bb, y => y.profit); return a.n && b.n && b.s > 0 && openedEnough(st, M.ba, M.bb) ? (a.s / a.n) / (b.s / b.n) : null; }
+    case 'ratio_profit3': { const a = sumH(st, M.a, M.b, y => y.profit), b = sumH(st, M.ba, M.bb, y => y.profit); return a.n && b.n && b.s > 0 && openedEnough(st, M.ba, M.bb) ? a.s / b.s : null; }
+    case 'ratio_margin': { const m = (a, b) => { const p = sumH(st, a, b, y => y.profit).s, r = sumH(st, a, b, y => y.rev).s; return r ? p / r : null; }; const x = m(M.a, M.b), y = m(M.ba, M.bb); return x != null && y > 0 && openedEnough(st, M.ba, M.bb) ? x / y : null; }
     case 'season': return st.season ? st.season.score : null;
     default: return null;
   }
@@ -682,7 +691,7 @@ export const weeklyOf = day => WEEKLY[(Math.ceil(day / 7) - 1) % WEEKLY.length];
 export function weeklyTick(st, day) { // thử thách tuần: chấm cuối mỗi tuần game (khi đã có từ 10 sao)
   if (day % 7 !== 0 || totalStars(st) < 10) return null;
   const ch = weeklyOf(day), w = st.hist.slice(-7), sum = k => w.reduce((a, h) => a + (h[k] || 0), 0), rev = sum('rev'), prof = sum('profit'), rep0 = st.hist[st.hist.length - 8]?.rep ?? 50;
-  const ok = { w1: () => sum('ls') <= 15, w2: () => sum('spoil') <= (st.stage === 1 ? 400 * K : 1500 * K), w3: () => rev > 0 && prof / rev >= 0.30, w4: () => st.rep >= rep0 + 2, w5: () => sum('lw') <= 25, w6: () => st.cal.filter(c => c[0] > day - 7 && c[2]).length >= 3, w7: () => w.every(h => !h.auto), w8: () => w.every(h => h.profit > 0) }[ch.id]();
+  const ok = { w1: () => sum('ls') <= 15, w2: () => sum('spoil') <= (st.stage === 1 ? 400 * K : 1500 * K), w3: () => rev > 0 && prof / rev >= 0.30, w4: () => st.rep >= rep0 + 2, w5: () => sum('lw') <= 25, w6: () => st.cal.filter(c => c[0] > day - 7 && c[2]).length >= 3, w7: () => w.every(h => !h.auto), w8: () => w.every(h => h.profit > 0) }[ch.id]() && w.filter(h => h.buyers > 0).length >= 6; // đóng cửa cả tuần không được tính đạt
   (st.weekly ||= []).push({ week: day / 7, id: ch.id, ok });
   if (ok) { st.ip += ch.ip; st.coins += ch.xu; }
   pushMail(st, { kind: ok ? 'REWARD' : 'INFO', src: 'official', title: (ok ? 'Đạt thử thách tuần: ' : 'Chưa đạt thử thách tuần: ') + ch.name, body: ok ? `${ch.desc} Thưởng ${ch.ip} IP và ${ch.xu} xu.` : `${ch.desc} Tuần sau có thử thách mới.` });
@@ -699,7 +708,7 @@ function unlockTick(st) { // mở khóa ở 10, 30, 60, 90 sao (mục 15.7)
 }
 export function totalStars(st) { return MILESTONES.reduce((a, M) => a + (st.stars[M.id] || 0), 0); }
 export function netWorth(st) {
-  let inv = 0; for (const g of ING_ORDER) for (const l of st.lots[g]) inv += l.q * l.cost;
+  let inv = 0; for (const L of [st.lots, st.b2?.lots]) if (L) for (const g of ING_ORDER) for (const l of L[g] || []) inv += l.q * l.cost;
   const eq = Object.entries(st.equip).reduce((a, [id, d]) => a + EQUIP[id].price * Math.max(0, 1 - (st.day - d) / 180), 0);
   return st.cash + inv + eq - st.debt;
 }
@@ -716,7 +725,7 @@ export function seasonScore(st) {
 function checkBadges(st, h) {
   const set = (id, c) => { if (c && !st.badges[id]) { st.badges[id] = st.day; const b = BADGES.find(x => x.id === id); st.ip += b.ip; pushMail(st, { kind: 'REWARD', src: 'official', title: 'Huy hiệu: ' + b.name, body: b.desc + (b.ip ? ` Thưởng ${b.ip} IP.` : '') }); } };
   set('A01', st.day >= 1 && h.rev > 0);
-  const last7 = st.hist.slice(-7); set('A02', last7.length === 7 && last7.every(x => x.ls <= 0));
+  const last7 = st.hist.slice(-7); set('A02', last7.length === 7 && last7.every(x => x.ls <= 0 && x.buyers > 0));
   set('A03', st.calHits >= 5);
   const a = H(st, 24), b = H(st, 31); set('A10', a && b && (a.night ?? 0) > 0 && (b.night ?? 0) > 0);
   set('A12', st.day === 68 && h.rev > 0 && h.profit > 0);
