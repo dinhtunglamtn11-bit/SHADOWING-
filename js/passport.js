@@ -318,6 +318,16 @@ function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
     c.fillStyle = '#009c3b'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#ffdf00'; c.beginPath(); c.moveTo(32, 5); c.lineTo(59, 24); c.lineTo(32, 43); c.lineTo(5, 24); c.closePath(); c.fill();
     c.fillStyle = '#002776'; c.beginPath(); c.arc(32, 24, 11, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2.4; c.beginPath(); c.arc(32, 50, 28, Math.PI * 1.17, Math.PI * 1.83); c.stroke(); return;
   }
+  if (cc === 'nl') { c.fillStyle = '#ae1c28'; c.fillRect(0, 0, 64, 16); c.fillStyle = '#fff'; c.fillRect(0, 16, 64, 16); c.fillStyle = '#21468b'; c.fillRect(0, 32, 64, 16); return; } // cờ Hà Lan: đỏ, trắng, xanh dương
+  if (cc === 'gh') { // cờ Ghana: đỏ, vàng, xanh lá và ngôi sao đen ở giữa
+    c.fillStyle = '#ce1126'; c.fillRect(0, 0, 64, 16); c.fillStyle = '#fcd116'; c.fillRect(0, 16, 64, 16); c.fillStyle = '#006b3f'; c.fillRect(0, 32, 64, 16);
+    c.fillStyle = '#000'; c.beginPath(); for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 5 : 12; c.lineTo(32 + Math.cos(a) * r, 25 + Math.sin(a) * r); } c.closePath(); c.fill(); return;
+  }
+  if (cc === 'ar') { // cờ Argentina: ba dải xanh trời, trắng, xanh trời và Mặt trời Tháng Năm ở giữa
+    c.fillStyle = '#74acdf'; c.fillRect(0, 0, 64, 16); c.fillRect(0, 32, 64, 16); c.fillStyle = '#fff'; c.fillRect(0, 16, 64, 16);
+    c.fillStyle = '#f6b40e'; c.strokeStyle = '#f6b40e'; c.lineWidth = 1.2; for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8; c.beginPath(); c.moveTo(32 + Math.cos(a) * 6, 24 + Math.sin(a) * 6); c.lineTo(32 + Math.cos(a) * 9.5, 24 + Math.sin(a) * 9.5); c.stroke(); }
+    c.beginPath(); c.arc(32, 24, 5.2, 0, Math.PI * 2); c.fill(); c.fillStyle = '#85340a'; c.fillRect(30, 23, 1.2, 1.2); c.fillRect(33.2, 23, 1.2, 1.2); c.fillRect(30.6, 26, 3, 0.9); return;
+  }
   if (cc === 'fr') { c.fillStyle = '#0055a4'; c.fillRect(0, 0, 22, 48); c.fillStyle = '#fff'; c.fillRect(22, 0, 21, 48); c.fillStyle = '#ef4135'; c.fillRect(43, 0, 21, 48); return; }
   if (cc === 'vn') {
     c.fillStyle = '#da251d'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#ffff00'; c.beginPath();
