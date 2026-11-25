@@ -239,3 +239,16 @@ body[data-view="tealab"] #lameEdge { display: none !important; }
 .tl-tags .tg.stk { background: #ff5a5fdd; color: #fff; font-weight: 700; }
 @media (max-width: 899px) { .tl-stkg { grid-template-columns: repeat(4, 1fr); } .tl-sc small { font-size: 10px; } .tl-sc b { font-size: 17px; } }
 .tl-stkall { padding: 0 6px; } .tl-stkall > summary { min-height: 36px; font-size: 14px; }
+.tl-pend { display: block; padding: 3px 0; border-bottom: 1px dashed var(--line); line-height: 1.25; } .tl-pend small { display: block; font-size: 13px; }
+
+/* hồ sơ và lịch sử các lượt */
+.hs-st { color: #a87400; letter-spacing: 1px; } .hs-st i { font-style: normal; opacity: .25; } :root[data-theme=night] .hs-st { color: #ffd84d; }
+.hs-gr { display: grid; grid-template-columns: 140px 1fr 78px; gap: 6px; align-items: center; font-size: 14px; padding: 2px 0; } .hs-gr small { text-align: right; }
+.hs-bar { position: relative; height: 10px; background: var(--tl-chip); border: 1px solid var(--tlc); } .hs-bar i { position: absolute; left: 0; top: 0; bottom: 0; display: block; } .hs-bar .life { background: #cfc8e6; } .hs-bar .cur { background: #5fd068; }
+:root[data-theme=night] .hs-bar .life { background: #7a73b8; }
+.hs-run { margin: 4px 0; } .hs-run > summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; font-size: 15px; } .hs-run.cur { border-color: #5fd068; border-style: solid; } .hs-s { font-family: var(--pf); }
+.hs-ms { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+.hs-tbl { overflow: auto; max-width: 100%; } .hs-t2 th, .hs-t2 td { text-align: center; padding: 3px 4px; font-size: 13px; } .hs-t2 td.hs-n { text-align: left; min-width: 150px; position: sticky; left: 0; background: var(--panel); }
+.hs-best { background: #ffd84d66; font-weight: 700; } .hs-g td { background: var(--tl-chip); font-family: var(--pf); text-align: left !important; font-size: 15px; position: static; }
+.tl-rec { font-size: 12px; background: var(--tl-lowbg); color: var(--tl-card-t); border: 1px solid #d9a41c; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
+.tl-bd.rec { opacity: .85; border-style: dashed; }
