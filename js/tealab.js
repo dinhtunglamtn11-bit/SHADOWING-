@@ -40,7 +40,8 @@ function load() {
 }
 function pullRemote() { // bản lưu từ máy khác: lấy bản có nhiều ngày hơn
   const r = store.get('prefs', 'tealab'); if (!r || !r.json || G.alive && G.st && G.st.phase === 'LIVE') return;
-  try { const o = JSON.parse(r.json); if (o && o.st && (!G.st || (o.st.day > G.st.day))) { G.profile = mergeProfile(G.profile, o.profile); G.st = E.ensure(o.st); G.st.runId ||= Date.now(); G.st.t0 ||= G.st.runId; G.S = o.S; if (G.root) render(); } } catch { /* bỏ qua */ }
+  try { const o = JSON.parse(r.json); const l = G.st, rt = o?.st?.t0 || o?.st?.runId || 0, lt = l?.t0 || 0; // lượt mới hơn thắng; cùng lượt thì lấy bản đi xa hơn (không để bản cũ đè lượt vừa chơi lại)
+    if (o && o.st && (!l || (l.silent && !l.sessionsPlayed && o.st.sessionsPlayed > 0) || (rt === lt ? o.st.day > l.day : rt > lt && !o.st.silent))) { G.profile = mergeProfile(G.profile, o.profile); G.st = E.ensure(o.st); G.st.runId ||= Date.now(); G.st.t0 ||= G.st.runId; G.S = o.S; if (G.root) render(); } } catch { /* bỏ qua */ }
 }
 
 // ---------- vòng chơi ----------
@@ -127,7 +128,7 @@ export function mount(root) {
   </div>`;
   bindRoot(root); G.cv = $('#tlCv'); G.g = G.cv.getContext('2d'); G.g.imageSmoothingEnabled = false; render();
 }
-function newGameSilent() { G.st = E.newRun({ seed: 20261201, diff: 'chuan' }); G.st.runId = Date.now(); G.st.t0 = G.st.runId; G.st.dayReps = []; E.beginSession(G.st); }
+function newGameSilent() { G.st = E.newRun({ seed: 20261201, diff: 'chuan' }); G.st.silent = 1;G.st.runId = Date.now(); G.st.t0 = G.st.runId; G.st.dayReps = []; E.beginSession(G.st); }
 export function render() { hud(); panel(); renderWin(); fade(); drawNow(); }
 function fade() { const f = $('#tlFade'); if (f) { f.hidden = !G.busy; f.innerHTML = G.busy ? `<div>${A.illus('sleep')}<p>Đi ngủ…</p><small>Các buổi còn lại chạy theo kế hoạch đứng.</small></div>` : ''; } }
 const clockText = () => { const s = st(), S = G.S; const k = s.k, base = SSTART[k]; if (s.phase === 'LIVE' && S) { const m = S.tick; return `${pad(base + Math.floor(m / 60))}:${pad(m % 60)}`; } if (s.phase === 'REVIEW') return `${pad(base + (k === 4 ? 2 : 4))}:00`; return `${pad(base)}:00`; };
@@ -181,11 +182,10 @@ const ING_FRESH = g => D.ING[g].grp === 'fresh';
 function orderHtml(s) {
   const sups = Object.keys(D.SUPPLIERS).filter(x => D.SUPPLIERS[x].stage <= s.stage && (!D.SUPPLIERS[x].needFlag || s.flags[D.SUPPLIERS[x].needFlag])), sup = sups.includes(G.sup) ? G.sup : 'A', sd = D.SUPPLIERS[sup], arr = E.arrivalOf(s, sup);
   const rows = grp => D.ING_ORDER.filter(g => D.ING[g].grp === grp && (!sd.fresh || grp === 'fresh') && (D.ITEM_ORDER.some(i => s.stage >= D.ITEMS[i].stage && D.inSeason(i, s.day + 6) && D.ITEMS[i].ing.includes(g)) || g === 'ly')).map(g => {
-    const price = E.marketPrice(s, g) * sd.mul * (s.equip.pearl && g === 'tranchau' ? 0.92 : 1), q = +(G.ord[g] || 0);
+    const price = E.unitPrice(s, sup, g), q = +(G.ord[g] || 0);
     return `<div class="tl-row"><span class="tl-ico">${A.ingIc(g, 22)}</span><div class="tl-nm"><b>${esc(D.ING[g].name)}</b>${G.profile?.zh ? `<span class="zh" lang="zh">${esc(D.ING_ZH[g] || '')}</span>` : ''}<small class="dim">kho ${stockLine(s, g)} · ${k1(price)}/phần</small></div><div class="tl-step"><input class="tl-num" data-calc="qty" data-g="${g}" type="text" inputmode="numeric" value="${q || ''}" placeholder="0" aria-label="Số phần ${esc(D.ING[g].name)}"><button class="btn" data-a="oq" data-g="${g}" data-d="10">+10</button><button class="btn" data-a="oq" data-g="${g}" data-d="50">+50</button></div></div>`;
   }).join('');
-  let total = 0; for (const [g, q] of Object.entries(G.ord)) if (q > 0) total += E.marketPrice(s, g) * sd.mul * (q >= D.PARAMS.discountQty ? 0.9 : 1) * q;
-  if (total) total += sd.fee;
+  const total = orderTotal(s, sup);
   const brs = s.b2 ? `<div class="tl-sups"><button class="chip ${G.br !== 'B' ? 'on' : ''}" data-a="brsel" data-v="A">🏪 Chi nhánh 1</button><button class="chip ${G.br === 'B' ? 'on' : ''}" data-a="brsel" data-v="B">🏬 Chi nhánh 2</button></div>` : '';
   return `${brs}${pendingHtml(s)}<div class="dim tl-note">Không biết đặt bao nhiêu? <button class="btn" data-a="guidefm">📐 Công thức EOQ, ROP, NV</button></div><div class="tl-sups">${sups.map(x => `<button class="chip ${x === sup ? 'on' : ''}" data-a="sup" data-v="${x}">${A.ic('sup' + x, 16)} ${esc(D.SUPPLIERS[x].name)}</button>`).join('')}</div>
     <div class="dim tl-note">${esc(sd.note)} Phí giao ${kfmt(sd.fee)}${sd.express ? ' · giao khẩn khi mở cửa' : ''}. ≥150 phần: giảm 10%.</div>
@@ -203,7 +203,7 @@ function forecastHtml(s) {
 function staffHtml(s) {
   const eq = Object.entries(E.EQUIP).filter(([, e]) => s.stage >= e.stage).map(([id, e]) => `<div class="tl-row"><span class="tl-ico">${A.ic(id, 26)}</span><div class="tl-nm"><b>${esc(e.name)}</b><small class="dim">${esc(e.desc)}</small></div>${s.equip[id] ? '<span class="chip on">Đã có</span>' : `<button class="btn" data-a="equip" data-v="${id}" ${s.cash < e.price ? 'disabled' : ''}>${kfmt(e.price)}</button>`}</div>`).join('');
   const staff = s.staff.map(m => `<div class="tl-row"><span class="tl-ico">${A.face('ST', 30)}</span><div class="tl-nm"><b>${esc(m.name)}</b><small class="dim">${esc(m.trait)} · lương ${kfmt(m.wage)}/buổi · ${m.shifts >= 4 ? (m.skill > 1.1 ? 'làm nhanh' : m.skill < 0.95 ? 'làm chậm' : 'làm bình thường') : 'đang làm quen'}</small><div class="tl-bar"><i style="width:${Math.round(m.energy)}%"></i></div><small class="dim">sức ${Math.round(m.energy)} · tâm trạng ${m.mood > 65 ? '🙂' : m.mood > 40 ? '😐' : '😟'}</small></div><button class="btn" data-a="fire" data-v="${m.id}">Cho nghỉ</button></div>`).join('') || '<div class="dim">Chưa có nhân viên. Tuyển người để mở trạm thu ngân.</div>';
-  const cand = s.cand.map(c => `<div class="tl-row"><span class="tl-ico">${A.face('ST', 30)}</span><div class="tl-nm"><b>${esc(c.name)}</b><small class="dim">${esc(c.trait)} · lương ${kfmt(c.wage)}/buổi${c.seen ? ` · tay nghề ≈ ${c.skill > 1.1 ? 'giỏi' : c.skill < 0.95 ? 'yếu' : 'khá'}` : ''}</small></div>${c.seen ? '' : `<button class="btn" data-a="intv" data-v="${c.id}">Phỏng vấn</button>`}<button class="btn primary" data-a="hire" data-v="${c.id}" ${s.staff.length >= D.PARAMS.maxStaff ? 'disabled' : ''}>Thuê</button></div>`).join('') || '<div class="dim">Chưa có ứng viên mới (mỗi 3 ngày có thêm).</div>';
+  const cand = s.cand.map(c => `<div class="tl-row"><span class="tl-ico">${A.face('ST', 30)}</span><div class="tl-nm"><b>${esc(c.name)}</b><small class="dim">${esc(c.trait)} · lương ${kfmt(c.wage)}/buổi${c.seen ? ` · tay nghề ≈ ${c.skill > 1.1 ? 'giỏi' : c.skill < 0.95 ? 'yếu' : 'khá'}` : ''}</small></div>${c.seen ? '' : `<button class="btn" data-a="intv" data-v="${c.id}">Phỏng vấn</button>`}<button class="btn primary" data-a="hire" data-v="${c.id}" ${s.staff.length >= D.PARAMS.staffMax[s.stage] ? 'disabled' : ''}>Thuê</button></div>`).join('') || '<div class="dim">Chưa có ứng viên mới (mỗi 3 ngày có thêm).</div>';
   const note = s.stage >= 3 ? '<div class="dim tl-note">Giai đoạn 3: người thứ nhất làm thu ngân, người thứ hai chuyên giao hàng (cần xe giao hàng), còn lại pha chế cùng Lame.</div>' : '';
   return `<h4>Nhân viên (${s.staff.length}/${D.PARAMS.staffMax[s.stage]})</h4>${note}${staff}<h4>Ứng viên</h4>${cand}<h4>Thiết bị</h4>${eq}`;
 }
@@ -400,7 +400,8 @@ function bindRoot(root) {
   document.addEventListener('visibilitychange', () => { if (G.alive && document.hidden && st()?.phase === 'LIVE') save(false); });
 }
 function renderPartial() { hud(); const p = $('#tlPanel'); const f = G.lastInput && G.lastInput.dataset ? G.lastInput.dataset.i : null; panel(); }
-function updOrdTotal() { const s = st(), sd = D.SUPPLIERS[D.SUPPLIERS[G.sup] && D.SUPPLIERS[G.sup].stage <= s.stage ? G.sup : 'A']; let t = 0; for (const [g, q] of Object.entries(G.ord)) if (q > 0) t += E.marketPrice(s, g) * sd.mul * (q >= D.PARAMS.discountQty ? 0.9 : 1) * q; if (t) t += sd.fee; const el = $('#tlOrdTotal'); if (el) el.textContent = t ? kfmt(t) : '0k'; }
+function orderTotal(s, sup) { let t = 0; for (const [g, q] of Object.entries(G.ord)) if (q > 0) t += Math.round(E.unitPrice(s, sup, g, Math.floor(q))) * Math.floor(q); return t ? t + D.SUPPLIERS[sup].fee : 0; }
+function updOrdTotal() { const s = st(), t = orderTotal(s, D.SUPPLIERS[G.sup] && D.SUPPLIERS[G.sup].stage <= s.stage ? G.sup : 'A'); const el = $('#tlOrdTotal'); if (el) el.textContent = t ? kfmt(t) : '0k'; }
 function onAct(a, ev) {
   const s = st(), d = a.dataset, act = d.a, res = r => { if (r && !r.ok) toast(r.reason, 2400); return r; };
   switch (act) {
@@ -422,7 +423,7 @@ function onAct(a, ev) {
     case 'expstop': res(E.cmd(s, G.S, { t: 'STOP_EXPERIMENT' })); save(false); panel(); break;
     case 'win': openWin(d.v); break;
     case 'live': { const sh = shortage(s); if (sh.miss.length && !confirm(`Đang thiếu: ${sh.miss.map(g => D.ING[g].name.toLowerCase()).join(', ')}.\nCác món dùng chúng sẽ KHÔNG bán được trong buổi này (hàng đặt bây giờ chỉ về đầu buổi sau).\nVẫn mở cửa?`)) break; goLive(); break; }
-    case 'skip': if (confirm('Nghỉ buổi này? Vẫn trả thuê mặt bằng và lương.')) skipSession(); break;
+    case 'skip': if (confirm(E.dayCard(s.day).defaultClosed.includes(s.k) ? 'Giữ đóng cửa? Vẫn trả thuê mặt bằng, không phải trả lương lễ.' : 'Nghỉ buổi này? Vẫn trả thuê mặt bằng và lương.')) skipSession(); break;
     case 'openany': openAnyway(); break;
     case 'pause': G.paused = !G.paused; panel(); applyPause(); break;
     case 'guidefm': G.gdTab = 'fm'; G.gdQ = ''; G.win = null; openWin('guide'); break;
@@ -458,6 +459,7 @@ function consume(S) {
   for (const e of S.out) {
     if (e.ty === 'buy') { { const gm = A.shopGeo(s.stage); (G.fl ||= []).push({ x: gm.coinX + (S.cust % 5) * 3 - 6, y: gm.coinY + 4, t0: G.t }); } if (G.fl.length > 24) G.fl.shift(); G.vis.push({ x: -8, seg: e.sg, v: (G.vis.length * 7 + S.cust) % 3, st: 'in', serveAt: S.tick + Math.min(60, Math.max(2, Math.round(e.wait / 60))), item: e.item, sat: e.sat, y: 56 + (G.vis.length % 3) * 3 }); }
     else if (e.ty === 'lost') { G.vis.push({ x: -8, seg: e.sg, v: S.cust % 3, st: 'lost', why: e.why, y: 58, t0: G.t }); if (lostMsg++ < 1) feedPush(e.why === 'stock' ? 'Khách bỏ đi: món hết hàng' : 'Khách bỏ đi: chờ lâu', 'bad'); }
+    else if (e.ty === 'late') { feedPush('🚚 Đơn khẩn bị trễ: về đầu buổi sau', 'warn'); toast('🚚 Đơn khẩn bị trễ, về đầu buổi sau', 2400); }
     else if (e.ty === 'delivery') { feedPush('🚚 Hàng giao khẩn đã đến', 'good'); toast('🚚 Hàng giao khẩn đã đến', 1600); }
     else if (e.ty === 'closed') feedPush('Quán đang đóng cửa', 'warn');
   }

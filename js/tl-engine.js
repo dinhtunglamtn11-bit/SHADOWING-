@@ -135,7 +135,7 @@ function planEvents(st) {
     for (const e of pool) { r -= e.w; if (r <= 0) { pick = e; break; } }
     if (!pick || (pick.sev >= 3 && d - sev3 < 3)) continue;
     if (pick.sev >= 3) sev3 = d; last[pick.id] = d;
-    const k = Math.floor(u(seed, 'event', d * 11 + 2) * 4);
+    const k = Math.min(pick.maxK ?? 3, Math.floor(u(seed, 'event', d * 11 + 2) * 4)); // đơn đặt trước phải báo trước giờ khách đến
     plan.push({ ev: pick.id, day: d, k, clueT: tau(d, k) - Math.max(1, pick.lead || 0) * 10 + (pick.lead ? 0 : 0) });
   }
   return plan.sort((a, b) => tau(a.day, a.k) - tau(b.day, b.k));
@@ -160,7 +160,6 @@ function eventTick(st) { // phát manh mối và kích hoạt sự kiện đến
       if (!happens) { (st.falseDays ||= []).push(p.day); pushMail(st, { kind: 'INFO', src: e.ch, title: 'Báo động giả: ' + e.name, body: 'Sự kiện đã được báo trước nhưng không xảy ra lần này. Phản ứng quá sớm có thể tốn kém, đó là bài học về độ tin cậy của nguồn tin.', ev: e.id }); continue; }
       const dur = Math.max(1, e.dur || 1);
       for (const f of e.effects || []) applyFx(st, e, f, mag, tau(p.day, 0), tau(p.day + dur - 1, 9));
-      if (e.special === 'inspect') { const bad = ING_ORDER.some(g => st.lots[g].some(l => l.last <= p.day && l.q > 0)); p.inspBad = bad; }
       if (e.choices && e.choices.length > 1) pushMail(st, { kind: 'DECISION', src: e.ch, title: e.name, body: e.body, ev: e.id, choices: e.choices.map(c => ({ id: c.id, label: c.label, hint: c.hint || '' })), defaultChoice: e.choices[0].id, deadline: at + 10 });
       else pushMail(st, { kind: 'INFO', src: e.ch, title: e.name, body: e.body, ev: e.id });
     }
@@ -192,8 +191,9 @@ export function applyChoice(st, mailId, choiceId, auto = false) {
   const e = EVENT_BY_ID[m.ev], c = e.choices.find(x => x.id === choiceId); if (!c) return { ok: false, reason: 'Lựa chọn không có.' };
   const need = c.ap || 0;
   if (!auto && (st.phase === 'LIVE' || st.phase === 'PREP') && st.ap < need) return { ok: false, reason: 'Không đủ điểm hành động (AP).' };
+  if (c.cash && !auto && st.cash + c.cash < -5000 * K) return { ok: false, reason: 'Không đủ tiền.' };
   if (!auto && need && (st.phase === 'LIVE' || st.phase === 'PREP')) st.ap -= need;
-  if (c.cash) { if (st.cash + c.cash < -5000 * K && !auto) return { ok: false, reason: 'Không đủ tiền.' }; st.cash += c.cash; ledger(st, e.name + ': ' + c.label, c.cash); }
+  if (c.cash) { st.cash += c.cash; ledger(st, e.name + ': ' + c.label, c.cash); }
   const at = tau(st.day, st.k), mag = P.difficulty[st.diff].mag;
   for (const f of c.fx || []) applyFx(st, e, f, 1, tau(st.day, 0), tau(st.day + Math.max(1, e.dur) - 1, 9));
   if (c.sp) special(st, c.sp);
@@ -201,13 +201,13 @@ export function applyChoice(st, mailId, choiceId, auto = false) {
   if (e.id === 'E23' && choiceId === 'ignore') { /* hiệu ứng nền đã áp dụng */ }
   if (e.id === 'E23' && choiceId !== 'ignore') st.fx = st.fx.filter(f => !(f.id === 'E23'));
   if (e.id === 'E03' && choiceId === 'return') { st.fx = st.fx.filter(f => f.id !== 'E03'); const l = st.lots.dao.reduce((a, b) => a + b.q * b.cost, 0); st.cash += rm(l * 0.8); ledger(st, 'Trả lô đào', rm(l * 0.8)); st.lots.dao = []; }
-  if (e.special === 'inspect' && choiceId === 'clean') { for (const g of ING_ORDER) st.lots[g] = st.lots[g].filter(l => l.last > st.day); }
+  if (e.special === 'inspect' && choiceId === 'clean') st.flags.clean = st.day;
   m.resolved = true; m.chosen = choiceId; m.read = true; m.auto = auto;
   return { ok: true, label: c.label };
 }
-function inspectResult(st) { // kết quả kiểm tra vệ sinh (E33) ở cuối ngày xảy ra
+function inspectResult(st, dirty) { // kết quả kiểm tra vệ sinh (E33) ở cuối ngày xảy ra; dirty: cuối ngày còn lô đến hạn (đo trước khi bỏ hàng hỏng)
   const p = st.plan.find(x => x.ev === 'E33' && x.day === st.day && x.happened); if (!p) return;
-  const bad = ING_ORDER.some(g => st.lots[g].some(l => l.last <= st.day && l.q > 0));
+  const bad = dirty && st.flags.clean !== st.day;
   if (bad) { st.rep = clamp(st.rep - 3, 0, 100); st.cash -= 400 * K; ledger(st, 'Phạt vệ sinh', -400 * K); pushMail(st, { kind: 'SYSTEM', src: 'official', title: 'Kiểm tra vệ sinh: chưa đạt', body: 'Kho còn lô hết hạn. Bạn bị phạt 400k và danh tiếng −3.' }); }
   else { st.rep = clamp(st.rep + 2, 0, 100); pushMail(st, { kind: 'REWARD', src: 'official', title: 'Kiểm tra vệ sinh: đạt', body: 'Kho sạch, giấy tờ đủ. Danh tiếng +2.' }); }
 }
@@ -287,7 +287,7 @@ export function beginSession(st) { // vào PREP của (ngày, buổi): nhận h�
   if (st.k === 0) calendarMails(st);
   eventTick(st);
   // hàng đến hạn
-  for (const p of st.pending.filter(p => p.t <= at && !p.at)) deliver(st, p);
+  for (const p of st.pending.filter(p => p.t <= at && (!p.at || p.t < at))) deliver(st, p); // p.t < at: đơn khẩn còn kẹt từ buổi trước
   st.pending = st.pending.filter(p => !p.done);
   const base = Math.round(P.ap[st.stage] * P.difficulty[st.diff].ap);
   st.ap = base + Math.min(P.apCarry, st.apCarry || 0); st.apCarry = 0; st.expressUsed = 0;
@@ -303,7 +303,7 @@ function deliver(st, p) {
   if (p.transfer) { const L = lotsOf(st, p.br); for (const l of p.lots) L[l.g].push({ ...l }); p.done = true; p.status = 'chuyển kho'; return; } // chuyển hàng giữa hai chi nhánh: giao đủ, giữ nguyên hạn dùng
   const day = st.day, rho = clamp(SUPPLIERS[p.sup].rho + fxVal(st, 'supplier.reliability', p.sup, tau(st.day, st.k), 'add') + (day === 35 ? -0.10 : 0), 0.05, 0.999);
   let frac = 1, status = 'đủ'; const r = u(st.seed, 'supplier', p.id * 3);
-  if (!p.late && r > rho) { const r2 = u(st.seed, 'supplier', p.id * 3 + 1); if (r2 < 0.5) { p.late = 1; const [nd, nk] = nextSess(st.day, st.k); p.t = tau(nd, nk); status = 'trễ'; st.supLog[p.sup].push([day, 'trễ']); return; } frac = 1 - (0.1 + 0.3 * u(st.seed, 'supplier', p.id * 3 + 2)); status = 'thiếu ' + Math.round((1 - frac) * 100) + '%'; }
+  if (!p.late && r > rho) { const r2 = u(st.seed, 'supplier', p.id * 3 + 1); if (r2 < 0.5) { p.late = 1; p.at = 0; const [nd, nk] = nextSess(st.day, st.k); p.t = tau(nd, nk); status = 'trễ'; st.supLog[p.sup].push([day, 'trễ']); return; } frac = 1 - (0.1 + 0.3 * u(st.seed, 'supplier', p.id * 3 + 2)); status = 'thiếu ' + Math.round((1 - frac) * 100) + '%'; }
   p.done = true; if (status !== 'trễ') st.supLog[p.sup].push([day, p.late ? 'đủ (sau khi trễ)' : status]);
   let refund = 0;
   for (const l of p.lines) {
@@ -364,6 +364,8 @@ export function cmd(st, S, c) {
     default: return fail('Lệnh không hỗ trợ.');
   }
 }
+// giá một phần khi đặt (dùng chung cho đặt hàng và số "Tổng" trên giao diện để hai nơi luôn khớp)
+export const unitPrice = (st, sup, g, q = 0, express = false) => marketPrice(st, g) * SUPPLIERS[sup].mul * fxVal(st, 'supplier.price', sup) * (q >= P.discountQty ? 1 - P.discountPct : 1) * (st.equip.pearl && g === 'tranchau' ? 0.92 : 1) * (express ? P.expressMul : 1);
 function placeOrder(st, sup, lines, express, S, br) {
   const sd = SUPPLIERS[sup], fail = reason => ({ ok: false, reason });
   if (!sd || sd.stage > st.stage || (sd.needFlag && !st.flags[sd.needFlag])) return fail('Nhà cung cấp này chưa mở.');
@@ -375,8 +377,7 @@ function placeOrder(st, sup, lines, express, S, br) {
   if (!supplierOpenOn(sup, arriveDay)) return fail(`${sd.name} đóng cửa vào ${dayLabel(arriveDay)}.`);
   let total = 0; const out = [];
   for (const l of lines) {
-    const q = Math.floor(l.q), disc = q >= P.discountQty ? 1 - P.discountPct : 1, e = st.equip.pearl && l.g === 'tranchau' ? 0.92 : 1;
-    const cost = rm(marketPrice(st, l.g) * sd.mul * fxVal(st, 'supplier.price', sup) * disc * e * (express ? P.expressMul : 1)); total += cost * q; out.push({ g: l.g, q, cost });
+    const q = Math.floor(l.q), cost = rm(unitPrice(st, sup, l.g, q, express)); total += cost * q; out.push({ g: l.g, q, cost });
   }
   total += (express ? P.expressFee : sd.fee);
   if (st.cash < total) return fail('Không đủ tiền (' + Math.round(total / K) + 'k).');
@@ -408,7 +409,7 @@ export function advance(st, S, n) {
   for (let q = 0; q < n && S.tick < S.len; q++) {
     const tick = S.tick, slot = Math.floor(tick / 30), k = S.k, at = tau(S.day, k), T = tempAt(S.card.w, k);
     // hàng giao khẩn đến hạn
-    for (const p of st.pending) if (p.at && !p.done && S.tick >= p.at) { deliver(st, p); p.done = true; ev.push({ ty: 'delivery', sup: p.sup }); }
+    for (const p of st.pending) if (p.at && !p.done && S.tick >= p.at) { deliver(st, p); ev.push({ ty: p.done ? 'delivery' : 'late', sup: p.sup }); } // giao trễ: đơn vẫn còn, về đầu buổi sau
     st.pending = st.pending.filter(p => !p.done);
     const stn = stations(st), onBreak = S.tick < S.breakUntil, capB = Math.max(0.2, eff(st, stn.bar) - (onBreak ? 0.5 : 0)), capC = stn.cash.length ? eff(st, stn.cash) : 0;
     const capS = stn.ship.length ? eff(st, stn.ship) : 0;
@@ -473,7 +474,9 @@ function handle(st, S, sg, c, T, capB, capC, slot, ev, capS) {
   ev.push({ ty: 'buy', sg, item: chosen, cups, wait: E, sat });
 }
 export function finishSession(st, S, auto = false) { // chốt buổi: lương, báo cáo, điểm dự đoán
-  const R = S.st, wages = [];
+  const R = S.st, worked = S.open || R.cups > 0, holidayOff = !worked && S.card.defaultClosed.includes(S.k);
+  for (const p of st.pending) if (p.at && !p.done) deliver(st, p); // đơn khẩn đặt sát giờ đóng: về khi hết buổi
+  st.pending = st.pending.filter(p => !p.done);
   let wage = 0;
   if (S.B) { // gộp số liệu chi nhánh 2 vào báo cáo buổi; nhân viên chi nhánh tính lương theo buổi mở cửa
     const b = S.B.st; R.b2 = { rev: b.rev, cups: b.cups, ls: b.lostStock, lw: b.lostWait, buyers: b.buyers };
@@ -482,15 +485,18 @@ export function finishSession(st, S, auto = false) { // chốt buổi: lương, 
     for (const sg of SEGS) { R.seg[sg].visit += b.seg[sg].visit; R.seg[sg].buy += b.seg[sg].buy; R.seg[sg].lost += b.seg[sg].lost; } b.perSlot.forEach((x, j) => { for (const k of ['v', 'b', 'ls', 'lw']) R.perSlot[j][k] += x[k]; });
     if (S.open) wage += P.branch.crew * P.branch.wage * S.card.wageMul;
   }
-  if (S.open || R.cups > 0 || S.tick >= S.len) for (const m of st.staff) { if (m.avail === false) continue; const w = m.wage * S.card.wageMul; wage += w; m.shifts = (m.shifts || 0) + 1; m.energy = clamp((m.energy ?? 100) - 10, 0, 100); m.mood = clamp((m.mood ?? 70) + (S.card.wageMul > 1 ? 1 : 2), 0, 100); }
+  if (!holidayOff && (worked || S.tick >= S.len)) for (const m of st.staff) { // nghỉ buổi: vẫn trả lương thường; ngày lễ đóng cửa mặc định: không có lương
+    if (m.avail === false) continue; wage += m.wage * (worked ? S.card.wageMul : 1); if (!worked) continue;
+    m.shifts = (m.shifts || 0) + 1; m.energy = clamp((m.energy ?? 100) - 10, 0, 100); m.mood = clamp((m.mood ?? 70) + (S.card.wageMul > 1 ? 1 : 2), 0, 100);
+  }
   let otMin = 0; // tăng ca: đơn còn dồn lại cuối buổi được làm nốt, lương ×1,5 cho phần thời gian dùng thêm (mục 5.5)
   if (S.open && S.Wb > 60) { const cap = Math.max(0.5, st.staff.length ? eff(st, stations(st).bar) : 1); otMin = Math.min(60, Math.ceil(S.Wb / (60 * cap) / 5) * 5); if (otMin >= 5 && st.staff.length) { const ot = rm(st.staff.filter(m => m.avail !== false).reduce((a, m) => a + m.wage * (P.overtime - 1) * otMin / 240, 0) * S.card.wageMul); wage += ot; if (otMin >= 15) for (const m of st.staff) m.mood = clamp((m.mood ?? 70) - 3, 0, 100); } }
   st.cash -= wage; R.wage = wage; if (wage) ledger(st, 'Lương buổi ' + ['S1', 'S2', 'S3', 'S4', 'S5'][S.k], -wage);
-  st.lame.energy = clamp(st.lame.energy - 10, 0, 100);
+  if (worked) st.lame.energy = clamp(st.lame.energy - 10, 0, 100);
   const lost = R.lostStock + R.lostWait, wants = R.buyers;
   const rep = { day: S.day, k: S.k, open: S.open, rev: R.rev, cups: R.cups, cogs: R.cogs, wage, buyers: wants, visit: SEGS.reduce((a, s) => a + R.seg[s].visit, 0), ls: R.lostStock, lw: R.lostWait, over: R.over, none: R.none, sat: R.satN ? R.sat / R.satN : 0, satN: R.satN, hi: R.hi || 0,
     by: R.by, seg: R.seg, perSlot: R.perSlot, stockout: R.stockout, comments: R.comments, maxQ: R.maxQ, wait: R.waitN ? R.wait / R.waitN : 0, errs: R.errs, auto, apLeft: st.ap, cmds: S.cmds.length };
-  const f = st.forecast; if (f && !auto) { const x = R.cups, IS = (f.hi - f.lo) + 10 * Math.max(0, f.lo - x) + 10 * Math.max(0, x - f.hi), score = clamp(100 * (1 - IS / Math.max(1, 1.5 * x)), 0, 100); rep.fc = { lo: f.lo, hi: f.hi, x, hit: x >= f.lo && x <= f.hi, score }; st.cal.push([S.day, score, rep.fc.hit ? 1 : 0]); if (rep.fc.hit) { st.calHits++; st.ip += 1; } if (score >= 75) st.ip += 1; }
+  const f = st.forecast; if (f && !auto && worked) { const x = R.cups, IS = (f.hi - f.lo) + 10 * Math.max(0, f.lo - x) + 10 * Math.max(0, x - f.hi), score = clamp(100 * (1 - IS / Math.max(1, 1.5 * x)), 0, 100); rep.fc = { lo: f.lo, hi: f.hi, x, hit: x >= f.lo && x <= f.hi, score }; st.cal.push([S.day, score, rep.fc.hit ? 1 : 0]); if (rep.fc.hit) { st.calHits++; st.ip += 1; } if (score >= 75) st.ip += 1; }
   rep.ot = otMin; rep.giftRev = R.giftRev || 0; rep.del = R.del || 0; rep.b2 = R.b2 || null;
   if (!auto && S.snap && S.open) { try { rep.q = assess(S, rep); (st.dqi ||= []).push([S.day, rep.q.score]); } catch (e) { rep.q = null; } } // chấm chất lượng quyết định và tách may / kỹ năng bằng chạy lại cùng seed
   if (st.exp && !st.exp.done && S.open) trackExp(st, S, rep);
@@ -537,11 +543,12 @@ export function nextSession(st) { // sau REVIEW “Xong”
 }
 function autoOrders(st) { // kế hoạch đứng: nhập về mức dùng trung bình 3 ngày gần nhất (nếu có), không phải chiến lược tối ưu
   const h = st.hist.slice(-3), use = {}; for (const g of ING_ORDER) use[g] = 0;
-  for (const d of h) for (const [it, q] of Object.entries(d.by || {})) for (const g of ITEMS[it].ing) use[g] += q / Math.max(1, h.length);
+  for (const d of h) for (const [it, q] of Object.entries(d.by || {})) if (st.menu[it] && inSeason(it, st.day)) for (const g of ITEMS[it].ing) use[g] += q / Math.max(1, h.length);
+  const coming = (g, br) => st.pending.reduce((a, p) => a + ((p.br || 'A') === br && !p.done ? (p.lines.length ? p.lines : p.lots || []).reduce((s, l) => s + (l.g === g ? l.q : 0), 0) : 0), 0); // hàng đang trên đường, để không đặt trùng
   const sh = st.b2 ? 0.75 : 1, sup = supplierOpenOn('A', nextSess(st.day, st.k)[0]) ? 'A' : 'B';
-  const lines = []; for (const g of ING_ORDER) { const need = Math.ceil(use[g] * 0.28 * 1.12 * sh) - stockOf(st, g); if (need > 0 && (ING[g].grp === 'fresh' ? need > 3 : need > 10)) lines.push({ g, q: need }); }
+  const lines = []; for (const g of ING_ORDER) { const need = Math.ceil(use[g] * 0.28 * 1.12 * sh) - stockOf(st, g) - coming(g, 'A'); if (need > 0 && (ING[g].grp === 'fresh' ? need > 3 : need > 10)) lines.push({ g, q: need }); }
   if (lines.length) placeOrder(st, sup, lines, false, null);
-  if (st.b2) { const l2 = []; for (const g of ING_ORDER) { const have = st.b2.lots[g].reduce((a, l) => a + l.q, 0), need = Math.ceil(use[g] * 0.28 * 1.12 * 0.25) - have; if (need > 0 && (ING[g].grp === 'fresh' ? need > 3 : need > 10)) l2.push({ g, q: need }); } if (l2.length) placeOrder(st, sup, l2, false, null, 'B'); }
+  if (st.b2) { const l2 = []; for (const g of ING_ORDER) { const have = st.b2.lots[g].reduce((a, l) => a + l.q, 0), need = Math.ceil(use[g] * 0.28 * 1.12 * 0.25) - have - coming(g, 'B'); if (need > 0 && (ING[g].grp === 'fresh' ? need > 3 : need > 10)) l2.push({ g, q: need }); } if (l2.length) placeOrder(st, sup, l2, false, null, 'B'); }
 }
 function runAuto(st) { // chạy các buổi còn lại của ngày bằng kế hoạch đứng
   while (st.phase !== 'DAYEND') {
@@ -566,22 +573,23 @@ export function closeDay(st) {
   // hàng hỏng
   let spoil = 0; const sp = {};
   const lossF = { fresh: clamp(fxVal(st, 'inventory.loss', 'fresh', tau(day, 0), 'add'), 0, 0.9), dry: clamp(fxVal(st, 'inventory.loss', 'dry', tau(day, 0), 'add'), 0, 0.9) };
-  for (const g of ING_ORDER) { const f = lossF[ING[g].grp]; if (f > 0) for (const l of st.lots[g]) { const lost = Math.floor(l.q * f); if (lost) { l.q -= lost; spoil += lost * l.cost; sp[g] = (sp[g] || 0) + lost; } } } // sự kiện làm hỏng một phần kho (cúp điện, hỏng tủ lạnh…)
+  for (const L of [st.lots, st.b2?.lots]) { if (!L) continue; for (const g of ING_ORDER) { const f = lossF[ING[g].grp]; if (f > 0) for (const l of L[g]) { const lost = Math.floor(l.q * f); if (lost) { l.q -= lost; spoil += lost * l.cost; sp[g] = (sp[g] || 0) + lost; } } } } // sự kiện làm hỏng một phần kho (cúp điện, hỏng tủ lạnh…)
+  const dirty = ING_ORDER.some(g => g !== 'da' && st.lots[g].some(l => l.q > 0 && l.last <= day));
   for (const L of [st.lots, st.b2 ? st.b2.lots : null]) { if (!L) continue; for (const g of ING_ORDER) { const keep = []; for (const l of L[g]) { if (l.last <= day) { spoil += l.q * l.cost; sp[g] = (sp[g] || 0) + l.q; } else keep.push(l); } L[g] = keep; } }
-  spoil = rm(spoil * (st.diff === 'nhan' ? 0.9 : 1)); st.cash -= spoil;
+  spoil = rm(spoil * (st.diff === 'nhan' ? 0.9 : 1)); // chỉ ghi vào sổ lãi lỗ: tiền hàng đã trả lúc đặt, không trừ tiền mặt lần nữa
   const fixed = rm(P.fixedDay[st.stage] * (fxVal(st, 'cost.fixed', '', tau(day, 0), 'mul'))); st.cash -= fixed;
   let interest = 0; if (st.debt > 0) { interest = rm(st.debt * 0.0005); st.cash -= interest; }
   // vay gia đình khi âm tiền (tối đa 5.000k)
   if (st.cash < 0 && st.debt < 5000 * K) { const b = Math.min(-st.cash, 5000 * K - st.debt); st.cash += b; st.debt += b; pushMail(st, { kind: 'SYSTEM', src: 'official', title: 'Vay gia đình', body: 'Tiền mặt âm nên bạn vay gia đình ' + Math.round(b / K) + 'k (lãi 0,05% mỗi ngày). Hãy tăng lợi nhuận để trả.' }); }
   else if (st.debt > 0 && st.cash > st.debt + 3000 * K) { st.cash -= st.debt; st.debt = 0; }
-  inspectResult(st);
+  inspectResult(st, dirty);
   const sum = k => reps.reduce((a, r) => a + (r[k] || 0), 0), by = {}; for (const r of reps) for (const [i, q] of Object.entries(r.by || {})) by[i] = (by[i] || 0) + q;
   const rev = sum('rev'), cogs = sum('cogs'), wage = sum('wage'), ls = sum('ls'), lw = sum('lw'), wants = sum('buyers'), satN = sum('satN');
   const sat = satN ? reps.reduce((a, r) => a + r.sat * r.satN, 0) / satN : 0.7, lostShare = wants ? (ls + lw) / wants : 0;
   const autoShare = reps.length ? reps.filter(r => r.auto).length : 0;
   // danh tiếng và khách quen (5.9)
   const target = 100 * clamp(sat * (1 - 1.5 * lostShare), 0, 1) * 1.0, rep0 = st.rep;
-  if (reps.some(r => r.open)) st.rep = clamp(st.rep + 0.12 * (target - st.rep), 0, 100);
+  if (reps.some(r => r.open || r.cups > 0)) st.rep = clamp(st.rep + 0.12 * (target - st.rep), 0, 100);
   const nhi = sum('hi'); st.loyal = clamp(0.97 * st.loyal + 0.10 * nhi, 0, P.loyalMax[st.stage]);
   // năng lượng qua đêm, nghỉ việc
   st.lame.energy = clamp(st.lame.energy + 35 + 10, 0, 100);
