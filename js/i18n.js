@@ -21,23 +21,27 @@ const coreOf = s => { const m = AFFIX.exec(s); return m && m[2] ? m[2] : s; };
 
 // Câu nằm trong vùng này là nội dung của người dùng: gần như không dịch
 const USER_OK = new Set(['chưa có phiên âm', 'chưa có nghĩa', 'Đúng', 'Sai']);
-const USER_SEL = '.cue .m,.cue .s,#now .main:not(.small),#now .sub,.qtext,.qexp,.qopt,.qback,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.ci b,.lib .n b,.wd b,.gt,.nw-h,.nw-lead,.nw-tag,.nw-ttl,.nw-text,.nw-src,.nw-syn,.wchip,.slot,.qhint,.qtitle,.mbq,.mbsrc,.wvw,.wvp,#nSelBar .gt,#rbResult .line,.sp-text,.sp-ct,.sp-ci,.wvm,.wvs,.wvsrc,#msItem option,#wtFolder option:not(:first-child),.uipv,textarea,[contenteditable]';
+const USER_SEL = '.cue .m,.cue .s,#now .main:not(.small),#now .sub,.qtext,.qexp,.qopt,.qback,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.ci b,.lib .n b,.wd b,.gt,.nw-h,.nw-lead,.nw-tag,.nw-ttl,.nw-text,.nw-src,.nw-syn,.wchip,.slot,.qhint,.qtitle,.mbq,.mbsrc,.wvw,.wvp,#nSelBar .gt,#rbResult .line,.sp-text,.sp-ct,.sp-ci,.wvm,.wvs,.wvsrc,#msItem option,#wtFolder option:not(:first-child),.uipv,.tl-user,textarea,[contenteditable]';
 
 // Nạp từ điển của ngôn ngữ đang chọn (chỉ tải khi không dùng tiếng Việt)
 const EN_FILES = ['en-a', 'en-b', 'en-c', 'en-d'];
+const GAME_FILES = ['en-t', 'en-u']; // từ điển riêng của game TeaLab: chỉ dùng cho chữ của game, không lan sang phần còn lại của app
+const load = async files => Object.assign({}, ...(await Promise.all(files.map(f => import(`./${f}.js`)))).map(m => m.default));
 const LOADERS = {
-  en: async () => Object.assign({}, ...(await Promise.all(EN_FILES.map(f => import(`./${f}.js`)))).map(m => m.default)),
+  en: async () => load(EN_FILES),
   zh: async () => {
     const en = await LOADERS.en(), zh = (await import('./zh-en.js')).default;
     return Object.fromEntries(Object.entries(en).map(([k, v]) => [k, zh[coreOf(v)] ?? v]));
   },
 };
 const DICT = uiLang === 'vi' ? {} : await LOADERS[uiLang]();
+const GAME = uiLang === 'vi' ? {} : await load(GAME_FILES); // giao diện Trung: TeaLab hiện tiếng Anh
 
 let E = null, PATS = [], KEYS = [];
-function build() {
-  E = new Map(); PATS = []; KEYS = [];
-  for (const dict of [DICT]) {
+const CTX = {};
+function compile(dicts) {
+  const E = new Map(), PATS = [], KEYS = new Map();
+  for (const dict of dicts) {
     for (const [k, v] of Object.entries(dict)) {
       const key = norm(coreOf(k)), val = coreOf(v);
       if (/\{[*~#]?\}/.test(key)) {
@@ -45,16 +49,20 @@ function build() {
         const parts = key.split(/(\{[*~#]?\})/), isPh = p => /^\{[*~#]?\}$/.test(p), lit = parts.filter(p => !isPh(p)).join('').length;
         const full = new Set(); let k = 0;
         const src = parts.map(p => { if (!isPh(p)) return esc(p); if (p === '{~}') full.add(k); k++; return p === '{#}' || (p === '{}' && lit < 8) ? '([\\d.,:/%]+)' : '(.*?)'; }).join('');
-        PATS.push({ re: new RegExp(`^${src}$`, 'su'), tpl: val, lit, full, dot: key.includes(' · ') });
+        PATS.unshift({ re: new RegExp(`^${src}$`, 'su'), tpl: val, lit, full, dot: key.includes(' · ') }); // từ điển sau được ưu tiên
       } else {
         E.set(key, val);
-        if (key.length >= 5) KEYS.push([key, val]);
+        if (key.length >= 5) KEYS.set(key, val);
       }
     }
   }
   PATS.sort((a, b) => b.lit - a.lit);
-  KEYS.sort((a, b) => b[0].length - a[0].length);
+  return { E, PATS, KEYS: [...KEYS].sort((a, b) => b[0].length - a[0].length) };
 }
+// chọn bộ từ điển: trong game TeaLab dùng thêm từ điển game (và ưu tiên nó), nơi khác chỉ dùng từ điển app
+let curGame = false; // phạm vi đang dịch: phần chèn lồng bên trong phải dùng cùng bộ từ điển
+function use(game) { curGame = game; ({ E, PATS, KEYS } = CTX[game ? 'g' : 'a'] ||= compile(game ? [DICT, GAME] : [DICT])); }
+const inGame = el => !!el?.closest?.('#tlHost') || document.body?.dataset.view === 'tealab';
 
 // điền mẫu: {} lần lượt, {2} theo số, {1:ít|nhiều} = số + từ chia số ít/nhiều
 function fill(tpl, caps, full) {
@@ -62,7 +70,7 @@ function fill(tpl, caps, full) {
   return tpl.replace(/\{(\d*)(?::([^|}]*)\|([^}]*))?\}/g, (_, d, a, b) => {
     const idx = d ? +d - 1 : i++;
     const raw = caps[idx] ?? '';
-    const cap = full?.has(idx) ? tr(raw) : exact(raw);
+    const cap = full?.has(idx) ? tr(raw, false, curGame) : exact(raw);
     return a !== undefined ? cap + ' ' + (parseFloat(raw) === 1 ? a : b) : cap;
   });
 }
@@ -98,7 +106,7 @@ function lookup(core, user) {
   if (r != null) return r;
   if (n.includes(' · ')) { // chuỗi ghép bằng ' · ': dịch từng phần
     let ch = false;
-    const out = n.split(' · ').map(x => { const t = tr(x); if (t !== x) ch = true; return t; });
+    const out = n.split(' · ').map(x => { const t = tr(x, false, curGame); if (t !== x) ch = true; return t; });
     if (ch) return out.join(' · ');
   }
   r = hit(false);
@@ -109,10 +117,10 @@ function lookup(core, user) {
 }
 
 const cache = new Map();
-export function tr(s, user = false) {
+export function tr(s, user = false, game = inGame()) {
   if (uiLang === 'vi' || typeof s !== 'string' || !s) return s;
-  if (!E) build();
-  const ck = (user ? '\u0001' : '') + s;
+  const ck = (game ? '\u0002' : '') + (user ? '\u0001' : '') + s;
+  use(game);
   let r = cache.get(ck);
   if (r !== undefined) return r;
   const m = AFFIX.exec(s);
@@ -122,7 +130,7 @@ export function tr(s, user = false) {
   cache.set(ck, r);
   return r;
 }
-export const trLines = s => (uiLang === 'vi' ? s : String(s).split('\n').map(l => tr(l)).join('\n'));
+export const trLines = (s, game = inGame()) => (uiLang === 'vi' ? s : String(s).split('\n').map(l => tr(l, false, game)).join('\n'));
 
 // ---------- áp dụng lên giao diện ----------
 const ATTRS = ['title', 'placeholder', 'aria-label', 'alt'];
@@ -132,13 +140,13 @@ function trText(tn) {
   if (!p || p.closest(SKIP)) return;
   const s = tn.nodeValue;
   if (!s || !s.trim()) return;
-  const o = tr(s, !!p.closest(USER_SEL));
+  const game = inGame(p), o = tr(s, !!p.closest(USER_SEL), game);
   if (o !== s) tn.nodeValue = o;
 }
 function trAttrs(el) {
   for (const a of ATTRS) {
     const v = el.getAttribute(a);
-    if (v) { const o = trLines(v); if (o !== v) el.setAttribute(a, o); }
+    if (v) { const o = trLines(v, inGame(el)); if (o !== v) el.setAttribute(a, o); }
   }
 }
 function scan(node) {
@@ -163,7 +171,7 @@ export function initI18n(root = document.body) {
   new MutationObserver(ms => {
     for (const m of ms) {
       if (m.type === 'characterData') trText(m.target);
-      else if (m.type === 'attributes') { const v = m.target.getAttribute(m.attributeName); if (v) { const o = trLines(v); if (o !== v) m.target.setAttribute(m.attributeName, o); } }
+      else if (m.type === 'attributes') { const v = m.target.getAttribute(m.attributeName); if (v) { const o = trLines(v, inGame(m.target)); if (o !== v) m.target.setAttribute(m.attributeName, o); } }
       else m.addedNodes.forEach(scan);
     }
   }).observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
