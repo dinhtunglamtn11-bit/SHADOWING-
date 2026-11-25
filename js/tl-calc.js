@@ -40,6 +40,18 @@ const FN = {
   BE: a => { need(a, 2); if (a[1] === 0) throw new CalcError('DIV0'); return a[0] / a[1]; },
   ROP: a => { need(a, 4); if (a[1] < 0) throw new CalcError('DOMAIN'); return a[0] * a[1] + a[3] * a[2] * Math.sqrt(a[1]); },
   CI: a => { need(a, 3); if (!(a[2] > 0 && a[2] < 1) || a[1] <= 0) throw new CalcError('DOMAIN'); return normInv((1 + a[2]) / 2) * a[0] / Math.sqrt(a[1]); },
+  // công thức bổ sung (hướng dẫn: mục Menu → Hướng dẫn → Công thức)
+  EOQ: a => { need(a, 3); if (a[0] < 0 || a[1] < 0 || !(a[2] > 0)) throw new CalcError(a[2] === 0 ? 'DIV0' : 'DOMAIN'); return Math.sqrt(2 * a[0] * a[1] / a[2]); },
+  TC: a => { need(a, 4); if (!(a[3] > 0)) throw new CalcError(a[3] === 0 ? 'DIV0' : 'DOMAIN'); return a[0] / a[3] * a[1] + a[3] / 2 * a[2]; },
+  SS: a => { need(a, 3); if (a[1] < 0) throw new CalcError('DOMAIN'); return a[2] * a[0] * Math.sqrt(a[1]); },
+  MK: a => { need(a, 2); if (a[0] === 0) throw new CalcError('DIV0'); return (a[1] - a[0]) / a[0] * 100; },
+  ELA: a => { need(a, 4); if (a[0] === 0 || a[2] === 0 || a[1] === a[0]) throw new CalcError('DIV0'); return ((a[3] - a[2]) / a[2]) / ((a[1] - a[0]) / a[0]); },
+  Z: a => { need(a, 3); if (a[2] === 0) throw new CalcError('DIV0'); return (a[0] - a[1]) / a[2]; },
+  TURN: a => { need(a, 2); if (a[1] === 0) throw new CalcError('DIV0'); return a[0] / a[1]; },
+  DOH: a => { need(a, 2); if (a[1] === 0) throw new CalcError('DIV0'); return a[0] / a[1]; },
+  ROI: a => { need(a, 2); if (a[1] === 0) throw new CalcError('DIV0'); return a[0] / a[1] * 100; },
+  LITTLE: a => { need(a, 2); return a[0] * a[1]; },
+  UTIL: a => { need(a, 2); if (a[1] === 0) throw new CalcError('DIV0'); return a[0] / a[1]; },
 };
 function need(a, n) { if (a.length !== n && !(n === 1 && a.length >= 1)) throw new CalcError('SYNTAX'); return a; }
 export const FUNCS = Object.keys(FN);

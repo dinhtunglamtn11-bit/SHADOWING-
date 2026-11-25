@@ -1,5 +1,6 @@
 // TeaLab: tranh pixel vẽ bằng chương trình (không cần file ảnh). Mọi hình dựng từ lưới ký tự hoặc ô vuông; hiển thị sắc cạnh (image-rendering: pixelated).
 import { EXTRA_IC, sceneFx, interiorFx, ILL_EXTRA, drawIllus2 } from './tl-art2.js';
+import { drawTown, drawRoom, shopGeo } from './tl-scene.js';
 export const C = {
   k: '#2d1f47', w: '#ffffff', c: '#fff1cf', d: '#5b5478', s: '#e4dff7', S: '#9a93c4',
   r: '#ff5a5f', R: '#c2354a', o: '#ff9a3c', O: '#c86a1f', y: '#ffd84d', Y: '#d9a41c', g: '#5fd068', G: '#2f9a4a', t: '#3cc8b4', T: '#1f8f86',
@@ -210,9 +211,9 @@ const bubCache = {}; export const bubble = n => (bubCache[n] ||= fromRows(BUB[n]
 const SKY = [['#ffd9a0', '#9ad0ff'], ['#c6ecff', '#69b8ff'], ['#ffe2ac', '#82b8ff'], ['#ff9a6a', '#4b3b8f'], ['#0b1030', '#26346a']];
 const hexRgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const mix = (a, b, t) => { const x = hexRgb(a), y = hexRgb(b); return `rgb(${x.map((v, i) => Math.round(v + (y[i] - v) * t)).join(',')})`; };
-export const SCENE_W = 160, SCENE_H = 100;
+export const SCENE_W = 160, SCENE_H = 100; export { shopGeo };
 // phông chữ pixel 3×5 cho biển hiệu
-const GL = { T: '111010010010010', R: '110101110101101', A: '010101111101101', L: '100100100100111', M: '101111111101101', B: '110101110101110', E: '111100110100111', ' ': '000000000000000' };
+const GL = { T: '111010010010010', R: '110101110101101', A: '010101111101101', L: '100100100100111', M: '101111111101101', B: '110101110101110', '2': '111001111100111', E: '111100110100111', ' ': '000000000000000' };
 function glyphs(R, x, y, s, col) { for (const ch of s) { const m = GL[ch]; if (m) for (let i = 0; i < 15; i++) if (m[i] === '1') R(x + (i % 3), y + Math.floor(i / 3), 1, 1, col); x += 4; } }
 export function drawScene(g, o) {
   const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
@@ -223,87 +224,20 @@ export function drawScene(g, o) {
   if (!cloudy) { if (k === 4) { const mx = 140 - hour * 34, my = 10 - hour * 3; R(mx, my, 8, 8, '#fff3b0'); R(mx + 3, my, 7, 8, '#0b1030'); R(mx + 2, my - 1, 3, 3, '#fff3b0'); } else R(18 + k * 36, 8 + (k === 3 ? 20 : k === 1 ? -2 : 4), 10, 10, k === 3 ? '#ff7a4a' : '#fff3b0'); }
   if (k === 4) for (let i = 0; i < 22; i++) R((i * 37 + 11) % 158, (i * 53) % 40, 1, 1, i % 3 ? '#ffffff' : '#ffd84d');
   if (cloudy) for (let i = 0; i < 5; i++) { const x = ((i * 47 + t * 3) % 200) - 20, y = 6 + (i * 11) % 24, c = k === 4 ? '#2b3560' : '#cfd6e8'; R(x, y, 26, 5, c); R(x + 4, y - 3, 16, 4, c); R(x + 8, y + 5, 14, 2, k === 4 ? '#1b2448' : '#b6bfd6'); }
-  // đường chân trời: nhà xa
-  const bc = mix('#7a7fa8', bot, 0.35); for (let i = 0; i < 12; i++) { const x = i * 14, h = 18 + ((i * 7) % 5) * 5; R(x, 58 - h, 12, h, k === 4 ? '#161c40' : bc); for (let w = 0; w < 3; w++) R(x + 2 + w * 3, 58 - h + 3 + (w % 2) * 4, 1, 2, k === 4 || k === 3 ? '#ffd84d' : '#ffffff55'); }
-  // vỉa hè + đường
-  R(0, 58, SCENE_W, 14, k === 4 ? '#3a3f66' : '#b9b3cf'); R(0, 72, SCENE_W, 28, k === 4 ? '#262a4a' : '#7d7799'); for (let x = 0; x < SCENE_W; x += 16) R(x + ((t * 2) % 16 - 16), 87, 8, 2, k === 4 ? '#6a6f99' : '#e4dff7');
-  R(0, 71, SCENE_W, 1, '#5b5478');
-  if (k >= 3) for (let lx = 14; lx < 160; lx += 52) { R(lx, 36, 2, 30, '#2d1f47'); R(lx - 3, 34, 8, 3, '#2d1f47'); R(lx - 2, 37, 6, 3, '#fff3b0'); g.fillStyle = '#fff3b033'; g.fillRect(lx - 6, 40, 14, 30); } // đèn đường buổi tối / đêm
-  // cửa hàng
-  const sx = 92;
-  if (stage === 1) { // xe đẩy
-    R(sx - 6, 40, 52, 6, '#ff5a5f'); for (let i = 0; i < 6; i++) R(sx - 6 + i * 9, 40, 4, 6, '#ffffff'); R(sx - 6, 46, 52, 2, '#c2354a');
-    R(sx - 2, 48, 2, 22, '#8a5a36'); R(sx + 42, 48, 2, 22, '#8a5a36');
-    R(sx - 4, 56, 48, 4, '#c9905a'); R(sx - 4, 60, 48, 14, '#8a5a36'); R(sx - 2, 62, 44, 10, '#a06a3c'); R(sx + 8, 64, 24, 6, open ? '#ffd84d' : '#9a93c4'); R(sx + 10, 65, 20, 1, '#2d1f47'); R(sx + 12, 67, 16, 1, '#2d1f47');
-    for (let i = 0; i < 3; i++) { R(sx + 0 + i * 4, 52, 3, 4, '#ffffff'); R(sx + 0 + i * 4, 52, 3, 1, '#9a93c4'); }
-    R(sx + 2, 72, 8, 8, '#2d1f47'); R(sx + 3, 73, 6, 6, '#9a93c4'); R(sx + 32, 72, 8, 8, '#2d1f47'); R(sx + 33, 73, 6, 6, '#9a93c4');
-    R(sx + 14, 31, 24, 11, '#ffd84d'); R(sx + 15, 32, 22, 9, '#2d1f47'); glyphs(R, sx + 21, 35, 'TEA', '#ffd84d'); R(sx + 28, 33, 1, 1, '#ffd84d');
-  } else { // tiệm nhỏ
-    R(sx - 14, 22, 66, 50, '#e8d5b0'); R(sx - 14, 22, 66, 3, '#8a5a36'); R(sx - 16, 16, 70, 8, '#ff5a5f'); for (let i = 0; i < 7; i++) R(sx - 16 + i * 10, 16, 5, 8, '#ffffff');
-    R(sx - 8, 26, 36, 10, '#2d1f47'); R(sx - 6, 27, 32, 8, '#ffd84d'); glyphs(R, sx, 29, 'TEALAB', '#2d1f47');
-    R(sx - 8, 40, 30, 24, '#9ad0ff'); R(sx - 8, 40, 30, 1, '#5b5478'); R(sx + 7, 40, 1, 24, '#5b5478'); R(sx - 6, 58, 26, 6, '#c9905a'); R(sx - 6, 64, 26, 8, '#8a5a36');
-    R(sx + 26, 42, 18, 30, open ? '#8a5a36' : '#5b3c22'); R(sx + 28, 44, 14, 12, open ? '#9ad0ff' : '#5b6a9a'); R(sx + 40, 58, 2, 2, '#ffd84d'); R(sx + 29, 38, 12, 4, open ? '#5fd068' : '#ff5a5f'); R(sx + 31, 39, 8, 2, '#ffffff');
-    if (stage >= 2) { R(sx - 12, 72, 8, 8, '#a06a3c'); R(sx - 12, 80, 8, 4, '#2d1f47'); R(sx + 44, 72, 8, 8, '#a06a3c'); R(sx + 44, 80, 8, 4, '#2d1f47'); }
-  }
-  if (!open) R(sx - 2, 52, 12, 8, '#ff5a5f');
-  // Lame và nhân viên sau quầy
-  const lx = stage === 1 ? sx + 18 : sx + 2; g.drawImage(personCanvas('LA', 0), lx, 54 - 2 + (Math.sin(t * 3) > 0.7 ? 1 : 0));
-  const tr = o.tired || []; for (let i = 0; i < staffN; i++) g.drawImage(personCanvas('ST', i, { tired: tr[i] }), lx + 12 + i * 10, 54 + (tr[i] ? 1 : 0) + (!tr[i] && Math.sin(t * 3 + i) > 0.8 ? -1 : 0)); // nhân viên: đứng, làm (nhún), mệt (gục)
-  if (stage >= 3) { // cửa hàng: xe giao hàng đậu trước tiệm, biển "mở rộng"
-    const ty = 76 + Math.round(Math.sin(t * 2) * 0.5); R(sx - 40, ty, 26, 10, '#ffffff'); R(sx - 40, ty, 18, 10, '#ffffff'); R(sx - 22, ty + 2, 8, 8, '#5ab4ff'); R(sx - 40, ty + 4, 18, 3, '#ff5a5f'); R(sx - 36, ty + 10, 5, 4, '#2d1f47'); R(sx - 22, ty + 10, 5, 4, '#2d1f47'); R(sx - 40, ty, 18, 1, '#e4dff7');
-    R(sx - 14, 18, 66, 2, '#ffd84d'); for (let i = 0; i < 7; i++) R(sx - 12 + i * 10, 20, 2, 2, '#ffd84d');
-  }
-  if (stage >= 4) { R(2, 30, 42, 42, '#d9c7e8'); R(2, 26, 44, 6, '#3cc8b4'); for (let i = 0; i < 4; i++) R(2 + i * 11, 26, 5, 6, '#ffffff'); R(6, 38, 14, 14, '#9ad0ff'); R(24, 40, 12, 32, '#8a5a36'); R(10, 34, 22, 4, '#2d1f47'); glyphs(R, 12, 35, 'TEA', '#ffd84d'); }
-  // trang trí theo ngày lễ
-  for (const d of decor) drawDecor(g, d, sx, t, R);
-  // thời tiết
+  const G = drawTown(g, o, R, { personCanvas, glyphs, mix, bot }); // phố, mặt tiền cửa hàng, người, trang trí ngày lễ
+ // thời tiết
   if (rain) { g.fillStyle = k === 4 ? '#8fb6ff' : '#5a8fe0'; for (let i = 0; i < 46; i++) { const x = (i * 29 + t * 18) % 170 - 5, y = ((i * 17 + t * 60) % 110) - 5; g.fillRect(Math.round(x), Math.round(y), 1, 3); } R(0, 88, SCENE_W, 12, '#5a8fe033'); }
   else if (sky === 'drizzle') { g.fillStyle = '#9ec0f0'; for (let i = 0; i < 34; i++) { const x = (i * 31 + t * 6) % 165, y = ((i * 19 + t * 22) % 105); g.fillRect(Math.round(x), Math.round(y), 1, 1); } }
   if (sky === 'cold' || sky === 'monsoon') { g.fillStyle = '#e6f6ff33'; g.fillRect(0, 56, SCENE_W, 44); }
   if (sky === 'hot' || sky === 'sunny') { g.fillStyle = '#fff3b022'; g.fillRect(0, 0, SCENE_W, 40); }
   sceneFx(g, o, R);
-  if (promo) { R(sx + 4, 30, 40, 7, '#ff5a5f'); R(sx + 6, 32, 36, 3, '#ffffff'); }
-  if (k === 4 || k === 3) { g.fillStyle = '#ffd84d33'; g.beginPath(); g.arc(sx + 20, 52, 26, 0, 6.3); g.fill(); }
-}
-function drawDecor(g, d, sx, t, R) {
-  if (d === 'noel') { R(10, 40, 3, 4, '#8a5a36'); for (let i = 0; i < 4; i++) R(4 + i, 26 + i * 4, 15 - i * 2, 5, '#2f9a4a'); R(10, 20, 3, 5, '#ffd84d'); for (let i = 0; i < 6; i++) R(6 + (i * 5) % 12, 28 + (i * 3) % 12, 2, 2, (t | 0) % 2 === i % 2 ? '#ff5a5f' : '#ffd84d'); }
-  if (d === 'newyear') for (let i = 0; i < 9; i++) R(sx - 14 + i * 8, 12, 2, 2, (t | 0) % 2 === i % 2 ? '#ffd84d' : '#ffffff');
-  if (d === 'tet') { for (let i = 0; i < 3; i++) { R(sx - 6 + i * 22, 24, 2, 4, '#8a5a36'); R(sx - 10 + i * 22, 28, 10, 12, '#ff5a5f'); R(sx - 9 + i * 22, 30, 8, 8, '#ffd84d'); R(sx - 7 + i * 22, 40, 2, 5, '#ffd84d'); } R(4, 42, 3, 28, '#8a5a36'); for (let i = 0; i < 9; i++) R(0 + (i * 5) % 16, 38 + (i * 4) % 22, 3, 3, i % 2 ? '#ff7fb5' : '#ffb0cc'); }
-  if (d === 'valentine') for (let i = 0; i < 6; i++) { const x = sx - 12 + i * 12, y = 10 + (i % 2) * 3; R(x, y, 3, 2, '#ff5a5f'); R(x + 4, y, 3, 2, '#ff5a5f'); R(x, y + 2, 7, 2, '#ff5a5f'); R(x + 2, y + 4, 3, 2, '#ff5a5f'); }
-  if (d === 'cho') { // Chợ Tết: cờ đuôi nheo và hai gian hàng trên vỉa hè
-    for (let i = 0; i < 16; i++) { const y = 10 + Math.round(Math.sin(i * 0.8) * 2); R(i * 10 + 1, y, 6, 4, i % 2 ? '#ff5a5f' : '#ffd84d'); }
-    for (const x of [50, 62]) { R(x, 50, 11, 3, x === 50 ? '#ff5a5f' : '#ffd84d'); for (let i = 0; i < 3; i++) R(x + i * 4, 50, 2, 3, '#ffffff'); R(x, 53, 1, 14, '#8a5a36'); R(x + 10, 53, 1, 14, '#8a5a36'); R(x, 62, 11, 3, '#c9905a'); for (let i = 0; i < 3; i++) R(x + 1 + i * 3, 59, 2, 3, ['#ff7fb5', '#ffd84d', '#ff5a5f'][(i + x) % 3]); }
-  }
-  if (d === 'spring') { for (const x of [2, 146]) { R(x + 4, 52, 8, 6, '#c2354a'); R(x + 5, 46, 2, 7, '#2f9a4a'); R(x + 8, 44, 2, 9, '#2f9a4a'); for (const [a, b, c] of [[2, 40, '#ff7fb5'], [6, 38, '#ffd84d'], [9, 41, '#ff9a3c'], [7, 43, '#ffffff']]) R(x + a, b, 3, 3, c); } }
-  if (d === 'ram') for (let i = 0; i < 4; i++) { const x = 6 + i * 36, y = 14 + (i % 2) * 4 + Math.sin(t + i) * 1.2; R(x, y - 3, 1, 3, '#2d1f47'); R(x - 3, y, 7, 7, '#ffd84d'); R(x - 2, y + 1, 5, 5, '#ff9a3c'); }
 }
 export const decorOf = day => { const d = []; if (day >= 17 && day <= 25) d.push('noel'); if (day === 24 || day === 25) d.push('snow'); if (day >= 28 && day <= 34) d.push('newyear'); if (day >= 56 && day <= 67) d.push('cho'); if (day >= 68 && day <= 75) d.push('tet'); if (day >= 70 && day <= 77) d.push('valentine'); if (day >= 80 && day <= 83) d.push('ram'); return d; };
 // ---------- nội thất (quầy thu ngân, khu pha chế, chỗ ngồi) theo giai đoạn ----------
 export function drawInterior(g, o) {
   const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
   const { stage = 1, k = 0, staffN = 0, guests = 0, t = 0, open = true, decor = [], tired = [], hour = 0 } = o, night = k >= 3;
-  const wall = ['#f3e2c0', '#ffe9b8', '#f6d9a8', '#c9a77a', '#6b5a8a'][k], floor1 = night ? '#4a3f66' : '#b08a5a', floor2 = night ? '#3d3358' : '#9c7748';
-  R(0, 0, 160, 62, wall); for (let x = 0; x < 160; x += 20) R(x, 0, 1, 62, night ? '#5a4a7a' : '#e6d0a0');
-  for (let y = 62; y < 100; y += 8) for (let x = 0; x < 160; x += 8) R(x, y, 8, 8, ((x / 8 + y / 8) % 2) ? floor1 : floor2);
-  R(0, 60, 160, 3, night ? '#2d1f47' : '#8a5a36');
-  // cửa sổ nhìn ra phố: màu trời theo buổi
-  const sk = SKY[k]; for (let y = 6; y < 36; y += 2) R(8, y, 40, 2, mix(sk[0], sk[1], (y - 6) / 30)); R(8, 6, 40, 1, '#5b5478'); R(8, 35, 40, 1, '#5b5478'); R(8, 6, 1, 30, '#5b5478'); R(47, 6, 1, 30, '#5b5478'); R(27, 6, 1, 30, '#5b5478');
-  if (stage >= 3) { R(54, 6, 30, 30, '#9ad0ff'); R(54, 6, 30, 1, '#5b5478'); R(54, 35, 30, 1, '#5b5478'); R(54, 6, 1, 30, '#5b5478'); R(83, 6, 1, 30, '#5b5478'); R(68, 6, 1, 30, '#5b5478'); }
-  // bảng thực đơn
-  R(92, 8, 52, 24, '#2d1f47'); R(92, 8, 52, 1, '#8a5a36'); R(92, 31, 52, 1, '#8a5a36'); const cols = ['#ffd84d', '#5fd068', '#ff7fb5', '#5ab4ff', '#ffb08a', '#cfe8a0'];
-  for (let i = 0; i < Math.min(6, 3 + stage * 1); i++) { R(96, 12 + i * 3, 3, 2, cols[i]); R(101, 12 + i * 3, 22 + (i * 5) % 12, 1, '#e4dff7'); R(136, 12 + i * 3, 5, 1, '#ffd84d'); }
-  // khu pha chế (tường sau) + quầy thu ngân
-  R(100, 38, 56, 3, '#8a5a36'); if (stage >= 2) { R(140, 38 - 16, 14, 16, '#cfd6e8'); R(141, 24, 12, 14, '#9aa0a8'); R(143, 27, 2, 8, '#2d1f47'); R(124, 38 - 10, 10, 10, '#5b5478'); R(126, 30, 6, 4, '#c2354a'); R(110, 38 - 9, 11, 9, '#8a5a36'); R(111, 30, 9, 3, '#3b2418'); } else { for (let i = 0; i < 5; i++) { R(104 + i * 9, 29, 7, 9, '#ffffff'); R(104 + i * 9, 29, 7, 1, '#9a93c4'); } }
-  R(86, 58, 72, 8, '#c9905a'); R(86, 66, 72, 14, '#8a5a36'); R(88, 68, 68, 10, '#a06a3c'); R(120, 52, 14, 8, '#2d1f47'); R(121, 53, 12, 5, open ? '#5fd068' : '#ff5a5f'); R(135, 54, 8, 5, '#e4dff7');  // máy tính tiền
-  for (let i = 0; i < 3; i++) { R(92 + i * 6, 54, 4, 5, '#ffffff'); R(92 + i * 6, 54, 4, 1, '#9a93c4'); }
-  g.drawImage(personCanvas('LA', 0), 108, 44 + (Math.sin(t * 3) > 0.7 ? 1 : 0)); for (let i = 0; i < staffN; i++) g.drawImage(personCanvas('ST', i, { tired: tired[i] }), 122 + i * 11, 44 + (tired[i] ? 1 : 0));
-  // chỗ ngồi: số bàn tăng theo giai đoạn
-  const tables = stage === 1 ? 0 : stage === 2 ? 2 : stage === 3 ? 4 : 6;
-  for (let i = 0; i < tables; i++) { const x = 8 + (i % 3) * 26, y = 70 + Math.floor(i / 3) * 14; R(x + 3, y, 12, 5, '#c9905a'); R(x + 3, y + 5, 12, 1, '#8a5a36'); R(x + 8, y + 6, 2, 5, '#8a5a36'); R(x, y + 1, 3, 6, '#ff9a3c'); R(x + 15, y + 1, 3, 6, '#ff9a3c'); if (i < guests) { g.drawImage(personCanvas(['HS', 'VP', 'DK', 'KQ'][i % 4], i % 3), x + 4, y - 9); R(x + 7, y - 1, 2, 2, '#ffffff'); } }
-  if (stage === 1) { R(10, 66, 60, 10, '#7a7fa8'); glyphs(function (a, b, c, d, e) { R(a, b, c, d, e); }, 14, 69, 'TEA', '#ffd84d'); }
-  if (night) { g.fillStyle = '#ffd84d44'; g.beginPath(); g.arc(120, 26, 40, 0, 6.3); g.fill(); }
-  // đêm S5: trăng ngoài cửa sổ, dây đèn nhấp nháy, ánh sáng dịu
-  if (k === 4) { const mx = 12 + hour * 11, my = 16 - hour * 3; R(mx, my, 7, 7, '#fff3b0'); R(mx + 3, my, 6, 7, '#0b1030'); for (let i = 0; i < 16; i++) { R(4 + i * 10, 2 + (i % 2) * 2, 2, 2, (Math.floor(t * 2) + i) % 3 ? '#ffd84d' : '#ff9a3c'); } R(0, 3, 160, 1, '#2d1f47'); }
+  drawRoom(g, R, { ...o, hour }, { personCanvas, mix, SKY }); // căn phòng: tường, sàn, quầy, bàn ghế
   interiorFx(g, o, R);
   // trang trí ngày lễ trong nhà
   for (const d of decor || []) {
@@ -324,15 +258,16 @@ export function illusUrl(kind) {
   const sky = (a, b) => { for (let y = 0; y < 64; y += 2) R(0, y, 160, 2, mix(a, b, y / 64)); };
   const ground = col => { R(0, 50, 160, 14, col); R(0, 50, 160, 1, '#2d1f47'); };
   const person = (x, y, seg, v) => g.drawImage(personCanvas(seg, v), x, y);
-  if (kind === 'noel') { sky('#0b1030', '#26346a'); for (let i = 0; i < 26; i++) R((i * 41) % 158, (i * 17) % 44, 1, 1, i % 3 ? '#ffffff' : '#ffd84d'); ground('#e6f0ff'); for (let i = 0; i < 4; i++) { const x = 20 + i * 36; for (let j = 0; j < 4; j++) R(x - j * 3, 14 + j * 8, 6 + j * 6, 8, '#2f9a4a'); R(x - 1, 46, 3, 5, '#8a5a36'); for (let j = 0; j < 7; j++) R(x - 8 + (j * 5) % 18, 18 + (j * 7) % 26, 2, 2, j % 2 ? '#ff5a5f' : '#ffd84d'); R(x - 1, 8, 3, 5, '#ffd84d'); } person(60, 36, 'DK', 0); person(100, 36, 'DK', 1); }
-  else if (kind === 'nye') { sky('#0b1030', '#3b2a6a'); const cols = ['#ff5a5f', '#ffd84d', '#5fd068', '#5ab4ff', '#ff7fb5']; for (let i = 0; i < 5; i++) { const x = 20 + i * 30, y = 14 + (i % 2) * 12; for (let a = 0; a < 12; a++) { const r = 5 + (a % 2) * 5; R(x + Math.round(Math.cos(a * 0.52) * r), y + Math.round(Math.sin(a * 0.52) * r), 2, 2, cols[i]); } R(x, y, 2, 2, '#ffffff'); } ground('#3a3f66'); for (let i = 0; i < 6; i++) person(14 + i * 24, 36, ['DK', 'HS', 'KQ'][i % 3], i % 3); }
-  else if (kind === 'tet') { sky('#ffe3cc', '#ffb08a'); ground('#c2553d'); for (let i = 0; i < 4; i++) { const x = 14 + i * 40; R(x + 4, 0, 1, 6, '#2d1f47'); R(x, 6, 10, 14, '#ff5a5f'); R(x + 1, 8, 8, 10, '#ffd84d'); R(x + 4, 20, 2, 8, '#ffd84d'); } R(120, 24, 3, 28, '#8a5a36'); for (let i = 0; i < 18; i++) R(106 + (i * 7) % 34, 14 + (i * 5) % 28, 3, 3, i % 2 ? '#ff7fb5' : '#ffb0cc'); R(70, 40, 14, 10, '#c2354a'); R(72, 42, 10, 6, '#ffd84d'); person(44, 34, 'LA', 0); person(90, 34, 'KQ', 1); R(52, 40, 4, 6, '#ff5a5f'); }
-  else if (kind === 'valentine') { sky('#ffd6e8', '#ff9fcb'); ground('#e6a8c0'); for (let i = 0; i < 9; i++) { const x = 8 + i * 17, y = 6 + (i * 9) % 22; R(x, y, 3, 2, '#ff5a5f'); R(x + 4, y, 3, 2, '#ff5a5f'); R(x, y + 2, 7, 2, '#ff5a5f'); R(x + 2, y + 4, 3, 2, '#ff5a5f'); } person(56, 36, 'DK', 2); person(70, 36, 'HS', 0); R(66, 44, 2, 2, '#ff5a5f'); person(104, 36, 'HS', 1); }
-  else if (kind === 'ram') { sky('#0b1030', '#2d3a7a'); R(120, 8, 14, 14, '#fff3b0'); R(124, 8, 12, 14, '#0b1030'); for (let i = 0; i < 6; i++) { const x = 10 + i * 26, y = 10 + (i % 2) * 8; R(x + 3, y - 4, 1, 4, '#2d1f47'); R(x, y, 7, 8, '#ffd84d'); R(x + 1, y + 1, 5, 6, '#ff9a3c'); } ground('#3a3f66'); person(40, 36, 'DK', 0); person(110, 36, 'KQ', 2); }
-  else if (kind === 'closed') { sky('#c6e6f8', '#e4dff7'); ground('#7d7799'); R(40, 24, 80, 26, '#e8d5b0'); R(36, 18, 88, 8, '#ff5a5f'); for (let i = 0; i < 8; i++) R(36 + i * 11, 18, 5, 8, '#ffffff'); R(70, 32, 18, 18, '#5b3c22'); R(48, 30, 16, 12, '#5b6a9a'); R(94, 30, 16, 12, '#5b6a9a'); R(66, 22, 26, 7, '#ff5a5f'); R(68, 23, 22, 5, '#ffffff'); glyphs(R, 69, 24, 'TEA', '#c2354a'); R(10, 40, 24, 10, '#cfd6e8'); R(30, 42, 8, 8, '#5ab4ff'); R(14, 50, 5, 4, '#2d1f47'); R(30, 50, 5, 4, '#2d1f47'); R(130, 28, 22, 14, '#fff'); R(134, 31, 14, 2, '#c2354a'); R(134, 36, 14, 1, '#9a93c4'); }
-  else if (kind === 'inspect') { sky('#e4f0ff', '#c6e6f8'); ground('#9a93c4'); R(20, 14, 50, 36, '#e8d5b0'); R(20, 10, 50, 6, '#3cc8b4'); R(30, 24, 14, 12, '#9ad0ff'); R(50, 26, 12, 24, '#8a5a36'); person(90, 32, 'IN', 0); person(106, 32, 'LA', 0); R(122, 20, 22, 28, '#ffffff'); R(122, 20, 22, 2, '#2d1f47'); for (let i = 0; i < 4; i++) { R(125, 26 + i * 6, 3, 3, i < 3 ? '#5fd068' : '#ffd84d'); R(130, 27 + i * 6, 11, 1, '#9a93c4'); } }
+  const townIll = (gg, opt) => { const sc = cv(160, 100); drawScene(sc.getContext('2d'), { open: true, sky: 'dry', staffN: 2, t: 1.2, day: 1, ...opt }); gg.drawImage(sc, 0, -12); }, OUTI = '#2d1f47';
+  if (kind === 'noel') { townIll(g, { stage: 3, k: 3, decor: ['noel', 'snow'], day: 24 }); person(46, 46, 'DK', 0); person(60, 46, 'DK', 1); person(30, 46, 'HS', 2); }
+  else if (kind === 'nye') { townIll(g, { stage: 3, k: 4, hour: 0, decor: ['newyear'], day: 31 }); for (let i = 0; i < 5; i++) person(12 + i * 11, 38, ['DK', 'HS', 'KQ'][i % 3], i % 3); }
+  else if (kind === 'tet') { townIll(g, { stage: 3, k: 3, decor: ['tet'], day: 68 }); person(40, 46, 'KQ', 2); person(52, 46, 'HS', 1); person(26, 46, 'VP', 0); }
+  else if (kind === 'valentine') { townIll(g, { stage: 3, k: 2, decor: ['valentine'], day: 76 }); person(44, 46, 'DK', 2); person(55, 46, 'HS', 0); R(52, 44, 3, 3, '#ff5a5f'); person(24, 46, 'HS', 1); }
+  else if (kind === 'ram') { townIll(g, { stage: 3, k: 4, hour: 0, decor: ['ram'], day: 82 }); person(40, 46, 'DK', 0); person(30, 46, 'KQ', 2); }
+  else if (kind === 'closed') { townIll(g, { stage: 3, k: 1, open: false, day: 65 }); person(48, 46, 'LA', 0); person(36, 46, 'CO', 0); }
+  else if (kind === 'inspect') { townIll(g, { stage: 3, k: 1, day: 53 }); person(52, 46, 'IN', 0); person(40, 46, 'LA', 0); R(30, 48, 8, 10, '#ffffff'); R(30, 48, 8, 1, OUTI); for (let i = 0; i < 3; i++) R(31, 50 + i * 3, 2, 2, i < 2 ? '#5fd068' : '#ffd84d'); }
   else if (kind === 'soon') { sky('#2d2a5c', '#4b4694'); for (let i = 0; i < 18; i++) R((i * 47) % 158, (i * 13) % 56, 1, 1, '#ffd84d'); R(48, 22, 64, 22, '#fff6dc'); R(50, 24, 60, 18, '#ffd84d'); glyphs(function (a, b, c, d, e) { R(a, b, c, d, e); }, 60, 29, 'TEALAB', '#2d1f47'); R(60, 48, 40, 4, '#ff9a3c'); for (let i = 0; i < 8; i++) R(60 + i * 5, 48, 2, 4, '#ffffff'); }
-  else if (ILL_EXTRA.includes(kind)) drawIllus2(kind, { g, R, sky, ground, person, ic: n => (IC[n] ? fromRows(IC[n]) : null) });
+  else if (ILL_EXTRA.includes(kind)) drawIllus2(kind, { g, R, sky, ground, person, town: opt => townIll(g, opt), ic: n => (IC[n] ? fromRows(IC[n]) : null) });
   else { sky('#c6e6f8', '#e4dff7'); ground('#7d7799'); }
   const u2 = c.toDataURL(); illCache.set(kind, u2); return u2;
 }

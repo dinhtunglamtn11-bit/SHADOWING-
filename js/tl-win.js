@@ -1,6 +1,9 @@
 // TeaLab: các cửa sổ nổi (lịch, thư, thành tích, báo cáo, menu) và máy tính. Mỗi lúc chỉ một cửa sổ; máy tính mở chồng lên ô đang nhập.
 import { esc } from './util.js';
 import { calcEval, fmt, roundFor, FUNCS } from './tl-calc.js';
+import { HOWTO, GLOSSARY, FORMULAS, TIPS } from './tl-guide.js';
+const fold = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase(); // bỏ dấu để tìm kiếm tiếng Việt
+const hitQ = (text, q) => !q || new RegExp('(^|[^a-z0-9])' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(fold(text)); // khớp đầu từ: “ap” ra AP chứ không ra “hạp”
 
 const pad = n => String(n).padStart(2, '0');
 const wrap = (title, body, extra = '') => `<div class="tl-sheet"><div class="tl-wh"><button class="btn" data-wc>← Đóng</button><b>${title}</b>${extra}</div><div class="tl-wb">${body}</div></div>`;
@@ -100,8 +103,17 @@ function reportHtml(c) {
     const led = (st.cur?.led || []).slice().reverse();
     body = led.length ? `<table class="tl-t"><tbody>${led.map(([w, a]) => `<tr><td>${esc(w)}</td><td class="${a < 0 ? 'bad' : 'good'}">${a < 0 ? '−' : '+'}${kfmt(Math.abs(a))}</td></tr>`).join('')}</tbody></table>` : '<div class="dim">Chưa có giao dịch trong buổi này.</div>';
   } else if (tab === 'kho') {
-    if (!st.tools.shelf) body = '<div class="dim">Mở “Kiểm kê chi tiết lô” bằng IP (mục Thành tích) để xem từng lô: số phần, hạn dùng, chất lượng.</div>';
-    else body = D.ING_ORDER.filter(g => st.lots[g].some(l => l.q > 0)).map(g => `<div class="tl-row"><span class="tl-ico">${A.ingIc(g, 22)}</span><div class="tl-nm"><b>${esc(D.ING[g].name)}</b><small class="dim">${st.lots[g].filter(l => l.q > 0).map(l => `${l.q} phần · hết hạn ngày ${l.last + 1 - 0 > st.day ? l.last : l.last} · ${l.qual >= 0.97 ? 'tốt' : l.qual >= 0.88 ? 'ổn' : 'kém'}`).join(' | ')}</small></div></div>`).join('') || '<div class="dim">Kho trống.</div>';
+    const ex = (l) => l.filter(x => x.q > 0), qtyOf = g => st.lots[g].reduce((a, l) => a + l.q, 0), use = D.ITEM_ORDER.filter(i => st.menu[i] && D.ITEMS[i].stage <= st.stage);
+    const need = D.ING_ORDER.filter(g => qtyOf(g) > 0 || use.some(i => D.ITEMS[i].ing.includes(g)));
+    const cap = use.map(i => [i, Math.min(...D.ITEMS[i].ing.map(qtyOf))]);
+    const live = st.phase === 'LIVE' && c.G.S;
+    const sum = `<div class="tl-stkh"><b>Tồn kho hiện tại${live ? ' (đang bán)' : ''}</b></div><div class="tl-stki">${cap.map(([i, n]) => `<span class="tl-pill ${n <= 0 ? 'out' : n < 10 ? 'low' : ''}">${A.cup(i, 14)} ${esc(D.ITEMS[i].name.replace(/^Trà /, ''))}: ${n <= 0 ? 'HẾT' : '~' + n + ' ly'}</span>`).join('')}</div>`;
+    const grid = `<div class="tl-stkg">${need.map(g => { const q = qtyOf(g), lots = ex(st.lots[g]), near = lots.length ? Math.min(...lots.map(l => l.last)) : null, max = D.ING[g].shelf; const state = q <= 0 ? 'out' : (near != null && near <= st.day) ? 'low' : 'ok'; return `<div class="tl-sc ${state}" title="${esc(D.ING[g].name)}">${A.ingIc(g, 20)}<b>${q}</b><small>${esc(D.ING[g].name)}</small><i>${q <= 0 ? 'hết' : near != null && near <= st.day + 1 ? 'hạn N' + near : D.ING[g].grp === 'fresh' ? 'tươi' : 'khô'}</i></div>`; }).join('')}</div>`;
+    const b2 = st.b2 ? `<div class="tl-stkh"><b>Chi nhánh 2</b></div><div class="tl-stkg">${need.map(g => { const q = E.stockB(st, g); return `<div class="tl-sc ${q <= 0 ? 'out' : 'ok'}">${A.ingIc(g, 20)}<b>${q}</b><small>${esc(D.ING[g].name)}</small><i>${q <= 0 ? 'hết' : ''}</i></div>`; }).join('')}</div>` : '';
+    const note = '<div class="dim tl-note">Màu đỏ: đã hết. Màu vàng: có lô sắp hết hạn (hạn Nx = hạn dùng ngày x) hoặc còn ít. Hàng tươi hỏng nhanh nên dùng lô gần hạn trước.</div>';
+    const lots = !st.tools.shelf ? '<div class="dim tl-note">🔒 Mở “Kiểm kê chi tiết lô” bằng IP (mục Thành tích) để xem từng lô: số phần, hạn dùng, chất lượng.</div>' : '<h4>Chi tiết từng lô</h4>';
+    body = sum + grid + b2 + note + lots;
+    if (st.tools.shelf) body += D.ING_ORDER.filter(g => st.lots[g].some(l => l.q > 0)).map(g => `<div class="tl-row"><span class="tl-ico">${A.ingIc(g, 22)}</span><div class="tl-nm"><b>${esc(D.ING[g].name)}</b><small class="dim">${st.lots[g].filter(l => l.q > 0).map(l => `${l.q} phần · hết hạn ngày ${l.last + 1 - 0 > st.day ? l.last : l.last} · ${l.qual >= 0.97 ? 'tốt' : l.qual >= 0.88 ? 'ổn' : 'kém'}`).join(' | ')}</small></div></div>`).join('') || '<div class="dim">Kho trống.</div>';
   } else if (tab === 'sv') {
     const sl = c.slots(), sm = h => ({ n: h.length, rev: h.reduce((a, x) => a + x.rev, 0), prof: h.reduce((a, x) => a + x.profit, 0), ls: h.reduce((a, x) => a + x.ls, 0) });
     const cur = sm(st.hist);
@@ -121,6 +133,7 @@ function menuHtml(c) {
   const { st, D, G } = c, s = st;
   return `<div class="tl-mn">
     <div class="tl-row"><div class="tl-nm"><b>Đi ngủ</b><small class="dim">Chạy các buổi còn lại theo kế hoạch đứng rồi sang ngày mới (phí 5%).</small></div><button class="btn primary" data-m="sleep" ${s.phase === 'LIVE' ? 'disabled' : ''}>😴 Đi ngủ</button></div>
+    <div class="row"><button class="btn primary" data-m="guide">📖 Hướng dẫn: cách chơi, ký hiệu, công thức</button></div>
     <h4>Kế hoạch đứng (khi đi ngủ sớm)</h4>
     <div class="tl-step wrapx">${['S1', 'S2', 'S3', 'S4', 'S5'].map((n, k) => `<button class="btn ${s.autoPlan.open[k] ? 'on' : ''}" data-m="plan" data-k="${k}">${s.autoPlan.open[k] ? '☑' : '☐'} ${n}</button>`).join('')}</div>
     <div class="dim tl-note">Buổi đánh dấu sẽ mở cửa với giá và thực đơn hiện tại; hàng được đặt theo mức dùng 3 ngày gần nhất. Không có buổi nào miễn phí: phí 5% doanh thu và không tính điểm chất lượng.</div>
@@ -135,9 +148,38 @@ function menuHtml(c) {
     <h4>Chơi lại</h4>
     <div class="row"><select id="tlDiff">${Object.entries(D.DIFFS).map(([k, n]) => `<option value="${k}" ${s.diff === k ? 'selected' : ''}>${n}</option>`).join('')}</select><button class="btn" data-m="again">↻ Chơi lại từ 01/12/2026</button></div>
     <div class="dim tl-note">Nhàn: AP ×1,5, manh mối đáng tin hơn, sự kiện nhẹ hơn. Khó: AP ×0,75, sự kiện nặng hơn. Sao đã đạt và huy hiệu giữ trong hồ sơ.</div>
-    <h4>Cách chơi nhanh</h4>
+    <h4>Cách chơi nhanh <button class="btn" data-m="guide">Xem đầy đủ</button></h4>
     <div class="dim tl-note">1) Mỗi buổi: <b>Chuẩn bị</b> (giá, đặt hàng, dự đoán) → <b>Mở cửa</b> (đồng hồ chạy, có lệnh tốn AP) → <b>Xem lại</b> (báo cáo, chẩn đoán, đặt hàng). 2) Hàng tươi hỏng nhanh, hàng khô để lâu; thiếu MỘT nguyên liệu là cả món hết. 3) Khách vượt ngưỡng giá sẽ bỏ đi hẳn. 4) Đọc <b>Thư</b> và <b>Lịch</b> trước các ngày lễ và Tết (nhà cung cấp đóng cửa). 5) Máy tính giúp tính lãi, lượng đặt, khoảng tin cậy.</div>
   </div>`;
+}
+
+// ---------- hướng dẫn: cách chơi, ký hiệu, công thức ----------
+const fmCard = (f, full, hid = '', mine = '') => { const [code, name, sig, form, desc, ex] = f; return `<div class="tl-gl tl-fm" ${hid}><div class="tl-fmh"><b>${esc(code)}</b><span>${esc(name)}</span></div><code>${esc(sig)}</code><div class="tl-fmf">${esc(form)}</div>${full ? `<p>${esc(desc)}</p>` : ''}<div class="row"><button class="btn" data-ins="${esc(code + '(')}">Chèn</button><button class="btn" data-ins="${esc(ex)}">Ví dụ: ${esc(ex)}</button>${mine ? `<button class="btn primary" data-ins="${esc(mine)}">Số liệu của tôi: ${esc(mine)}</button>` : ''}</div></div>`; };
+// Ví dụ lấy từ số liệu thật của bạn (món bán chạy nhất gần đây): giá, vốn, chi phí cố định, nhu cầu mỗi buổi
+function liveEx(c) {
+  const { st, D, E } = c, out = {}, h = st.hist.slice(-7); if (!h.length) return out;
+  const items = D.ITEM_ORDER.filter(i => D.ITEMS[i].stage <= st.stage && st.menu[i]), by = st.lastReport?.by ? Object.entries(st.lastReport.by).sort((a, b) => b[1] - a[1])[0]?.[0] : null, it = by && D.ITEMS[by] ? by : items[0]; if (!it) return out;
+  const f = x => String(x).replace('.', ','), price = st.prices[it], cost = Math.round(E.unitCost(st, it) / 100) / 10, mg = Math.round((price - cost) * 10) / 10;
+  if (!(price > 0) || !(cost > 0)) return out;
+  out.MG = `MG(${f(price)};${f(cost)})`; out.MGP = `MGP(${f(price)};${f(cost)})`; out.MK = `MK(${f(cost)};${f(price)})`;
+  if (mg > 0) { out.BE = `BE(${f(D.PARAMS.fixedDay[st.stage] / 1000)};${f(mg)})`; out.CR = `CR(${f(mg)};${f(cost)})`; }
+  if (h.length >= 3 && mg > 0) { const per = h.map(x => x.cups / Math.max(1, x.n || 4)), m = per.reduce((a, b) => a + b, 0) / per.length, sd = Math.sqrt(per.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, per.length - 1)); out.NV = `NV(${f(Math.round(m))};${f(Math.round(sd * 10) / 10)};${f(mg)};${f(cost)})`; }
+  return out;
+}
+const SHOP_ZH = [['欢迎光临', 'huānyíng guānglín', 'Chào mừng quý khách'], ['您要什么？', 'nín yào shénme', 'Quý khách dùng gì ạ?'], ['多少钱？', 'duōshao qián', 'Bao nhiêu tiền?'], ['热的', 'rè de', 'nóng'], ['冰的', 'bīng de', 'đá'], ['少糖', 'shǎo táng', 'ít đường'], ['去冰', 'qù bīng', 'không đá'], ['加珍珠', 'jiā zhēnzhū', 'thêm trân châu'], ['打包', 'dǎbāo', 'mang đi'], ['谢谢，再见', 'xièxie, zàijiàn', 'Cảm ơn, tạm biệt']];
+function guideHtml(c) {
+  const G = c.G, tab = G.gdTab || 'play', tabs = [['play', 'Cách chơi'], ['gl', 'Ký hiệu'], ['fm', 'Công thức'], ['zh', '中文'], ['tip', 'Mẹo']];
+  const head = `<div class="tl-tabs">${tabs.map(([k, n]) => `<button class="chip ${tab === k ? 'on' : ''}" data-gd="${k}">${n}</button>`).join('')}</div>`;
+  let body = ''; const q = fold((G.gdQ || '').trim()), hid = t => (hitQ(t, q) ? '' : 'hidden');
+  if (tab === 'play') body = HOWTO.map(([h, t], i) => `<details class="tl-more" ${i < 2 ? 'open' : ''}><summary>${i + 1}. ${esc(h)}</summary><p class="tl-note">${t}</p></details>`).join('');
+  else if (tab === 'gl') body = `<input id="gdQ" class="tl-srch" type="search" placeholder="Tìm: AP, DQI, ROP…" value="${esc(G.gdQ || '')}" autocomplete="off">` + GLOSSARY.map(([k, n, d]) => `<div class="tl-gl tl-gr" ${hid(k + n + d)}><b>${esc(k)}</b><span><i>${esc(n)}</i><small class="dim">${esc(d)}</small></span></div>`).join('');
+  else if (tab === 'fm') body = `<div class="dim tl-note">Nhập trong máy tính: ngăn đối số bằng dấu <b>;</b> và số thập phân bằng dấu <b>,</b> (ví dụ ROP(50;2;12;1,64)). Bấm “Chèn” hoặc “Ví dụ” để đưa vào máy tính đang mở.</div><input id="gdQ" class="tl-srch" type="search" placeholder="Tìm công thức (EOQ, tồn kho, hòa vốn…)" value="${esc(G.gdQ || '')}" autocomplete="off">` + (() => { const mine = liveEx(c); return FORMULAS.map(f => fmCard(f, true, hid(f.join(' ')), mine[f[0]] || '')).join(''); })();
+  else if (tab === 'zh') {
+    const { D } = c, items = D.ITEM_ORDER.filter(i => D.ITEMS[i].zh).map(i => [D.ITEMS[i].zh, D.ITEMS[i].name]), ings = D.ING_ORDER.filter(g => D.ING_ZH[g]).map(g => [D.ING_ZH[g], D.ING[g].name]);
+    const row = ([zh, vi]) => { const [han, ...py] = String(zh).split(' '); return `<div class="tl-gr"><b class="zh2" lang="zh">${esc(han)}</b><span><i>${esc(vi)}</i><small class="dim">${esc(py.join(' '))}</small></span></div>`; };
+    body = `<div class="dim tl-note">Từ vựng tiếng Trung trong quán trà. Bật “Tên món tiếng Trung” ở Menu để hiện chữ Hán ngay trong game.</div><h4>Món</h4>${items.map(row).join('')}<h4>Nguyên liệu</h4>${ings.map(row).join('')}<h4>Câu nói trong quán</h4>${SHOP_ZH.map(([zh, py, vi]) => `<div class="tl-gr"><b class="zh2" lang="zh">${esc(zh)}</b><span><i>${esc(vi)}</i><small class="dim">${esc(py)}</small></span></div>`).join('')}`;
+  } else body = `<ul class="tl-tips">${TIPS.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
+  return head + body;
 }
 
 // ---------- chẩn đoán cuối buổi ----------
@@ -179,12 +221,17 @@ export function render(name, c) {
     case 'ach': return wrap('⭐ Thành tích', achHtml(c));
     case 'report': return wrap('📊 Báo cáo', reportHtml(c));
     case 'menu': return wrap('☰ Menu', menuHtml(c));
+    case 'guide': return wrap('📖 Hướng dẫn', guideHtml(c));
     default: return wrap('', '');
   }
 }
 export function bind(name, box, c) {
   if (box._b) return; box._b = 1; // chỉ đăng ký một lần (nội dung cửa sổ được vẽ lại nhiều lần)
   const G = c.G, E = c.E;
+  box.addEventListener('input', e => { // ô tìm trong Hướng dẫn: lọc tại chỗ (không vẽ lại để khỏi mất tiêu điểm)
+    if (e.target.id !== 'gdQ') return; G.gdQ = e.target.value; const q = fold(G.gdQ.trim());
+    box.querySelectorAll('.tl-gl').forEach(el => { el.hidden = !hitQ(el.textContent, q); });
+  });
   box.addEventListener('click', e => {
     const st = c.st; // trạng thái hiện hành (có thể đã đổi sau khi chơi lại)
     if (e.target.closest('[data-wc]')) { c.closeWin(); return; }
@@ -197,6 +244,8 @@ export function bind(name, box, c) {
     if ((b = x.closest('[data-mg]'))) { /* mở / đóng nhóm */ }
     if ((b = x.closest('[data-tool]'))) { const t = c.D.IP_TOOLS.find(q => q.id === b.dataset.tool); const r = E.cmd(st, G.S, { t: 'TOOL', tool: t }); if (!r.ok) c.toast(r.reason, 2200); else c.toast('Đã mở: ' + t.name, 1600); c.save(false); c.refresh(); return; }
     if ((b = x.closest('[data-rp]'))) { G.rpTab = b.dataset.rp; c.refresh(); return; }
+    if ((b = x.closest('[data-gd]'))) { G.gdTab = b.dataset.gd; G.gdQ = ''; c.refresh(); return; }
+    if ((b = x.closest('[data-ins]'))) { G.calcExpr = (G.calcExpr || '') + b.dataset.ins; c.openCalc(); c.toast('Đã đưa vào máy tính: ' + b.dataset.ins, 1600); return; }
     if ((b = x.closest('[data-svx]'))) { const hist = b.dataset.svx === 'cur' ? st.hist : (c.slots().find(q => q.id === +b.dataset.svx) || {}).hist || []; const csv = 'ngay,doanh_thu,gia_von,hang_hong,co_dinh,luong,lai,ly,het_hang,cho_lau,uy_tin,tien\n' + hist.map(h => [h.day, h.rev, h.cogs, h.spoil, h.fixed, h.wage, h.profit, h.cups, h.ls, h.lw, h.rep, h.cash].join(',')).join('\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = 'tealab-so-lieu.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return; }
     if ((b = x.closest('[data-svd]'))) { c.delSlot(+b.dataset.svd); c.refresh(); return; }
     if (x.closest('[data-nadd]')) { const t = box.querySelector('#tlNote').value.trim(); if (t) { (st.notes ||= []).push({ id: Date.now() % 1e9, day: st.day, text: t, st: 'open' }); c.save(false); c.refresh(); } return; }
@@ -211,6 +260,7 @@ function menuAct(b, c) {
   if (m === 'sleep') { if (confirm('Đi ngủ ngay? Các buổi còn lại chạy theo kế hoạch đứng (phí tự trông tiệm 5% doanh thu, không tính điểm chất lượng).')) { c.closeWin(); c.sleep(); } }
   else if (m === 'plan') { st.autoPlan.open[+b.dataset.k] = st.autoPlan.open[+b.dataset.k] ? 0 : 1; c.save(false); c.refresh(); }
   else if (m === 'auto') { G.noAutoMail = !G.noAutoMail; c.refresh(); }
+  else if (m === 'guide') { G.gdTab = G.gdTab || 'play'; c.openWin('guide'); }
   else if (m === 'zh') { G.profile.zh = !G.profile.zh; c.save(false); c.refresh(); }
   else if (m === 'savedata') { const x = c.saveData(); c.toast(`Đã lưu số liệu “${x.name}” (${x.hist.length} ngày)`, 2200); c.refresh(); }
   else if (m === 'export') { const blob = new Blob([localStorage.getItem('tealab:v1') || '{}'], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tealab-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
@@ -225,6 +275,7 @@ function importSave(inp, c) {
 const KEYS = [['MC', 'MR', 'M+', 'M−', 'ANS'], ['C', 'CE', '⌫', '±', '%'], ['7', '8', '9', '÷', '('], ['4', '5', '6', '×', ')'], ['1', '2', '3', '−', '^'], ['0', ',', '=', '+', '√']];
 const FA = [['x²', '^2'], ['1/x', '1÷('], ['|x|', 'ABS('], ['ln', 'LN('], ['eˣ', 'EXP('], ['ROUND', 'ROUND('], ['CEIL', 'CEIL('], ['FLOOR', 'FLOOR('], ['SUM', 'SUM('], ['AVG', 'AVG('], ['MIN', 'MIN('], ['MAX', 'MAX('], ['SD', 'SD('], ['COUNT', 'COUNT('], ['Δ%', 'Δ%('], ['MG', 'MG('], ['MGP', 'MGP(']];
 const FB = [['NORM', 'NORM('], ['NORMINV', 'NORMINV('], ['CR', 'CR('], ['NV', 'NV('], ['BE', 'BE('], ['ROP', 'ROP('], ['CI', 'CI(']];
+const FC = [['EOQ', 'EOQ('], ['TC', 'TC('], ['SS', 'SS('], ['MK', 'MK('], ['ELA', 'ELA('], ['Z', 'Z('], ['TURN', 'TURN('], ['DOH', 'DOH('], ['ROI', 'ROI('], ['LITTLE', 'LITTLE('], ['UTIL', 'UTIL(']];
 function dataVars(c) { // biến công khai (mục 17.4), chốt giá trị lúc chèn
   const { st, D, E } = c, v = [['TIEN', st.cash / 1000, 'Tiền mặt (k)'], ['R', st.rep, 'Danh tiếng R'], ['L', st.loyal, 'Khách quen L'], ['CPCD', D.PARAMS.fixedDay[st.stage] / 1000, 'Chi phí cố định/ngày (k)']];
   for (const i of D.ITEM_ORDER.filter(i => D.ITEMS[i].stage <= st.stage)) { v.push(['GIA ' + D.ITEMS[i].name, st.prices[i], 'Giá bán (k)']); v.push(['VON ' + D.ITEMS[i].name, Math.round(E.unitCost(st, i) / 100) / 10, 'Giá vốn một ly (k)']); }
@@ -240,6 +291,8 @@ export function calcHtml(c) {
     <div class="tc-keys">${KEYS.map(r => r.map(k => `<button class="btn tc-k ${'÷×−+^='.includes(k) ? 'op' : ''} ${k === '=' ? 'eq' : ''}" data-k="${k}">${k}</button>`).join('')).join('')}</div>
     <div class="tc-fn">${FA.map(([n, t]) => `<button class="btn" data-ins="${esc(t)}">${n}</button>`).join('')}</div>
     <div class="tc-fn ${B ? '' : 'lock'}">${B ? FB.map(([n, t]) => `<button class="btn" data-ins="${esc(t)}">${n}</button>`).join('') : '<span class="dim">Hàm phân tích (NORM, NV, CI…) mở từ ngày 5.</span>'}</div>
+    ${B ? `<div class="tc-fn">${FC.map(([n, t]) => `<button class="btn" data-ins="${esc(t)}">${n}</button>`).join('')}</div>
+    <details class="tl-more tc-lib"><summary>📐 Công thức có sẵn: EOQ, ROP, NV, BE… (${FORMULAS.length})</summary>${FORMULAS.map(f => fmCard(f, false)).join('')}<div class="dim tl-note">Giải thích từng công thức: Menu → Hướng dẫn → Công thức.</div></details>` : ''}
     <div class="tc-row"><select id="tcData"><option value="">Dữ liệu ▾ (chèn giá trị công khai)</option>${vars.map(([n, val, d], i) => `<option value="${i}">${esc(n)} = ${fmt(+val.toFixed(2))} · ${esc(d)}</option>`).join('')}</select></div>
     <div class="tc-row"><button class="btn primary" data-use="any">↳ Dùng kết quả</button><button class="btn" data-use="price">→ Giá</button><button class="btn" data-use="qty">→ Đặt hàng</button><button class="btn" data-use="fc">→ Dự đoán</button></div>
     <div class="tc-tape"><b>Băng giấy</b> <button class="btn" data-tc="clr">Xóa</button>${tape.map((t, i) => `<button class="tc-t" data-tape="${esc(t[0])}"><span>${esc(t[0])}</span><b>= ${esc(t[1])}</b></button>`).join('') || '<div class="dim">Chưa có phép tính.</div>'}</div></div>`;
