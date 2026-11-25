@@ -104,7 +104,7 @@ function reportHtml(c) {
     const led = (st.cur?.led || []).slice().reverse();
     body = led.length ? `<table class="tl-t"><tbody>${led.map(([w, a]) => `<tr><td>${esc(w)}</td><td class="${a < 0 ? 'bad' : 'good'}">${a < 0 ? '−' : '+'}${kfmt(Math.abs(a))}</td></tr>`).join('')}</tbody></table>` : '<div class="dim">Chưa có giao dịch trong buổi này.</div>';
   } else if (tab === 'kho') {
-    const ex = (l) => l.filter(x => x.q > 0), qtyOf = g => st.lots[g].reduce((a, l) => a + l.q, 0), use = D.ITEM_ORDER.filter(i => st.menu[i] && D.ITEMS[i].stage <= st.stage);
+    const ex = (l) => l.filter(x => x.q > 0), qtyOf = g => st.lots[g].reduce((a, l) => a + l.q, 0), use = D.ITEM_ORDER.filter(i => st.menu[i] && D.ITEMS[i].stage <= st.stage && D.inSeason(i, st.day));
     const need = D.ING_ORDER.filter(g => qtyOf(g) > 0 || use.some(i => D.ITEMS[i].ing.includes(g)));
     const cap = use.map(i => [i, Math.min(...D.ITEMS[i].ing.map(qtyOf))]);
     const live = st.phase === 'LIVE' && c.G.S;

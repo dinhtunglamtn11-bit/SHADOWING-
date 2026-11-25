@@ -255,7 +255,7 @@ function liveHtml(s) {
 }
 function subLive(s) {
   if (G.subLive === 'price') return `<div class="tl-subb"><b>Đổi giá (1 AP mỗi lần)</b>${priceRows(s, true)}</div>`;
-  if (G.subLive === 'express') { const items = D.ING_ORDER.filter(g => D.ITEM_ORDER.some(i => s.menu[i] && D.ITEMS[i].ing.includes(g))); return `<div class="tl-subb"><b>Giao khẩn từ đại lý B (2 AP, giá ×1,3, hàng đến sau 60 phút)</b>${items.map(g => `<div class="tl-row"><span class="tl-ico">${A.ingIc(g, 22)}</span><div class="tl-nm"><b>${esc(D.ING[g].name)}</b><small class="dim">kho ${E.stockOf(s, g)}</small></div><div class="tl-step"><input class="tl-num" data-calc="qty" data-g="${g}" data-ex="1" type="text" inputmode="numeric" placeholder="0"></div></div>`).join('')}<div class="row"><button class="btn primary" data-a="exp">Gửi đơn khẩn</button><button class="btn" data-a="subx">Đóng</button></div></div>`; }
+  if (G.subLive === 'express') { const items = D.ING_ORDER.filter(g => D.ITEM_ORDER.some(i => s.menu[i] && D.inSeason(i, s.day) && D.ITEMS[i].ing.includes(g))); return `<div class="tl-subb"><b>Giao khẩn từ đại lý B (2 AP, giá ×1,3, hàng đến sau 60 phút)</b>${items.map(g => `<div class="tl-row"><span class="tl-ico">${A.ingIc(g, 22)}</span><div class="tl-nm"><b>${esc(D.ING[g].name)}</b><small class="dim">kho ${E.stockOf(s, g)}</small></div><div class="tl-step"><input class="tl-num" data-calc="qty" data-g="${g}" data-ex="1" type="text" inputmode="numeric" placeholder="0"></div></div>`).join('')}<div class="row"><button class="btn primary" data-a="exp">Gửi đơn khẩn</button><button class="btn" data-a="subx">Đóng</button></div></div>`; }
   return '';
 }
 // ---------- đơn hàng đang trên đường ----------
@@ -270,7 +270,7 @@ function pendingHtml(s) {
   return `<div class="tl-arr"><b>🚚 Đơn đang trên đường (${list.length})</b>${list.map(({ p, lab }) => `<div class="tl-pend"><b>${p.transfer ? 'Chuyển kho' : 'NCC ' + p.sup}${p.br === 'B' ? ' → CN2' : ''}</b> · về <b>${esc(lab)}</b><small class="dim">${itemsOf(p).slice(0, 6).map(l => `${esc(D.ING[l.g].name)} ×${l.q}`).join(', ')}${itemsOf(p).length > 6 ? '…' : ''}</small></div>`).join('')}<div class="dim tl-note">Đơn đặt bây giờ sẽ về đầu buổi kế tiếp.</div></div>`;
 }
 function shortage(s) { // món đang bật nhưng thiếu nguyên liệu ngay lúc này
-  const items = D.ITEM_ORDER.filter(i => s.menu[i] && D.ITEMS[i].stage <= s.stage && !E.itemAvail(s, i, 1)), miss = [...new Set(items.flatMap(i => D.ITEMS[i].ing.filter(g => E.stockOf(s, g) < 1)))];
+  const items = D.ITEM_ORDER.filter(i => onSale(s, i) && !E.itemAvail(s, i, 1)), miss = [...new Set(items.flatMap(i => D.ITEMS[i].ing.filter(g => E.stockOf(s, g) < 1)))];
   return { items, miss };
 }
 function shortageHtml(s) {
@@ -280,7 +280,8 @@ function shortageHtml(s) {
 
 // ---------- theo dõi kho trực tiếp trong buổi bán ----------
 // Mẫu số lượng tồn từng nguyên liệu theo phút game để ước lượng tốc độ dùng (trong ~90 phút gần nhất) và thời gian còn đủ hàng.
-const liveIngs = s => D.ING_ORDER.filter(g => g === 'ly' || D.ITEM_ORDER.some(i => s.menu[i] && D.ITEMS[i].stage <= s.stage && D.ITEMS[i].ing.includes(g)));
+const onSale = (s, i) => s.menu[i] && D.ITEMS[i].stage <= s.stage && D.inSeason(i, s.day); // món theo mùa ngoài mùa (vd. Quà trà Tết) không tính
+const liveIngs = s => D.ING_ORDER.filter(g => g === 'ly' || D.ITEM_ORDER.some(i => onSale(s, i) && D.ITEMS[i].ing.includes(g)));
 const qOf = (s, g, key) => (key === 'b' ? E.stockB(s, g) : E.stockOf(s, g));
 function stockTrack(s, S) {
   if (!S) return;
@@ -318,7 +319,7 @@ function stockAlerts(s, S) { // báo khi một nguyên liệu chuyển sang “s
 function stockHtml(s, S) {
   const blk = (key, title) => {
     const rows = stockRows(s, S, key), bad = rows.filter(r => r.state !== 'ok').length;
-    const items = D.ITEM_ORDER.filter(i => s.menu[i] && D.ITEMS[i].stage <= s.stage).map(i => ({ i, n: Math.min(...D.ITEMS[i].ing.map(g => qOf(s, g, key))) }));
+    const items = D.ITEM_ORDER.filter(i => onSale(s, i)).map(i => ({ i, n: Math.min(...D.ITEMS[i].ing.map(g => qOf(s, g, key))) }));
     const incLbl = r => { const i = incomingFor(s, r.g, key); return i ? 'về ' + i.short : 'hết'; };
     const cell = r => `<div class="tl-sc ${r.state}" title="${esc(D.ING[r.g].name)}">${A.ingIc(r.g, 20)}<b>${r.q}</b><small>${esc(D.ING[r.g].name)}</small><i>${r.state === 'out' ? incLbl(r) : r.rate > 0 ? '~' + (r.eta > 240 ? '240+' : Math.round(r.eta)) + 'p' : '—'}</i><u style="width:${Math.min(100, Math.round(100 * r.q / r.max))}%"></u></div>`;
     return `<div class="tl-stk"><div class="tl-stkh"><b>${title}</b><span class="tl-flag ${bad ? 'warn' : 'ok'}">${bad ? bad + ' cần chú ý' : 'Kho ổn'}</span>${bad && s.phase === 'LIVE' ? '<button class="btn" data-a="cmd" data-v="express">🚚 Giao khẩn</button>' : ''}</div>
