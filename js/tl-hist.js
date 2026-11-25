@@ -1,6 +1,7 @@
 // TeaLab: hồ sơ và lịch sử các lượt chơi. Mỗi lượt chơi (mùa 90 ngày) có bản ghi riêng: sao từng cột mốc, huy hiệu, điểm mùa, lãi...
 // Thành tích đã đạt ở BẤT KỲ lượt nào vẫn được công nhận và giữ trong hồ sơ (kỷ lục); sang lượt mới mọi thứ tính lại từ đầu để so sánh.
 import { esc } from './util.js';
+import { uiLang } from './i18n.js';
 
 const MAXRUNS = 40;
 export const ensureProfile = p => { p.best ||= {}; p.badges ||= {}; p.hist ||= []; p.runN ||= p.hist.length; return p; };
@@ -44,7 +45,7 @@ function overview(c, runs) {
   const lifeBadges = D.BADGES.filter(b => p.badges[b.id] || st?.badges[b.id]), done = runs.filter(r => !r.cur);
   const bestScore = Math.max(0, ...runs.map(r => r.score || 0)), bestTotal = Math.max(0, ...runs.map(r => r.total));
   const grp = Object.entries(D.MG_NAME).map(([g, name]) => { const ms = M.filter(m => m.g === g), life = sum(Object.fromEntries(ms.map(m => [m.id, Math.max(p.best[m.id] || 0, st?.stars[m.id] || 0)]))), cur = sum(Object.fromEntries(ms.map(m => [m.id, st?.stars[m.id] || 0]))), max = ms.length * 3; return `<div class="hs-gr"><b>${g}. ${esc(name)}</b><span class="hs-bar"><i class="life" style="width:${Math.round(100 * life / max)}%"></i><i class="cur" style="width:${Math.round(100 * cur / max)}%"></i></span><small>${cur} / ${life} / ${max}</small></div>`; }).join('');
-  return `<div class="tl-sum"><span>${c.A.ic('star', 18)} <b>${lifeStars}/${M.length * 3}</b> sao kỷ lục</span><span>${c.A.ic('ribbon', 18)} <b>${lifeBadges.length}/${D.BADGES.length}</b> huy hiệu</span><span><b>${runs.length}</b> lượt</span></div>
+  return `<div class="tl-sum"><span>${c.A.ic('star', 18)} <b>${lifeStars}/${M.length * 3}</b> sao kỷ lục</span><span>${c.A.ic('ribbon', 18)} <b>${lifeBadges.length}/${D.BADGES.length}</b> huy hiệu</span><span><b>${runs.length}</b> ${uiLang === 'vi' ? 'lượt' : 'runs'}</span></div>
     <div class="dim tl-note">Thành tích đã đạt ở bất kỳ lượt nào vẫn được công nhận và giữ trong hồ sơ. Mỗi lượt mới tính lại từ đầu: bạn có đạt lại được chúng và vượt kỷ lục hay không.</div>
     <div class="tl-kpis"><div><b>${bestTotal}</b><small>sao nhiều nhất một lượt</small></div><div><b>${bestScore || '—'}</b><small>Điểm Mùa cao nhất</small></div><div><b>${done.filter(r => r.final).length}</b><small>mùa trọn vẹn</small></div><div><b>${curStars}</b><small>sao lượt này</small></div></div>
     <h4>Theo nhóm cột mốc</h4><div class="dim tl-note">Mỗi hàng: lượt này / kỷ lục / tối đa. Thanh xanh = lượt này, thanh nhạt = kỷ lục hồ sơ.</div>${grp}
@@ -56,8 +57,8 @@ function runCard(c, r, runs) {
   const grp = Object.entries(D.MG_NAME).map(([g, name]) => { const ms = M.filter(m => m.g === g), s = sum(Object.fromEntries(ms.map(m => [m.id, r.stars[m.id] || 0]))); return `<div class="hs-gr"><b>${g}. ${esc(name)}</b><span class="hs-bar"><i class="cur" style="width:${Math.round(100 * s / (ms.length * 3))}%"></i></span><small>${s} / ${ms.length * 3}</small></div>`; }).join('');
   const bd = D.BADGES.filter(b => r.badges[b.id]).map(b => `<span class="tl-pill">${c.A.ic(b.ic, 14)} ${esc(b.name)}</span>`).join(' ') || '<span class="dim">Chưa có huy hiệu.</span>';
   const got = M.filter(m => r.stars[m.id]).map(m => `<div class="hs-ms"><b>${m.id}</b> ${esc(m.name)}${stars(r.stars[m.id])}</div>`).join('') || '<div class="dim">Chưa đạt cột mốc nào.</div>';
-  return `<details class="tl-more hs-run ${r.cur ? 'cur' : ''}"><summary><span class="hs-t"><b>${esc(runName(r))}</b> <small class="dim">${dstr(r.t0)} · ${esc(D.DIFFS[r.diff] || r.diff)}</small></span><span class="hs-s">★ ${r.total}/${M.length * 3} · 🏅 ${r.nb} · ngày ${r.day}${r.score != null ? ` · ${r.score}đ` : ''}</span></summary>
-    <div class="tl-kpis"><div><b>${r.total}</b><small>sao</small></div><div><b>${r.nb}</b><small>huy hiệu</small></div><div><b>${r.score != null ? r.score : '—'}</b><small>Điểm Mùa</small></div><div><b>${Math.round(r.profit / 1e6)}tr</b><small>lãi cả lượt</small></div></div>
+  return `<details class="tl-more hs-run ${r.cur ? 'cur' : ''}"><summary><span class="hs-t"><b>${esc(runName(r))}</b> <small class="dim">${dstr(r.t0)} · ${esc(D.DIFFS[r.diff] || r.diff)}</small></span><span class="hs-s">★ ${r.total}/${M.length * 3} · 🏅 ${r.nb} · ngày ${r.day}${r.score != null ? ` · ${r.score}${uiLang === 'vi' ? 'đ' : ' pts'}` : ''}</span></summary>
+    <div class="tl-kpis"><div><b>${r.total}</b><small>sao</small></div><div><b>${r.nb}</b><small>huy hiệu</small></div><div><b>${r.score != null ? r.score : '—'}</b><small>Điểm Mùa</small></div><div><b>${Math.round(r.profit / 1e6)}${uiLang === 'vi' ? 'tr' : 'M'}</b><small>lãi cả lượt</small></div></div>
     ${r.title ? `<div class="tl-arr">Danh hiệu: <b>${esc(r.title)}</b>${r.final ? '' : ' (tạm tính)'}</div>` : ''}
     ${grp}<h4>Huy hiệu lượt này</h4><div>${bd}</div><h4>Cột mốc đã đạt (${Object.keys(r.stars).length})</h4>${got}</details>`;
 }

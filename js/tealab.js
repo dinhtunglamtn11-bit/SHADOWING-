@@ -3,6 +3,7 @@
 // lịch / thư / thành tích / máy tính / báo cáo / menu là cửa sổ nổi (mỗi lúc một cái; máy tính được mở chồng lên ô đang nhập).
 import { $, $$, esc, toast, bus } from './util.js';
 import { HUD_HELP } from './tl-guide.js';
+import { uiLang, tr } from './i18n.js';
 import { archive, mergeLife, mergeProfile, ensureProfile } from './tl-hist.js';
 import * as store from './store.js';
 import * as E from './tl-engine.js';
@@ -133,10 +134,10 @@ function newGameSilent() { G.st = E.newRun({ seed: 20261201, diff: 'chuan' }); G
 export function render() { hud(); panel(); renderWin(); fade(); drawNow(); }
 function fade() { const f = $('#tlFade'); if (f) { f.hidden = !G.busy; f.innerHTML = G.busy ? `<div>${A.illus('sleep')}<p>Đi ngủ…</p><small>Các buổi còn lại chạy theo kế hoạch đứng.</small></div>` : ''; } }
 const clockText = () => { const s = st(), S = G.S; const k = s.k, base = SSTART[k]; if (s.phase === 'LIVE' && S) { const m = S.tick; return `${pad(base + Math.floor(m / 60))}:${pad(m % 60)}`; } if (s.phase === 'REVIEW') return `${pad(base + (k === 4 ? 2 : 4))}:00`; return `${pad(base)}:00`; };
-const hudMoney = v => (Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(Math.abs(v) >= 1e8 ? 0 : 1).replace('.', ',') + 'tr' : kfmt(v)); // thanh trên: 240,0tr thay vì 240.028k cho gọn
+const hudMoney = v => (Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(Math.abs(v) >= 1e8 ? 0 : 1).replace('.', ',') + (uiLang === 'vi' ? 'tr' : 'M') : kfmt(v)); // thanh trên: 240,0tr thay vì 240.028k cho gọn
 export function hud() {
   const h = $('#tlHud'), s = st(); if (!h || !s) return; const card = E.dayCard(s.day), dt = card.date;
-  const dayTxt = s.day > 90 ? 'N' + s.day : 'N' + s.day, wk = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][card.dow];
+  const dayTxt = s.day > 90 ? 'N' + s.day : 'N' + s.day, wk = (uiLang === 'vi' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])[card.dow];
   const chip = (id, icon, val, sub, cls = '') => `<div class="hc ${cls}" id="${id}">${A.ic(icon, 20)}<b>${val}</b><small>${sub}</small></div>`;
   h.innerHTML = chip('hD', 'day', dayTxt, `${wk} ${pad(dt.dd)}/${pad(dt.m)}`) + chip('hT', 'clock', clockText(), 'giờ game') + chip('hK', s.k >= 3 ? 'moon' : 'sun', 'S' + (s.k + 1), D.SNAME[s.k]) + chip('hM', 'coin', hudMoney(s.cash), 'tiền', s.cash < 0 ? 'bad' : '') + chip('hA', 'bolt', s.ap, 'AP', s.phase === 'LIVE' && s.ap < 2 ? 'low' : '') + chip('hR', 'rep', Math.round(s.rep), 'uy tín R');
   const tb = $('#tlTools'); if (tb && tb.offsetHeight) tb.parentElement.style.setProperty('--tltools', tb.offsetHeight + 'px'); // thanh “Xong/Mở cửa” dính ngay trên hàng công cụ, không để hở
@@ -242,7 +243,7 @@ function liveHtml(s) {
   const S = G.S; if (!S) return '<div class="empty">Đang tải buổi…</div>';
   const R = S.st;
   return `<div class="tl-ph"><b>Đang mở cửa · ${D.SNAME[s.k]}</b><span class="dim" id="tlLiveClock"></span></div>
-    <div class="tl-speed"><button class="btn ${G.paused ? 'on' : ''}" data-a="pause">${A.ic(G.paused ? 'play' : 'pause', 14)} ${G.paused ? 'Tiếp' : 'Dừng'}</button>${[1, 2, 4].map(x => `<button class="btn ${G.speed === x ? 'on' : ''}" data-a="spd" data-v="${x}">${A.ic('speed' + x, 14)} ×${x}</button>`).join('')}</div>
+    <div class="tl-speed"><button class="btn ${G.paused ? 'on' : ''}" data-a="pause">${A.ic(G.paused ? 'play' : 'pause', 14)} ${G.paused ? (uiLang === 'vi' ? 'Tiếp' : 'Resume') : 'Dừng'}</button>${[1, 2, 4].map(x => `<button class="btn ${G.speed === x ? 'on' : ''}" data-a="spd" data-v="${x}">${A.ic('speed' + x, 14)} ×${x}</button>`).join('')}</div>
     <div class="tl-stats" id="tlLive"></div>
     <details class="tl-more tl-stock" id="tlStockBox" ${G.stkOpen === false ? '' : 'open'}><summary>📦 Theo dõi kho trực tiếp</summary><div id="tlStock"></div></details>
     <div class="tl-cmds">
@@ -269,7 +270,7 @@ const incomingFor = (s, g, key) => incoming(s).find(x => (x.p.br || 'A') === (ke
 function pendingHtml(s) {
   const list = incoming(s);
   if (!list.length) return '<div class="dim tl-note">📭 Chưa có đơn nào đang trên đường. Hàng đặt <b>bây giờ</b> chỉ về <b>đầu buổi kế tiếp</b>, nên cần đặt trước một buổi.</div>';
-  return `<div class="tl-arr"><b>🚚 Đơn đang trên đường (${list.length})</b>${list.map(({ p, lab }) => `<div class="tl-pend"><b>${p.transfer ? 'Chuyển kho' : 'NCC ' + p.sup}${p.br === 'B' ? ' → CN2' : ''}</b> · về <b>${esc(lab)}</b><small class="dim">${itemsOf(p).slice(0, 6).map(l => `${esc(D.ING[l.g].name)} ×${l.q}`).join(', ')}${itemsOf(p).length > 6 ? '…' : ''}</small></div>`).join('')}<div class="dim tl-note">Đơn đặt bây giờ sẽ về đầu buổi kế tiếp.</div></div>`;
+  return `<div class="tl-arr"><b>🚚 Đơn đang trên đường (${list.length})</b>${list.map(({ p, lab }) => `<div class="tl-pend"><b>${p.transfer ? 'Chuyển kho' : 'NCC ' + p.sup}${p.br === 'B' ? ' → CN2' : ''}</b> · về <b>${esc(lab)}</b><small class="dim">${itemsOf(p).slice(0, 6).map(l => `<span>${esc(D.ING[l.g].name)}</span> ×${l.q}`).join(', ')}${itemsOf(p).length > 6 ? '…' : ''}</small></div>`).join('')}<div class="dim tl-note">Đơn đặt bây giờ sẽ về đầu buổi kế tiếp.</div></div>`;
 }
 function shortage(s) { // món đang bật nhưng thiếu nguyên liệu ngay lúc này
   const items = D.ITEM_ORDER.filter(i => onSale(s, i) && !E.itemAvail(s, i, 1)), miss = [...new Set(items.flatMap(i => D.ITEMS[i].ing.filter(g => E.stockOf(s, g) < 1)))];
@@ -277,7 +278,7 @@ function shortage(s) { // món đang bật nhưng thiếu nguyên liệu ngay l�
 }
 function shortageHtml(s) {
   const { items, miss } = shortage(s); if (!miss.length) return '';
-  return `<div class="tl-arr bad">⚠ <b>Kho đang thiếu:</b> ${miss.map(g => { const c = incomingFor(s, g, 'a'); return `${esc(D.ING[g].name.toLowerCase())}${c ? ` (đang về ${c.short})` : ' (chưa đặt)'}`; }).join(', ')}.<br>Món không bán được lúc này: ${items.map(i => esc(D.ITEMS[i].name)).join(', ')}.<br><small>Hàng đặt bây giờ chỉ về đầu buổi kế tiếp, không kịp cho buổi này. Có thể dùng <b>Giao khẩn</b> khi đang bán (nhà cung cấp B).</small></div>`;
+  return `<div class="tl-arr bad">⚠ <b>Kho đang thiếu:</b> ${miss.map(g => { const c = incomingFor(s, g, 'a'); return `<span>${esc(D.ING[g].name.toLowerCase())}</span><span>${c ? ` (đang về ${c.short})` : ' (chưa đặt)'}</span>`; }).join(', ')}.<br>Món không bán được lúc này: ${items.map(i => '<span>' + esc(D.ITEMS[i].name) + '</span>').join(', ')}.<br><small>Hàng đặt bây giờ chỉ về đầu buổi kế tiếp, không kịp cho buổi này. Có thể dùng <b>Giao khẩn</b> khi đang bán (nhà cung cấp B).</small></div>`;
 }
 
 // ---------- theo dõi kho trực tiếp trong buổi bán ----------
@@ -323,9 +324,9 @@ function stockHtml(s, S) {
     const rows = stockRows(s, S, key), bad = rows.filter(r => r.state !== 'ok').length;
     const items = D.ITEM_ORDER.filter(i => onSale(s, i)).map(i => ({ i, n: Math.min(...D.ITEMS[i].ing.map(g => qOf(s, g, key))) }));
     const incLbl = r => { const i = incomingFor(s, r.g, key); return i ? 'về ' + i.short : 'hết'; };
-    const cell = r => `<div class="tl-sc ${r.state}" title="${esc(D.ING[r.g].name)}">${A.ingIc(r.g, 20)}<b>${r.q}</b><small>${esc(D.ING[r.g].name)}</small><i>${r.state === 'out' ? incLbl(r) : r.rate > 0 ? '~' + (r.eta > 240 ? '240+' : Math.round(r.eta)) + 'p' : '—'}</i><u style="width:${Math.min(100, Math.round(100 * r.q / r.max))}%"></u></div>`;
+    const cell = r => `<div class="tl-sc ${r.state}" title="${esc(D.ING[r.g].name)}">${A.ingIc(r.g, 20)}<b>${r.q}</b><small>${esc(D.ING[r.g].name)}</small><i>${r.state === 'out' ? incLbl(r) : r.rate > 0 ? '~' + (r.eta > 240 ? '240+' : Math.round(r.eta)) + (uiLang === 'vi' ? 'p' : 'm') : '—'}</i><u style="width:${Math.min(100, Math.round(100 * r.q / r.max))}%"></u></div>`;
     return `<div class="tl-stk"><div class="tl-stkh"><b>${title}</b><span class="tl-flag ${bad ? 'warn' : 'ok'}">${bad ? bad + ' cần chú ý' : 'Kho ổn'}</span>${bad && s.phase === 'LIVE' ? '<button class="btn" data-a="cmd" data-v="express">🚚 Giao khẩn</button>' : ''}</div>
-      <div class="tl-stki">${items.map(x => `<span class="tl-pill ${x.n <= 0 ? 'out' : x.n < 10 ? 'low' : ''}">${A.cup(x.i, 14)} ${esc(D.ITEMS[x.i].name.replace(/^Trà /, ''))}: ${x.n <= 0 ? 'HẾT' : '~' + x.n}</span>`).join('')}</div>
+      <div class="tl-stki">${items.map(x => `<span class="tl-pill ${x.n <= 0 ? 'out' : x.n < 10 ? 'low' : ''}">${A.cup(x.i, 14)} ${esc(uiLang === 'vi' ? D.ITEMS[x.i].name.replace(/^Trà /, '') : D.ITEMS[x.i].name)}: ${x.n <= 0 ? 'HẾT' : '~' + x.n}</span>`).join('')}</div>
       ${bad ? `<div class="tl-stkg">${rows.filter(r => r.state !== 'ok').map(cell).join('')}</div>` : ''}
       <details class="tl-more tl-stkall" id="tlStkAll${key}" ${(G.stkAll ||= {})[key] ? 'open' : ''}><summary>${bad ? `Xem ${rows.length - bad} nguyên liệu còn đủ` : `Xem ${rows.length} nguyên liệu`}</summary><div class="tl-stkg">${rows.filter(r => r.state === 'ok').map(cell).join('')}</div></details></div>`;
   };
@@ -334,7 +335,7 @@ function stockHtml(s, S) {
 function stockUI(s, S) {
   const el = $('#tlStock'); if (!el || !S) return; stockTrack(s, S); stockAlerts(s, S);
   const h = stockHtml(s, S); if (h !== G.stkHtml) { G.stkHtml = h; el.innerHTML = h; }
-  const tg = $('#tlTags'), has = !!G.stk.out.length; if (tg) { let o = tg.querySelector('.tg.stk'); if (has) { if (!o) { o = document.createElement('span'); o.className = 'tg stk'; tg.appendChild(o); } o.textContent = '⛔ Hết: ' + G.stk.out.slice(0, 3).join(', '); } else o?.remove(); }
+  const tg = $('#tlTags'), has = !!G.stk.out.length; if (tg) { let o = tg.querySelector('.tg.stk'); if (has) { if (!o) { o = document.createElement('span'); o.className = 'tg stk'; tg.appendChild(o); } o.textContent = '⛔ Hết: ' + G.stk.out.slice(0, 3).map(n => tr(n)).join(', '); } else o?.remove(); }
 }
 function liveStats() {
   const s = st(), S = G.S, el = $('#tlLive'); if (!S || !el) return; const R = S.st; stockUI(s, S);
@@ -424,7 +425,7 @@ function onAct(a, ev) {
     case 'expgo': { const it = $('#tlXi')?.value, pb = parseInt($('#tlXp')?.value); const r = res(E.cmd(s, G.S, { t: 'START_EXPERIMENT', item: it, pb, blocks: 12 })); if (r?.ok) { toast('🧪 Bắt đầu thử nghiệm giá', 1800); save(false); panel(); } break; }
     case 'expstop': res(E.cmd(s, G.S, { t: 'STOP_EXPERIMENT' })); save(false); panel(); break;
     case 'win': openWin(d.v); break;
-    case 'live': { const sh = shortage(s); if (sh.miss.length && !confirm(`Đang thiếu: ${sh.miss.map(g => D.ING[g].name.toLowerCase()).join(', ')}.\nCác món dùng chúng sẽ KHÔNG bán được trong buổi này (hàng đặt bây giờ chỉ về đầu buổi sau).\nVẫn mở cửa?`)) break; goLive(); break; }
+    case 'live': { const sh = shortage(s); if (sh.miss.length && !confirm(`Đang thiếu: ${sh.miss.map(g => tr(D.ING[g].name).toLowerCase()).join(', ')}.\nCác món dùng chúng sẽ KHÔNG bán được trong buổi này (hàng đặt bây giờ chỉ về đầu buổi sau).\nVẫn mở cửa?`)) break; goLive(); break; }
     case 'skip': if (confirm(E.dayCard(s.day).defaultClosed.includes(s.k) ? 'Giữ đóng cửa? Vẫn trả thuê mặt bằng, không phải trả lương lễ.' : 'Nghỉ buổi này? Vẫn trả thuê mặt bằng và lương.')) skipSession(); break;
     case 'openany': openAnyway(); break;
     case 'pause': G.paused = !G.paused; panel(); applyPause(); break;

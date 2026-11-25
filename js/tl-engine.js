@@ -547,8 +547,14 @@ export function nextSession(st) { // sau REVIEW “Xong”
   st.k = k; beginSession(st); return 'PREP';
 }
 function autoOrders(st) { // kế hoạch đứng: nhập về mức dùng trung bình 3 ngày gần nhất (nếu có), không phải chiến lược tối ưu
-  const h = st.hist.filter(d => d.cups > 0).slice(-3), use = {}; for (const g of ING_ORDER) use[g] = 0; // ngày có bán: nghỉ / hết sạch hàng không làm kế hoạch đứng ngừng đặt mãi
-  for (const d of h) for (const [it, q] of Object.entries(d.by || {})) if (st.menu[it] && inSeason(it, st.day)) for (const g of ITEMS[it].ing) use[g] += q / Math.max(1, h.length);
+  const h = st.hist.filter(d => d.buyers > 0).slice(-3), use = {}; for (const g of ING_ORDER) use[g] = 0; // ngày có khách muốn mua (kể cả bán được 0 ly vì hết hàng)
+  const per = {}; for (const d of h) for (const [it, q] of Object.entries(d.by || {})) per[it] = (per[it] || 0) + q / h.length;
+  const want = h.reduce((a, d) => a + d.buyers, 0) / Math.max(1, h.length), lostS = h.reduce((a, d) => a + d.ls, 0) / Math.max(1, h.length);
+  if (lostS > want * 0.15) { // đang hụt hàng nặng: số bán thấp giả tạo, nhập theo số khách muốn mua, chia cho mọi món đang bán
+    const on = ITEM_ORDER.filter(it => st.menu[it] && !ITEMS[it].seasonal && ITEMS[it].stage <= st.stage);
+    for (const it of on) per[it] = Math.max(per[it] || 0, want * 1.1 / on.length);
+  }
+  for (const [it, q] of Object.entries(per)) if (st.menu[it] && inSeason(it, st.day)) for (const g of ITEMS[it].ing) use[g] += q;
   const coming = (g, br) => st.pending.reduce((a, p) => a + ((p.br || 'A') === br && !p.done ? (p.lines.length ? p.lines : p.lots || []).reduce((s, l) => s + (l.g === g ? l.q : 0), 0) : 0), 0); // hàng đang trên đường, để không đặt trùng
   const sh = st.b2 ? 0.75 : 1, sup = supplierOpenOn('A', nextSess(st.day, st.k)[0]) ? 'A' : 'B';
   const lines = []; for (const g of ING_ORDER) { const need = Math.ceil(use[g] * 0.28 * 1.12 * sh) - stockOf(st, g) - coming(g, 'A'); if (need > 0 && (ING[g].grp === 'fresh' ? need > 3 : need > 10)) lines.push({ g, q: need }); }

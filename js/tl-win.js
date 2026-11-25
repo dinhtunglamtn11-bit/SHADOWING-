@@ -3,6 +3,7 @@ import { esc } from './util.js';
 import { calcEval, fmt, roundFor, FUNCS } from './tl-calc.js';
 import { HOWTO, GLOSSARY, FORMULAS, TIPS } from './tl-guide.js';
 import { histHtml, histClick } from './tl-hist.js';
+import { uiLang } from './i18n.js';
 const fold = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase(); // bỏ dấu để tìm kiếm tiếng Việt
 const hitQ = (text, q) => !q || new RegExp('(^|[^a-z0-9])' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(fold(text)); // khớp đầu từ: “ap” ra AP chứ không ra “hạp”
 
@@ -42,12 +43,12 @@ function dayDetail(c, dk) {
   const mails = st.mails.filter(x => x.day === dk && x.ev);
   const ill = note && D.ILL_BY_DAY[dk] ? c.A.illus(D.ILL_BY_DAY[dk]) : '';
   return `<div class="cal-d">${ill}<b>${wd} ${pad(dt.dd)}/${pad(dt.m)} · ngày ${dk}${dk === st.day ? ' (hôm nay)' : ''}</b>
-    ${note ? `<div><u>${esc(note[0])}</u>: ${esc(note[1])}</div>` : '<div class="dim">Không có sự kiện công khai.</div>'}
+    ${note ? `<div><u>${esc(note[0])}</u> — ${esc(note[1])}</div>` : '<div class="dim">Không có sự kiện công khai.</div>'}
     <div class="dim">${esc(weather)}</div>${hs ? `<div class="dim">${hs}</div>` : ''}
     ${card.wageMul > 1 ? `<div>Lương lễ ×${card.wageMul} nếu mở cửa.</div>` : ''}${card.extra ? '<div>Có buổi S5 (22:00–24:00).</div>' : ''}
     ${closures.length ? `<div class="bad">Nhà cung cấp đóng cửa: ${closures.join(', ')}</div>` : ''}
     ${ms.length ? `<div>Hạn cột mốc: ${ms.map(M => M.id).join(', ')}</div>` : ''}
-    ${mails.length ? `<div class="dim">Thư đã báo: ${mails.map(x => esc(x.title)).join('; ')}</div>` : ''}</div>`;
+    ${mails.length ? `<div class="dim">Thư đã báo: ${mails.map(x => '<span>' + esc(x.title) + '</span>').join('; ')}</div>` : ''}</div>`;
 }
 
 // ---------- thư ----------
@@ -108,7 +109,7 @@ function reportHtml(c) {
     const need = D.ING_ORDER.filter(g => qtyOf(g) > 0 || use.some(i => D.ITEMS[i].ing.includes(g)));
     const cap = use.map(i => [i, Math.min(...D.ITEMS[i].ing.map(qtyOf))]);
     const live = st.phase === 'LIVE' && c.G.S;
-    const sum = `<div class="tl-stkh"><b>Tồn kho hiện tại${live ? ' (đang bán)' : ''}</b></div><div class="tl-stki">${cap.map(([i, n]) => `<span class="tl-pill ${n <= 0 ? 'out' : n < 10 ? 'low' : ''}">${A.cup(i, 14)} ${esc(D.ITEMS[i].name.replace(/^Trà /, ''))}: ${n <= 0 ? 'HẾT' : '~' + n + ' ly'}</span>`).join('')}</div>`;
+    const sum = `<div class="tl-stkh"><b>Tồn kho hiện tại${live ? ' (đang bán)' : ''}</b></div><div class="tl-stki">${cap.map(([i, n]) => `<span class="tl-pill ${n <= 0 ? 'out' : n < 10 ? 'low' : ''}">${A.cup(i, 14)} ${esc(uiLang === 'vi' ? D.ITEMS[i].name.replace(/^Trà /, '') : D.ITEMS[i].name)}: ${n <= 0 ? 'HẾT' : '~' + n + ' ly'}</span>`).join('')}</div>`;
     const grid = `<div class="tl-stkg">${need.map(g => { const q = qtyOf(g), lots = ex(st.lots[g]), near = lots.length ? Math.min(...lots.map(l => l.last)) : null, max = D.ING[g].shelf; const state = q <= 0 ? 'out' : (near != null && near <= st.day) ? 'low' : 'ok'; return `<div class="tl-sc ${state}" title="${esc(D.ING[g].name)}">${A.ingIc(g, 20)}<b>${q}</b><small>${esc(D.ING[g].name)}</small><i>${q <= 0 ? 'hết' : near != null && near <= st.day + 1 ? 'hạn N' + near : D.ING[g].grp === 'fresh' ? 'tươi' : 'khô'}</i></div>`; }).join('')}</div>`;
     const b2 = st.b2 ? `<div class="tl-stkh"><b>Chi nhánh 2</b></div><div class="tl-stkg">${need.map(g => { const q = E.stockB(st, g); return `<div class="tl-sc ${q <= 0 ? 'out' : 'ok'}">${A.ingIc(g, 20)}<b>${q}</b><small>${esc(D.ING[g].name)}</small><i>${q <= 0 ? 'hết' : ''}</i></div>`; }).join('')}</div>` : '';
     const note = '<div class="dim tl-note">Màu đỏ: đã hết. Màu vàng: có lô sắp hết hạn (hạn Nx = hạn dùng ngày x) hoặc còn ít. Hàng tươi hỏng nhanh nên dùng lô gần hạn trước.</div>';
@@ -122,7 +123,7 @@ function reportHtml(c) {
   } else if (tab === 'note') {
     const ns = (st.notes || []).slice().reverse(), lab = { open: '❓ chưa rõ', yes: '✅ đúng', no: '❌ sai' };
     body = `<div class="dim tl-note">Ghi giả thuyết của bạn (ví dụ “hạ giá trà đào buổi chiều thì lãi tăng”), rồi đánh dấu đúng / sai sau khi kiểm chứng bằng số liệu hoặc thử nghiệm giá.</div><textarea id="tlNote" rows="2" maxlength="240" placeholder="Giả thuyết của tôi…"></textarea><div class="row"><button class="btn primary" data-nadd>＋ Thêm</button></div>` +
-      (ns.map(n => `<div class="tl-row"><div class="tl-nm"><b>${esc(n.text)}</b><small class="dim">ngày ${n.day} · ${lab[n.st]}</small></div><button class="btn" data-ns="${n.id}:yes">✅</button><button class="btn" data-ns="${n.id}:no">❌</button><button class="btn" data-ns="${n.id}:open">❓</button><button class="btn" data-nd="${n.id}">🗑</button></div>`).join('') || '<div class="dim">Chưa có giả thuyết nào.</div>');
+      (ns.map(n => `<div class="tl-row"><div class="tl-nm"><b class="tl-user">${esc(n.text)}</b><small class="dim">ngày ${n.day} · ${lab[n.st]}</small></div><button class="btn" data-ns="${n.id}:yes">✅</button><button class="btn" data-ns="${n.id}:no">❌</button><button class="btn" data-ns="${n.id}:open">❓</button><button class="btn" data-nd="${n.id}">🗑</button></div>`).join('') || '<div class="dim">Chưa có giả thuyết nào.</div>');
   } else {
     body = ['A', 'B', 'C', 'D'].filter(id => D.SUPPLIERS[id].stage <= st.stage).map(id => { const log = st.supLog[id].slice(-8); return `<div class="tl-row"><div class="tl-nm"><b>${esc(D.SUPPLIERS[id].name)}</b><small class="dim">${st.tools.supplier ? (log.length ? log.map(([d, s]) => `ngày ${d}: ${s}`).join(' · ') : 'chưa có lần giao nào') : 'Mở nhật ký giao hàng bằng IP (mục Thành tích) từ ngày 4.'}</small></div></div>`; }).join('');
   }
@@ -195,9 +196,9 @@ export function diagnose(c, r) {
   if (by.length) { const [it, q] = by[0], I = D.ITEMS[it]; out.push({ t: `Bán chạy nhất: <b>${esc(I.name)}</b> (${q} ly), lãi ${c.k1((s.prices[it] * 1000) - E.unitCost(s, it))} mỗi ly.` }); }
   if (r.errs) out.push({ c: 'warn', t: `Sức khỏe thấp làm ${r.errs} ly pha sai. Dùng “Nghỉ giải lao” khi sức xuống dưới 30.` });
   const near = D.ING_ORDER.filter(g => D.ING[g].grp === 'fresh' && E.lotsNear(s, g, s.day) > 5);
-  if (near.length) out.push({ c: 'warn', t: `Sắp hết hạn: ${near.map(g => `${esc(ing[g].name.toLowerCase())} (${E.lotsNear(s, g, s.day)})`).join(', ')}. Dùng hết hoặc chịu hao.` });
+  if (near.length) out.push({ c: 'warn', t: `Sắp hết hạn: ${near.map(g => `<span>${esc(ing[g].name.toLowerCase())}</span> (${E.lotsNear(s, g, s.day)})`).join(', ')}. Dùng hết hoặc chịu hao.` });
   if (!out.length) out.push({ c: 'good', t: 'Buổi chạy khá trơn: ít khách bỏ đi, tồn kho ổn.' });
-  if (r.sat) out.push({ t: `Độ hài lòng trung bình ${Math.round(r.sat * 100)}%${r.comments.length ? ` · khách nói: ${r.comments.slice(0, 2).map(esc).join(' ')}` : ''}` });
+  if (r.sat) out.push({ t: `Độ hài lòng trung bình ${Math.round(r.sat * 100)}%${r.comments.length ? ` · khách nói: ${r.comments.slice(0, 2).map(x => '<span>' + esc(x) + '</span>').join(' ')}` : ''}` });
   return out.slice(0, 7);
 }
 export function whatIfHtml(c) {

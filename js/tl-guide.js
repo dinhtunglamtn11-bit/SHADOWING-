@@ -1,7 +1,10 @@
 // TeaLab: nội dung hướng dẫn (cách chơi, ký hiệu và từ viết tắt, công thức máy tính). Dữ liệu thuần, dùng cho cửa sổ Hướng dẫn và danh sách công thức trong máy tính.
 // Quy ước máy tính: ngăn cách đối số bằng dấu chấm phẩy ( ; ), số thập phân bằng dấu phẩy ( , ).
 
-export const HOWTO = [
+import { uiLang } from './i18n.js';
+import * as EN from './tl-guide-en.js';
+
+const HOWTO_VI = [
   ['Mục tiêu', 'Điều hành tiệm trà từ 01/12/2026 đến 28/02/2027 (90 ngày). Kiếm lãi, giữ uy tín, nâng cấp tiệm, đạt nhiều sao ở các cột mốc để có Điểm Mùa cao. Hết ngày 90 có màn Chung kết; sau đó bạn có thể chơi tiếp ở chế độ tự do.'],
   ['Một ngày gồm các buổi', 'Mỗi ngày có tối đa 5 buổi: S1 Sáng, S2 Trưa, S3 Chiều, S4 Tối, S5 Đêm (22–24h, chỉ vài ngày đặc biệt). Mỗi buổi có ba pha: <b>Chuẩn bị</b> (đặt giá, đặt hàng, dự đoán, nhân sự) → <b>Mở cửa</b> (đồng hồ chạy, có thể ra lệnh) → <b>Xem lại</b> (báo cáo, chẩn đoán, đặt hàng cho buổi sau). Bấm <b>Nghỉ buổi</b> nếu không muốn mở.'],
   ['Điểm hành động (AP)', 'Mỗi buổi bạn có một số AP (giai đoạn 1: 6, rồi 7, 8, 9; độ khó Nhàn ×1,5, Khó ×0,75). AP dư tối đa 2 được giữ sang buổi sau. Lệnh khi đang bán tốn AP: đổi giá 1, giao khẩn 2, khuyến mãi 2, nghỉ giải lao 1, đóng cửa sớm hoặc mở lại 1. Việc ở pha Chuẩn bị (đặt giá lần đầu, đặt hàng) thì không tốn AP.'],
@@ -20,7 +23,7 @@ export const HOWTO = [
 ];
 
 // [ký hiệu, tên đầy đủ, giải thích ngắn]
-export const GLOSSARY = [
+const GLOSSARY_VI = [
   ['N', 'Ngày', 'Số thứ tự ngày game (N1 = 01/12/2026, N90 = 28/02/2027).'],
   ['Giờ game', 'Đồng hồ trong game', 'Chỉ chạy khi mở cửa. Buổi S1 bắt đầu 06:00, S2 10:00, S3 14:00, S4 18:00, S5 22:00.'],
   ['S1–S5', 'Buổi trong ngày', 'S1 Sáng, S2 Trưa, S3 Chiều, S4 Tối, S5 Đêm (22–24h, chỉ vài ngày).'],
@@ -63,7 +66,7 @@ export const GLOSSARY = [
 ];
 
 // Công thức cho máy tính: [mã hàm, tên, cú pháp, công thức, giải thích trong game, ví dụ]
-export const FORMULAS = [
+const FORMULAS_VI = [
   ['EOQ', 'Lượng đặt kinh tế', 'EOQ(D;S;H)', 'EOQ = √(2·D·S / H)', 'D: nhu cầu cả kỳ (số phần dùng), S: phí cho mỗi lần đặt (giao hàng, công), H: phí giữ một phần trong kỳ (hao hụt, vốn nằm kho). Cho lượng mỗi lần đặt làm tổng phí đặt + phí giữ nhỏ nhất. Dùng nhiều ở hàng khô, ít hợp với hàng tươi vì hỏng nhanh.', 'EOQ(1400;15;2)'],
   ['TC', 'Tổng chi phí tồn kho', 'TC(D;S;H;Q)', 'TC = D/Q·S + Q/2·H', 'So sánh các mức đặt Q khác nhau. Q = EOQ cho TC thấp nhất; thử Q lớn hơn hay nhỏ hơn để thấy chi phí tăng.', 'TC(1400;15;2;150)'],
   ['ROP', 'Điểm đặt hàng lại', 'ROP(d;L;σ;z)', 'ROP = d·L + z·σ·√L', 'd: dùng trung bình mỗi buổi, L: số buổi từ lúc đặt đến lúc hàng về, σ: độ lệch chuẩn nhu cầu mỗi buổi, z: hệ số an toàn (z=1,28 ứng ~90%, 1,64 ~95%). Khi tồn kho tụt tới ROP thì đặt thêm.', 'ROP(50;2;12;1,64)'],
@@ -89,7 +92,7 @@ export const FORMULAS = [
 ];
 
 // Chạm vào số trên thanh trên cùng thì hiện giải thích ngắn
-export const HUD_HELP = {
+const HUD_HELP_VI = {
   hD: 'N = ngày game (N1 là 01/12/2026, N90 là 28/02/2027). Dưới là thứ và ngày dương lịch.',
   hT: 'Giờ game: chỉ chạy khi mở cửa. Mỗi buổi dài 4 tiếng (S5 dài 2 tiếng).',
   hK: 'Buổi hiện tại: S1 Sáng, S2 Trưa, S3 Chiều, S4 Tối, S5 Đêm (22–24h, chỉ vài ngày).',
@@ -99,7 +102,7 @@ export const HUD_HELP = {
 };
 
 // Mẹo ngắn theo tình huống
-export const TIPS = [
+const TIPS_VI = [
   'Khách hết hàng là mất ngay; khách chờ lâu là mất uy tín. Xem biểu đồ “khách bỏ đi” cuối buổi để biết khung giờ nào thiếu hàng hay thiếu người.',
   'Thiếu một nguyên liệu là cả món hết: ly và nắp, đá, trà… cũng phải đủ như sữa và trái cây.',
   'Đặt hàng theo mức dùng gần đây (LY7, SDLY7 trong ô Dữ liệu) cộng tồn kho an toàn (SS) thay vì đoán cảm tính.',
@@ -109,3 +112,7 @@ export const TIPS = [
   'Đừng phản ứng quá sớm với tin đồn: có “báo động giả”, và phản ứng quá mạnh cũng tốn tiền.',
   'Sau mỗi buổi, dùng “Chạy lại giả định” để biết lãi tăng là do giá tốt hay chỉ do may.',
 ];
+
+// giao diện tiếng Anh (và tiếng Trung) dùng bản hướng dẫn tiếng Anh
+const pick = (vi, en) => (uiLang === 'vi' ? vi : en);
+export const HOWTO = pick(HOWTO_VI, EN.HOWTO), GLOSSARY = pick(GLOSSARY_VI, EN.GLOSSARY), FORMULAS = pick(FORMULAS_VI, EN.FORMULAS), HUD_HELP = pick(HUD_HELP_VI, EN.HUD_HELP), TIPS = pick(TIPS_VI, EN.TIPS);
