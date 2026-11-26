@@ -1258,4 +1258,15 @@ export default {
   "Chỉ lịch sử học, xu và thẻ Passport, thói quen, Luyện âm, thẻ ôn, câu sai: file nhỏ, hợp để chuyển máy": "Only study history, coins and Passport cards, habits, Pronunciation lab, review cards and mistakes: a small file, good for moving to another device",
   "Chỉ tiến độ": "Progress only",
   " gồm lịch sử học, xu và thẻ Passport, đồ đã mua, thói quen, Luyện âm (gồm Bộ thủ), thẻ ôn và câu sai, nhưng không có phụ đề, ghi chú, bộ bài tập. Cả hai loại file đều khôi phục được từ nút bên cạnh.": " includes study history, coins and Passport cards, purchased items, habits, Pronunciation lab (with Radicals), review cards and mistakes, but no subtitles, notes or exercise sets. Both kinds of file can be restored with the button next to it.",
-  "Đã tạo file sao lưu tiến độ": "Progress backup file created",}
+  "Đã tạo file sao lưu tiến độ": "Progress backup file created",
+  "Kết thúc": "Finish",
+  "{}/{} câu đúng ({}%)": "{1}/{2} correct ({3}%)",
+  "Đã kết thúc phiên luyện.": "Practice session ended.",
+  "Làm lượt mới": "New round",
+  "Còn {} thẻ chưa ôn xong.": "{1:card|cards} not finished yet.",
+  "Còn {} câu chưa làm.": "{1:question|questions} not done yet.",
+  "Làm tiếp": "Continue",
+  "{}/{} chữ đạt": "{1}/{2} characters passed",
+  "Bạn chưa chấm chữ nào trong phiên này.": "No character has been graded in this session.",
+  "Làm lại từ đầu": "Start over",
+}

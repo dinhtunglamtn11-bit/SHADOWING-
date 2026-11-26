@@ -14,7 +14,7 @@ body[data-view="tealab"] #views { padding-bottom: 0; }
 .tl .empty { padding: 20px; text-align: center; }
 
 /* thanh trên: 6 con số */
-.tl-hud { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; position: sticky; top: 0; z-index: 5; }
+.tl-hud { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; position: sticky; top: 0; z-index: 5; }
 .tl-hud .hc { display: grid; justify-items: center; align-content: center; gap: 0; padding: 3px 2px 2px; min-width: 0; background: var(--panel); border: 2px solid var(--tlc); box-shadow: 0 3px 0 var(--lo, #ecd6a2); }
 .tl-hud .hc b { font-family: var(--pf); font-size: 20px; line-height: 1; overflow: hidden; text-overflow: ellipsis; max-width: 100%; white-space: nowrap; }
 .tl-hud .hc small { font-size: 12px; color: var(--dim); line-height: 1; white-space: nowrap; }
@@ -301,3 +301,8 @@ body[data-view="tealab"] #lameEdge { display: none !important; }
 .tl-art{display:flex;justify-content:center}
 .tl-secb .tl-ill,.tl-wb .tl-ill{max-width:100%;height:auto}
 .tl-go .btn.big{white-space:normal;line-height:1.15;min-width:0}
+
+/* thanh tiền nổi ở góc dưới bên trái */
+.tl-cash{position:fixed;left:8px;bottom:72px;z-index:5;display:flex;align-items:center;gap:6px;min-height:34px;padding:3px 12px 3px 8px;background:var(--panel);color:var(--text,inherit);border:2px solid var(--tlc);box-shadow:0 3px 0 rgba(0,0,0,.25);cursor:help;white-space:nowrap}
+.tl-cash b{font-family:var(--pf);font-size:20px;line-height:1}
+.tl-cash.bad{background:var(--tl-badbg)}

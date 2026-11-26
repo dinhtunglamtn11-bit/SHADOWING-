@@ -817,7 +817,7 @@ body.vx-on #cueList { display: none; }
 #passDlg .pdbd, #passStory .psbd { display: grid; gap: 10px; justify-items: start; }
 .pdart { align-self: center; justify-self: center; background: #1f1850; border: 3px solid var(--ink); padding: 8px; }
 .pdart canvas { image-rendering: pixelated; display: block; }
-#pdNote { margin: 0; line-height: 1.6; } #pdNote.lock { color: var(--dim); font-style: italic; }
+#pdNote { margin: 0; line-height: 1.6; } #pdNote.lock { color: var(--dim); font-style: italic; } #pdNote.flag { white-space: pre-line; text-align: left; }
 .pdtag { color: #7be08a; }
 #psBody p { margin: 0 0 12px; line-height: 1.75; }
 .pp-how[hidden] { display: none; }
@@ -831,6 +831,11 @@ body.vx-on #cueList { display: none; }
 :root[data-lame-pos=l] #lameEdge { right: auto; left: calc(8px + env(safe-area-inset-left, 0px)); }
 :root[data-lame=off] #lameEdge, body.focus-mode #lameEdge, body.sp-reading #lameEdge, body.cueedit #lameEdge { display: none; }
 :root[data-motion=off] #lameEdge { animation: none; }
+#lameSay input[type=text], #lameSay select { font: inherit; min-height: 38px; padding: 4px 6px; max-width: 100%; }
+#lameSay input[type=text] { flex: 1; min-width: 150px; }
+.lsHours { display: flex; flex-wrap: wrap; gap: 8px; }
+.lsItem { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--line, #9993); }
+.lsItem > div { display: grid; min-width: 0; overflow-wrap: anywhere; }
 @keyframes lameBob { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
 @media (max-width: 820px) { #lameEdge { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); } }
 #uiDlg .lamebox { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }

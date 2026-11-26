@@ -47,6 +47,40 @@ async function drawSlots() {
     row.append(sel); box.append(row);
   }
 }
+// ---------- câu thoại tự thêm ----------
+const WHEN = [['tap', 'Chạm vào Lame', 'Tap on Lame'], ['idle', 'Chạm khi hôm nay chưa học', 'Tap before studying today'], ['ok', 'Làm đúng', 'Right answer'], ['bad', 'Làm sai', 'Wrong answer'], ['cheer', 'Đạt điểm cao', 'High score'], ['buy', 'Mua thẻ', 'Buying a card'], ['coin', 'Nhận xu', 'Getting coins'], ['chest', 'Mở rương', 'Opening a chest']];
+const whenName = k => { const w = WHEN.find(x => x[0] === k) || WHEN[0]; return t(w[1], w[2]); };
+const hourOpts = (from, to, sel) => Array.from({ length: to - from + 1 }, (_, i) => `<option value="${from + i}" ${from + i === sel ? 'selected' : ''}>${from + i} ${t('giờ', 'h')}</option>`).join('');
+const timeText = x => (x.from === x.to || (x.from === 0 && x.to === 24) ? t('cả ngày', 'all day') : `${x.from}–${x.to} ${t('giờ', 'h')}`);
+function drawSay() {
+  const box = $('#lameSay'); if (!box) return;
+  if (!box.firstElementChild) {
+    box.innerHTML = `<h4>${t('Câu thoại của bạn', 'Your own lines')}</h4>
+      <div class="uirow"><span>${t('Câu nói', 'Line')}</span><input id="lsText" type="text" maxlength="80" placeholder="${t('Ví dụ: Uống nước đê', 'e.g. Drink some water')}"></div>
+      <div class="uirow"><span>${t('Tình huống', 'When')}</span><select id="lsWhen">${WHEN.map(([k]) => `<option value="${k}">${whenName(k)}</option>`).join('')}</select></div>
+      <div class="uirow"><span>${t('Khung giờ', 'Hours')}</span><span class="lsHours"><label>${t('từ', 'from')} <select id="lsFrom">${hourOpts(0, 23, 0)}</select></label> <label>${t('đến', 'to')} <select id="lsTo">${hourOpts(1, 24, 24)}</select></label></span></div>
+      <div class="uirow"><small class="dim">${t('0 đến 24 giờ là cả ngày. Chọn 22 đến 5 nếu muốn qua nửa đêm.', '0 to 24 means all day. Pick 22 to 5 to span midnight.')}</small><button class="btn primary" id="lsAdd">${t('＋ Thêm câu', '＋ Add line')}</button></div>
+      <div id="lsList"></div>`;
+  }
+  const list = $('#lsList', box); list.innerHTML = '';
+  const all = fx.sayList();
+  if (!all.length) { list.innerHTML = `<small class="dim">${t('Chưa có câu nào bạn tự thêm. Các câu có sẵn của Lame vẫn dùng bình thường.', 'No custom lines yet. Lame’s built-in lines still work.')}</small>`; return; }
+  for (const x of all) {
+    const row = document.createElement('div'); row.className = 'lsItem';
+    row.innerHTML = `<div><b></b><small class="dim">${whenName(x.when)} · ${timeText(x)}</small></div><button class="btn" data-lsdel="${x.id}" aria-label="${t('Xóa', 'Delete')}">🗑</button>`;
+    row.querySelector('b').textContent = x.text; list.append(row);
+  }
+}
+function sayClick(e) {
+  const del = e.target.closest('[data-lsdel]');
+  if (del) { fx.sayPut(fx.sayList().filter(x => String(x.id) !== del.dataset.lsdel)); drawSay(); return; }
+  if (!e.target.closest('#lsAdd')) return;
+  const input = $('#lsText'), text = input.value.trim();
+  if (!text) { input.focus(); return; }
+  const all = fx.sayList(); if (all.length >= 100) return;
+  fx.sayPut([...all, { id: Date.now(), text, when: $('#lsWhen').value, from: +$('#lsFrom').value, to: +$('#lsTo').value }]);
+  input.value = ''; drawSay(); input.focus();
+}
 async function redrawAll() { await Promise.all([refresh(), drawPreview().catch(() => {}), drawSlots().catch(() => {})]); }
 
 export function init() {
@@ -56,7 +90,9 @@ export function init() {
   fx.init({ edge, repaint: paintNow, eq: () => passport.getEq(), items: () => items });
   bus.on('show', () => refresh());
   bus.on('lame', () => redrawAll());
-  bus.on('settingsOpen', () => { drawPreview().catch(() => {}); drawSlots().catch(() => {}); });
+  bus.on('settingsOpen', () => { drawPreview().catch(() => {}); drawSlots().catch(() => {}); drawSay(); });
+  $('#lameSay')?.addEventListener('click', sayClick);
+  $('#lameSay')?.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'lsText') { e.preventDefault(); $('#lsAdd').click(); } });
   bus.on('ui', () => refresh()); // đổi cỡ / bật tắt trong Cài đặt
   $('#lameSlots')?.addEventListener('change', e => {
     const sel = e.target.closest('select[data-slot]'); if (!sel) return;

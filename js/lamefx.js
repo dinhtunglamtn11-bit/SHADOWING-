@@ -4,6 +4,17 @@
 // Tôn trọng "Hiệu ứng chuyển động: Tắt" và chế độ giảm chuyển động của hệ điều hành: khi đó chỉ còn nét mặt và bong bóng chữ, không có động tác.
 import { bus, vnDate, vnHour } from './util.js';
 import { byDate } from './tracker.js';
+import * as store from './store.js';
+
+// ---------- câu thoại do người dùng tự thêm (Cài đặt → Nhân vật Lame), đồng bộ qua prefs ----------
+export const sayList = () => store.get('prefs', 'lamesay')?.list || [];
+export const sayPut = list => store.put('prefs', 'lamesay', { list });
+// khung giờ [from, to): from = to là cả ngày; from > to là qua nửa đêm (ví dụ 22 → 5)
+export const inHours = (x, h) => (x.from === x.to || (x.from === 0 && x.to === 24) ? true : x.from < x.to ? h >= x.from && h < x.to : h >= x.from || h < x.to);
+const mine = when => { try { const h = vnHour(); return sayList().filter(x => x.when === when && inHours(x, h)).map(x => x.text); } catch { return []; } };
+// câu tự thêm được ưu tiên một nửa số lần nói
+const mix = (when, builtin, often) => { const own = mine(when); return own.length ? { lines: Math.random() < 0.5 || !builtin.length ? own : builtin, often: Math.max(often, 0.6) } : { lines: builtin, often }; };
+const iconOr = (when, icons) => { const own = mine(when); return own.length && Math.random() < 0.6 ? pick(own) : pick(icons); };
 import { getUi } from './settings.js';
 
 let o = null; // { edge, repaint, eq, items }
@@ -72,19 +83,20 @@ function tapLines() { // câu nói được lúc chạm vào, tùy giờ và vi�
 let lastLine = '';
 const fresh = list => { const pool = list.length > 1 ? list.filter(x => x !== lastLine) : list; return (lastLine = pick(pool)); };
 const TAP_ICONS = ['👋', '😆', '🙃', '😤', '💕', '🐾', '🤭'];
-const tapSay = () => { const r = Math.random(); return r < 0.55 ? fresh(tapLines()) : r < 0.8 ? greeting() : fresh(TAP_ICONS); };
+function ownTap() { const out = mine('tap'); try { if (!studied()) out.push(...mine('idle')); } catch { /* bỏ qua */ } return out; }
+const tapSay = () => { const r = Math.random(), own = ownTap(); if (own.length && r < 0.45) return fresh(own); return r < 0.65 ? fresh(tapLines()) : r < 0.83 ? greeting() : fresh(TAP_ICONS); };
 // phản ứng khi làm bài: chủ yếu là biểu tượng, thỉnh thoảng mới nói để khỏi lặp gây phiền
-const react = (icons, lines, often) => (Math.random() < often ? pick(lines) : pick(icons));
+const react = (when, icons, builtin, often) => { const m = mix(when, builtin, often); return m.lines.length && Math.random() < m.often ? pick(m.lines) : pick(icons); };
 
 // ---------- hiệu ứng theo sự kiện ----------
 const FX = {
-  ok: { expr: 'happy', anim: 'fx-hop', ms: 950, jump: 1, bub: () => (Math.random() < 0.5 ? react(['👍', '✨', '😄', '💪', '🌟', '🎯', '✅', '😎', '🔥', '👏', '🥳', '💯', '🤩'], ['Bạn thắng, nhưng tôi chưa bao giờ thuaaa'], 0.2) : '') },
-  bad: { expr: 'sad', anim: 'fx-shake', ms: 800, bub: () => (Math.random() < 0.5 ? react(['😅', '💦', '🤔', '💪', '🙈', '😵', '🥲', '🫠', '❓', '🩹'], ['Bạn sợ à?', 'Suýt đúng'], 0.35) : '') },
-  buy: { expr: 'love', anim: 'fx-pop', ms: 1200, jump: 1, bub: () => pick(['🛍️', '💖', '✨', '🤑', '🎀', '😍', '🛒', '💝']) },
+  ok: { expr: 'happy', anim: 'fx-hop', ms: 950, jump: 1, bub: () => (Math.random() < 0.5 ? react('ok', ['👍', '✨', '😄', '💪', '🌟', '🎯', '✅', '😎', '🔥', '👏', '🥳', '💯', '🤩'], ['Bạn thắng, nhưng tôi chưa bao giờ thuaaa'], 0.2) : '') },
+  bad: { expr: 'sad', anim: 'fx-shake', ms: 800, bub: () => (Math.random() < 0.5 ? react('bad', ['😅', '💦', '🤔', '💪', '🙈', '😵', '🥲', '🫠', '❓', '🩹'], ['Bạn sợ à?', 'Suýt đúng'], 0.35) : '') },
+  buy: { expr: 'love', anim: 'fx-pop', ms: 1200, jump: 1, bub: () => iconOr('buy', ['🛍️', '💖', '✨', '🤑', '🎀', '😍', '🛒', '💝']) },
   rank: { expr: 'wow', anim: 'fx-spin', ms: 1500, jump: 1, bub: arg => ({ bronze: '🥉', silver: '🥈', gold: '🥇', diamond: '💎' }[arg] || '🛂') + '!' },
-  chest: { expr: 'wow', anim: 'fx-cheer', ms: 1400, jump: 1, bub: () => pick(['🎁', '🎊', '👀', '🗝️', '✨']) },
-  coin: { expr: 'happy', anim: 'fx-pop', ms: 800, bub: () => pick(['🪙', '💰', '🤑', '✨']) },
-  cheer: { expr: 'happy', anim: 'fx-cheer', ms: 1400, jump: 1, bub: () => react(['🎉', '🏆', '👏', '🥳', '🎇', '👑', '💯'], ['Bạn thắng, nhưng tôi chưa bao giờ thuaaa'], 0.4) },
+  chest: { expr: 'wow', anim: 'fx-cheer', ms: 1400, jump: 1, bub: () => iconOr('chest', ['🎁', '🎊', '👀', '🗝️', '✨']) },
+  coin: { expr: 'happy', anim: 'fx-pop', ms: 800, bub: () => iconOr('coin', ['🪙', '💰', '🤑', '✨']) },
+  cheer: { expr: 'happy', anim: 'fx-cheer', ms: 1400, jump: 1, bub: () => react('cheer', ['🎉', '🏆', '👏', '🥳', '🎇', '👑', '💯'], ['Bạn thắng, nhưng tôi chưa bao giờ thuaaa'], 0.4) },
   greet: { expr: 'wink', anim: 'fx-wave', ms: 1100, bub: () => greeting() },
 };
 function setExpr(x, ms) {
