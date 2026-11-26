@@ -53,6 +53,47 @@ export const ING = {
 export const ING_ORDER = Object.keys(ING);
 export const FRESH_C_ONLY = true; // nhà cung cấp C chỉ bán nhóm tươi
 
+// ---------- luật kho v2 (chỉ áp cho lượt chơi mới: st.rules = 2) ----------
+export const zoneOf = g => (g === 'da' ? 'ice' : ING[g].grp === 'fresh' ? 'cold' : 'dry');
+export const ZONES = ['dry', 'cold', 'ice'];
+export const STORE = {
+  zone: { dry: { name: 'Kệ khô', hold: 0.01, icon: '📦' }, cold: { name: 'Tủ lạnh', hold: 0.02, icon: '🧊' }, ice: { name: 'Ngăn đá', hold: 0.02, icon: '❄️' } }, // hold: phí giữ hàng mỗi ngày theo giá trị tồn
+  cap: [null, { dry: 1200, cold: 350, ice: 220 }, { dry: 3000, cold: 850, ice: 550 }, { dry: 4800, cold: 1300, ice: 800 }, { dry: 6000, cold: 1600, ice: 1000 }],
+  b2: { dry: 2400, cold: 650, ice: 400 }, boost: 0.5, // thiết bị kho mở thêm 50% một khu (chi nhánh 1)
+};
+// lead: số buổi chờ hàng (C đặt trước 2 ngày); min: tiền hàng tối thiểu mỗi đơn; free: tiền hàng được miễn phí giao
+export const TERMS = {
+  A: { lead: 1, min: 0, free: 600 * K, fee: 20 * K, credit: true },
+  B: { lead: 2, min: 200 * K,free: 500 * K, fee: 15 * K, credit: true },
+  D: { lead: 4, min: 400 * K, free: 700 * K, fee: 15 * K, credit: false },
+  C: { lead: 0, min: 150 * K, free: 400 * K, fee: 25 * K, credit: false },
+};
+export const TIERS = [[400, 0.12], [150, 0.07], [50, 0.03]]; // [số phần một mặt hàng, mức giảm]
+// ---------- đợt 3 (chỉ lượt mới: st.rules = 3) ----------
+// sơ chế theo mẻ: min = phút chờ chín, work = giây công pha chế mỗi mẻ nấu thêm, batch / at = cỡ mẻ và ngưỡng nấu thêm tối thiểu
+export const PREP = {
+  tranchau: { name: 'Trân châu', verb: 'Nấu', min: 40, work: 150, stage: 2, batch: 8, at: 6, share: 0.55, cover: 1.5 },
+  tra: { name: 'Trà ủ', verb: 'Ủ', min: 20, work: 90, stage: 2, batch: 15, at: 12, share: 0.7, cover: 2.2 },
+};
+export const PACK_SHARE = 0.3; // phần công mỗi ly chuyển sang bàn đóng gói khi có người đứng trạm này
+export const BAR_CROWD = [1, 1, 0.8, 0.6]; // quầy chật: người thứ ba, thứ tư ở quầy pha làm được ít hơn
+export const CONTRACT = { stage: 2, max: 2, days: 28, disc: 0.08, penalty: 0.3, rel: 0.1 };
+export const HUB = { stage: 4, fee: 80 * K, disc: 0.08, lead: 3, cap: { dry: 12000, cold: 0, ice: 0 } }; // kho trung tâm chỉ trữ hàng khô; hàng tươi và đá giao thẳng
+// khủng hoảng nhiều bước: báo trước `warn` ngày, mỗi bước bắt đầu ở ngày `at` tính từ ngày khủng hoảng
+export const CRISES = [
+  { id: 'K01', day: 38, warn: 3, name: 'Mưa lũ kéo dài', steps: [
+    { at: 0, dur: 2, risk: 'supply', title: 'Lũ: đường vào chợ bị ngập', body: 'Giao hàng hai ngày này dễ trễ hoặc thiếu.', fx: [{ t: 'supplier.reliability', ts: 'A', v: -0.4 }, { t: 'supplier.reliability', ts: 'B', v: -0.4 }] },
+    { at: 2, dur: 4, risk: 'price', title: 'Sau lũ: sữa và chanh tăng giá', body: 'Giá sữa tươi +30%, chanh +25% trong bốn ngày.', fx: [{ t: 'price.ingredient', ts: 'sua', op: 'mul', v: 1.3 }, { t: 'price.ingredient', ts: 'chanh', op: 'mul', v: 1.25 }] },
+    { at: 3, dur: 3, risk: 'supply', title: 'Đại lý B dọn kho ngập, tạm đóng', body: 'Đại lý B không nhận đơn trong ba ngày.', fx: [{ t: 'supplier.closed', ts: 'B', v: 1 }] },
+  ] },
+  { id: 'K02', day: 79, warn: 3, name: 'Dịch trên đàn bò sữa', steps: [
+    { at: 0, dur: 6, risk: 'price', title: 'Khan sữa: giá tăng mạnh', body: 'Giá sữa tươi +45% trong sáu ngày.', fx: [{ t: 'price.ingredient', ts: 'sua', op: 'mul', v: 1.45 }] },
+    { at: 1, dur: 3, risk: 'supply', title: 'Chợ đầu mối kiểm dịch', body: 'Chợ đầu mối giao thất thường trong ba ngày.', fx: [{ t: 'supplier.reliability', ts: 'A', v: -0.45 }] },
+    { at: 3, dur: 3, risk: 'supply', title: 'Chợ đầu mối tạm đóng để khử trùng', body: 'Chợ đầu mối không nhận đơn trong ba ngày.', fx: [{ t: 'supplier.closed', ts: 'A', v: 1 }] },
+  ] },
+];
+export const CREDIT = { days: 7, after: 5, disc: 0.02, limit: [0, 1500 * K, 5000 * K, 12000 * K, 25000 * K] }; // mở công nợ sau `after` lần nhận hàng; trả ngay được giảm `disc`
+
 // ---------- nhà cung cấp (Phụ lục B.3; khi lệch mục 5.7 thì Phụ lục B thắng) ----------
 export const SUPPLIERS = {
   A: { name: 'A · Chợ đầu mối', mul: 1.00, rho: 0.95, q: 0.97, qsd: 0.04, fee: 15 * K, express: false, stage: 1, closed: [[32, 33], [65, 74]], note: 'Ổn định, giá chợ, chất lượng cao.' },
@@ -314,6 +355,17 @@ export const EVENTS = [
   { id: 'E52', name: 'Thiết bị giảm giá', cat: 'Chợ', sev: 1, w: 1, cd: 45, ch: 'trusted', lead: 1, rel: 1, dur: 3, st: [2, 4],
     clue: 'Tin nhắn: nhà cung cấp thiết bị giảm 20% trong 3 ngày.', body: 'Tủ mát giảm 20% (4.800k) nếu bạn chưa có.', effects: [],
     choices: [{ id: 'skip', label: 'Bỏ qua' }, { id: 'buy', label: 'Mua tủ mát giảm giá (−4.800k)', sp: 'fridgeSale' }] },
+  // khủng hoảng nhiều bước (đợt 3): w = 0 nên không rút ngẫu nhiên; lịch và các bước ở CRISES
+  ...['K01', 'K02'].map((id, i) => ({
+    id, name: ['Cảnh báo: mưa lũ trong 3 ngày nữa', 'Cảnh báo: dịch trên đàn bò sữa trong 3 ngày nữa'][i], cat: 'Chợ', sev: 3, w: 0, cd: 99, ch: 'official', lead: 0, rel: 1, dur: 1, effects: [],
+    body: ['Dự báo mưa lũ vài ngày: đường vào chợ có thể ngập, sữa và chanh có thể tăng giá, một nơi bán có thể đóng cửa. Chuẩn bị một phương án dự phòng.', 'Có dịch trên đàn bò sữa: sữa có thể tăng giá mạnh, chợ đầu mối có thể bị kiểm dịch rồi tạm đóng. Chuẩn bị một phương án dự phòng.'][i],
+    choices: [
+      { id: 'none', label: 'Không làm gì thêm' },
+      { id: 'supply', label: 'Ký nguồn hàng dự phòng (1 AP, −400k): giao hàng và cửa hàng nơi bán không bị ảnh hưởng', ap: 1, cash: -400 * K, sp: 'hedge:' + id + ':supply' },
+      { id: 'price', label: 'Chốt giá trước với nhà cung cấp (1 AP, −350k): giá không tăng', ap: 1, cash: -350 * K, sp: 'hedge:' + id + ':price' },
+      { id: 'space', label: 'Thuê thêm kho 12 ngày (1 AP, −300k): sức chứa +40% để trữ trước', ap: 1, cash: -300 * K, sp: 'hedge:' + id + ':space' },
+    ],
+  })),
 ];
 export const EVENT_BY_ID = Object.fromEntries(EVENTS.map(e => [e.id, e]));
 // sự kiện theo ngày: [ngày game, mã mẫu]
@@ -387,6 +439,8 @@ export const IP_TOOLS = [
   { id: 'exp', name: 'Thử nghiệm giá', cost: 10, day: 6, need: 'count', desc: 'Đổi giá một món xen kẽ giữa hai mức qua nhiều buổi để biết mức nào lãi hơn, kèm kết luận thống kê.' },
   { id: 'diag', name: 'Chẩn đoán đầy đủ', cost: 6, day: 7, desc: 'Báo cáo cuối buổi có điểm chất lượng quyết định (DQI) và tách phần may rủi khỏi kỹ năng.' },
   { id: 'shelf', name: 'Kiểm kê chi tiết lô', cost: 4, day: 3, desc: 'Xem từng lô trong kho: số phần, ngày hết hạn, chất lượng (tốt, ổn, kém).' },
+  { id: 'forecast', name: 'Dự báo nhu cầu', cost: 8, day: 8, v2: 1, desc: 'Báo cáo → Dự báo: so bốn cách dự báo số khách mua và chấm sai số của từng cách.' },
+  { id: 'abc', name: 'Phân loại ABC–XYZ', cost: 5, day: 10, v2: 1, desc: 'Báo cáo → ABC–XYZ: xếp nguyên liệu theo giá trị dùng và độ biến động, kèm cách quản lý.' },
 ];
 export const DIFFS = { nhan: 'Nhàn', chuan: 'Chuẩn', kho: 'Khó' };
 export const inSeason = (it, day) => { const s = ITEMS[it].seasonal; return !s || (day >= s[0] && day <= s[1]); };
@@ -402,7 +456,7 @@ export const TUTORIAL = {
 };
 // minh họa cho sự kiện lớn: theo ngày lịch và theo mã sự kiện (vẽ trong tl-art.js: illus)
 export const ILL_BY_DAY = { 24: 'noel', 25: 'noel', 31: 'nye', 32: 'nye', 53: 'inspect', 56: 'tet', 65: 'closed', 66: 'closed', 67: 'tet', 68: 'tet', 72: 'tet', 76: 'valentine', 82: 'ram' };
-export const ILL_BY_EVENT = { E33: 'inspect', E04: 'closed', E20: 'noel', E28: 'noel', E07: 'closed', E02: 'closed' };
+export const ILL_BY_EVENT = { K01: 'flood', K02: 'milk', E33: 'inspect', E04: 'closed', E20: 'noel', E28: 'noel', E07: 'closed', E02: 'closed' };
 // tên nguyên liệu bằng tiếng Trung (hiện khi bật “Tên món tiếng Trung” trong Menu)
 export const ING_ZH = { ly: '杯子 bēizi', tra: '茶叶 cháyè', duong: '糖 táng', da: '冰 bīng', chanh: '柠檬 níngméng', sua: '牛奶 niúnǎi', tranchau: '珍珠 zhēnzhū', dao: '桃子 táozi', gung: '姜 jiāng', matong: '蜂蜜 fēngmì', vai: '荔枝 lìzhī', matcha: '抹茶 mǒchá', chanhday: '百香果 bǎixiāngguǒ', hoacuc: '菊花 júhuā', oi: '番石榴 fānshíliú', sen: '莲花 liánhuā', dua: '椰子 yēzi', hopqua: '礼盒 lǐhé' };
 // thử thách tuần (mở khi có 10 sao): chấm cuối mỗi tuần game (ngày chia hết cho 7); thưởng IP + xu

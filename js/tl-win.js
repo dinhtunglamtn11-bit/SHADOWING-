@@ -3,6 +3,7 @@ import { esc } from './util.js';
 import { calcEval, fmt, roundFor, FUNCS } from './tl-calc.js';
 import { HOWTO, GLOSSARY, FORMULAS, TIPS } from './tl-guide.js';
 import { histHtml, histClick } from './tl-hist.js';
+import { polHtml, kpiHtml, fcHtml, abcHtml, lossHtml, opsClick, opsChange } from './tl-ops.js';
 import { uiLang } from './i18n.js';
 const fold = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase(); // bỏ dấu để tìm kiếm tiếng Việt
 const hitQ = (text, q) => !q || new RegExp('(^|[^a-z0-9])' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(fold(text)); // khớp đầu từ: “ap” ra AP chứ không ra “hạp”
@@ -78,30 +79,35 @@ function achHtml(c) {
   }).join('');
   const soon = `<details class="tl-mg"><summary><b>Sắp ra mắt</b></summary>${A.illus('soon')}${A.illus('summer')}${D.SOON.map(([id, n]) => `<div class="tl-ms lockd"><span class="msn"><b>${id}</b> ${esc(n)}</span><small class="dim">${A.ic('lock', 12)} sắp ra mắt</small></div>`).join('')}</details>`;
   const badges = D.BADGES.map(b => `<div class="tl-bd ${st.badges[b.id] ? 'on' : G.profile?.badges?.[b.id] ? 'rec' : ''}" title="${esc(b.desc)}">${A.ic(st.badges[b.id] || G.profile?.badges?.[b.id] ? b.ic : 'lock', 28)}<small>${esc(b.name)}</small>${!st.badges[b.id] && G.profile?.badges?.[b.id] ? '<small class="dim">đã có (hồ sơ)</small>' : ''}</div>`).join('');
-  const IPI = { count: 'ipCount', survey: 'ipSurvey', supplier: 'ipSupplier', exp: 'flask', diag: 'ipDiag', shelf: 'ipShelf' };
-  const tools = D.IP_TOOLS.map(t => `<div class="tl-row">${A.ic(IPI[t.id] || 'bolt', 22)}<div class="tl-nm"><b>${esc(t.name)}</b><small class="dim">${esc(t.desc)} · mở từ ngày ${t.day}</small></div>${st.tools[t.id] ? '<span class="chip on">Đã có</span>' : `<button class="btn" data-tool="${t.id}" ${st.ip < t.cost || st.day < t.day || (t.need && !st.tools[t.need]) ? 'disabled' : ''}>${t.cost} IP</button>`}</div>`).join('');
+  const IPI = { count: 'ipCount', survey: 'ipSurvey', supplier: 'ipSupplier', exp: 'flask', diag: 'ipDiag', shelf: 'ipShelf', forecast: 'ipForecast', abc: 'ipAbc' };
+  const tools = D.IP_TOOLS.filter(t => !t.v2 || st.rules >= 2).map(t => `<div class="tl-row">${A.ic(IPI[t.id] || 'bolt', 22)}<div class="tl-nm"><b>${esc(t.name)}</b><small class="dim">${esc(t.desc)} · mở từ ngày ${t.day}</small></div>${st.tools[t.id] ? '<span class="chip on">Đã có</span>' : `<button class="btn" data-tool="${t.id}" ${st.ip < t.cost || st.day < t.day || (t.need && !st.tools[t.need]) ? 'disabled' : ''}>${t.cost} IP</button>`}</div>`).join('');
   return `<div class="row"><button class="btn" data-m="hist">🏅 Hồ sơ và lịch sử các lượt</button></div><div class="dim tl-note">Sao và huy hiệu tính theo <b>lượt này</b>. Thành tích đạt ở lượt trước vẫn được giữ trong hồ sơ (thẻ “kỷ lục”).</div><div class="tl-sum"><span>${A.ic('star', 18)} <b>${tot}/${D.MILESTONES.length * 3}</b> sao</span><span>${A.ic('bolt', 18)} <b>${st.ip}</b> IP</span><span>${A.ic('coin', 18)} <b>${st.coins}</b> xu</span></div>
     ${tot >= 10 ? (() => { const ch = E.weeklyOf(st.day), done = (st.weekly || []).filter(w => w.ok).length; return `<div class="tl-arr"><b>🎯 Thử thách tuần ${Math.ceil(st.day / 7)}: ${esc(ch.name)}</b><br>${esc(ch.desc)} Thưởng ${ch.ip} IP + ${ch.xu} xu, chấm cuối tuần (đã đạt ${done}/${(st.weekly || []).length} tuần).</div>`; })() : '<div class="dim tl-note">🔒 Thử thách tuần mở khi có 10 sao.</div>'}
     <div class="tl-unlg">${D.UNLOCKS.map(([n, name, desc, ic]) => `<div class="tl-ul ${tot >= n ? 'on' : ''}">${A.ic(tot >= n ? ic : 'lock', 22)}<span><b>${n}★ · ${esc(name)}</b><small class="dim">${esc(desc)}</small>${n === 30 ? `<span class="tl-sps">${[1, 2, 3, 4, 5].map(i => A.ic('sp' + i, 20)).join('')}</span>` : ''}<i class="tl-bar"><b style="width:${Math.min(100, Math.round(100 * tot / n))}%"></b></i></span></div>`).join('')}</div>
     ${groups}${soon}<h4>Huy hiệu</h4><div class="tl-bds">${badges}</div><h4>Công cụ mua bằng IP</h4>${tools}
+    <div class="dim tl-note">Sao chỉ tính khi bạn tự chơi ít nhất một nửa số buổi trong kỳ đo của cột mốc.</div>
     <div class="dim tl-note">Không có cột mốc nào đo biến ẩn. “Chưa đạt” không bị phạt gì; sao đã đạt không bị thu hồi.</div>`;
 }
 
 // ---------- báo cáo ----------
 function reportHtml(c) {
   const { st, E, D, A, kfmt, G } = c, tab = G.rpTab || 'day';
-  const tabs = [['day', 'Ngày'], ['chart', 'Biểu đồ'], ['led', 'Sổ cái'], ['sup', 'Nhà cung cấp'], ['kho', 'Kho'], ['note', 'Sổ giả thuyết'], ['sv', 'Đã lưu']];
+  const tabs = [['day', 'Ngày'], ['chart', 'Biểu đồ'], ['loss', 'Tốn tiền'], ...(st.rules >= 2 ? [['kpi', 'Chỉ số'], ['fc', 'Dự báo'], ['abc', 'ABC–XYZ']] : []), ['led', 'Sổ cái'], ['sup', 'Nhà cung cấp'], ['kho', 'Kho'], ['note', 'Sổ giả thuyết'], ['sv', 'Đã lưu']];
   let body = '';
   if (tab === 'day') {
     const rows = st.hist.slice(-7).reverse();
-    body = rows.length ? `<table class="tl-t"><thead><tr><th>Ngày</th><th>DT</th><th>Lãi</th><th>Ly</th><th>Bỏ đi</th><th>Hỏng</th></tr></thead><tbody>${rows.map(h => `<tr><td>${h.day}</td><td>${kfmt(h.rev)}</td><td class="${h.profit < 0 ? 'bad' : ''}">${kfmt(h.profit)}</td><td>${h.cups}</td><td>${h.ls + h.lw}</td><td>${kfmt(h.spoil)}</td></tr>`).join('')}</tbody></table><div class="dim tl-note">DT = doanh thu; lãi theo sổ kế toán (trừ giá vốn đã dùng, hao hụt, chi phí cố định, lương). “Bỏ đi” = hết hàng + chờ lâu.</div>` : '<div class="dim">Chưa có báo cáo ngày. Hết ngày đầu tiên báo cáo sẽ hiện ở đây.</div>';
+    body = rows.length ? `<table class="tl-t"><thead><tr><th>Ngày</th><th>DT</th><th>Lãi</th><th>Ly</th><th>Bỏ đi</th><th>Hỏng</th>${st.rules >= 2 ? '<th>Giữ kho</th>' : ''}</tr></thead><tbody>${rows.map(h => `<tr><td>${h.day}</td><td>${kfmt(h.rev)}</td><td class="${h.profit < 0 ? 'bad' : ''}">${kfmt(h.profit)}</td><td>${h.cups}</td><td>${h.ls + h.lw}</td><td>${kfmt(h.spoil)}</td>${st.rules >= 2 ? `<td>${kfmt(h.hold || 0)}</td>` : ''}</tr>`).join('')}</tbody></table><div class="dim tl-note">Lãi đã trừ cả phí giao hàng, phí tự trông tiệm, phí chuyển kho và khoản chi do sự kiện. Riêng cột mốc về lãi chấm theo lãi chưa trừ các khoản này.</div><div class="dim tl-note">DT = doanh thu; lãi theo sổ kế toán (trừ giá vốn đã dùng, hao hụt, chi phí cố định, lương). “Bỏ đi” = hết hàng + chờ lâu.</div>` : '<div class="dim">Chưa có báo cáo ngày. Hết ngày đầu tiên báo cáo sẽ hiện ở đây.</div>';
     const reps = (st.dayReps || []).filter(r => r.day === st.day); if (reps.length) body += `<h4>Hôm nay (${E.dayLabel(st.day)})</h4>` + reps.map(r => `<div class="tl-row"><div class="tl-nm"><b>${D.SNAME[r.k]}${r.auto ? ' (tự chạy)' : ''}</b><small class="dim">${r.cups} ly · ${kfmt(r.rev)} · ${r.ls + r.lw} khách bỏ đi</small></div></div>`).join('');
   } else if (tab === 'chart') {
     const h = st.hist.slice(-30);
     if (h.length < 2) body = '<div class="dim">Cần ít nhất 2 ngày số liệu.</div>';
     else { const W = 300, H = 120, mx = Math.max(...h.map(x => x.cash), 1), mn = Math.min(...h.map(x => x.cash), 0), px = i => 8 + i * (W - 16) / (h.length - 1), py = v => H - 8 - (v - mn) / (mx - mn || 1) * (H - 16); const pm = Math.max(...h.map(x => Math.abs(x.profit)), 1);
       body = `<svg viewBox="0 0 ${W} ${H}" class="tl-svg"><polyline fill="none" stroke="#2f7ad1" stroke-width="2" points="${h.map((x, i) => px(i) + ',' + py(x.cash)).join(' ')}"/>${h.map((x, i) => `<rect x="${px(i) - 3}" y="${x.profit >= 0 ? H - 8 - x.profit / pm * 30 : H - 8}" width="6" height="${Math.abs(x.profit) / pm * 30}" fill="${x.profit >= 0 ? '#5fd068' : '#ff5a5f'}" opacity=".75"/>`).join('')}</svg><div class="dim tl-note">Đường xanh dương: tiền mặt (${h.length} ngày gần nhất). Cột: lãi mỗi ngày.</div>`; }
-  } else if (tab === 'led') {
+  } else if (tab === 'kpi') { body = kpiHtml(c); }
+  else if (tab === 'fc') { body = fcHtml(c); }
+  else if (tab === 'abc') { body = abcHtml(c); }
+  else if (tab === 'loss') { body = lossHtml(c); }
+  else if (tab === 'led') {
     const led = (st.cur?.led || []).slice().reverse();
     body = led.length ? `<table class="tl-t"><tbody>${led.map(([w, a]) => `<tr><td>${esc(w)}</td><td class="${a < 0 ? 'bad' : 'good'}">${a < 0 ? '−' : '+'}${kfmt(Math.abs(a))}</td></tr>`).join('')}</tbody></table>` : '<div class="dim">Chưa có giao dịch trong buổi này.</div>';
   } else if (tab === 'kho') {
@@ -136,6 +142,7 @@ function menuHtml(c) {
   return `<div class="tl-mn">
     <div class="tl-row"><div class="tl-nm"><b>Đi ngủ</b><small class="dim">Chạy các buổi còn lại theo kế hoạch đứng rồi sang ngày mới (phí 5%).</small></div><button class="btn primary" data-m="sleep" ${s.phase === 'LIVE' ? 'disabled' : ''}>😴 Đi ngủ</button></div>
     <div class="row"><button class="btn primary" data-m="guide">📖 Hướng dẫn: cách chơi, ký hiệu, công thức</button><button class="btn primary" data-m="hist">🏅 Hồ sơ và lịch sử các lượt</button></div>
+    ${s.rules >= 2 ? '<div class="row"><button class="btn primary" data-m="pol">🤖 Đặt hàng tự động theo luật của bạn</button></div>' : ''}
     <h4>Kế hoạch đứng (khi đi ngủ sớm)</h4>
     <div class="tl-step wrapx">${['S1', 'S2', 'S3', 'S4', 'S5'].map((n, k) => `<button class="btn ${s.autoPlan.open[k] ? 'on' : ''}" data-m="plan" data-k="${k}">${s.autoPlan.open[k] ? '☑' : '☐'} ${n}</button>`).join('')}</div>
     <div class="dim tl-note">Buổi đánh dấu sẽ mở cửa với giá và thực đơn hiện tại; hàng được đặt theo mức dùng 3 ngày gần nhất. Không có buổi nào miễn phí: phí 5% doanh thu và không tính điểm chất lượng.</div>
@@ -187,8 +194,10 @@ function guideHtml(c) {
 // ---------- chẩn đoán cuối buổi ----------
 export function diagnose(c, r) {
   const { E, D, A, kfmt } = c, out = [], s = c.st, ing = D.ING;
-  const top = Object.entries(r.stockout || {}).sort((a, b) => b[1] - a[1])[0];
-  if (r.ls > 0) out.push({ c: 'bad', t: `Hết hàng: ${r.ls} khách bỏ đi, nhiều nhất do thiếu <b>${esc(ing[top[0]].name.toLowerCase())}</b> (${top[1]}). Một nguyên liệu hết là cả món hết.` });
+  const nr = r.notReadyBy || {}, empty = r.ls - (r.notReady || 0); // tách khách mất vì kho hết với khách mất vì chưa kịp nấu
+  const top = Object.entries(r.stockout || {}).map(([g, n]) => [g, n - (nr[g] || 0)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
+  if (empty > 0 && top) out.push({ c: 'bad', t: `Hết hàng: ${empty} khách bỏ đi, nhiều nhất do thiếu <b>${esc(ing[top[0]].name.toLowerCase())}</b> (${top[1]}). Một nguyên liệu hết là cả món hết.` });
+  if (r.notReady) out.push({ c: 'bad', t: `Chưa kịp nấu: ${r.notReady} khách bỏ đi dù kho còn nguyên liệu. Tăng số nấu sẵn hoặc ngưỡng nấu thêm.` });
   const pk = r.perSlot.map((x, j) => [x.lw, j]).sort((a, b) => b[0] - a[0])[0];
   if (r.lw > 0) out.push({ c: 'warn', t: `Chờ lâu: ${r.lw} khách bỏ đi vì hàng đợi, nặng nhất khoảng ${pad(D.SSTART[r.k] + Math.floor(pk[1] / 2))}:${pk[1] % 2 ? '30' : '00'}. Hàng đợi dài làm giảm danh tiếng.` });
   if (r.over > 0 && r.over >= r.buyers * 0.2) out.push({ c: 'warn', t: `${r.over} khách thấy giá vượt mức họ chấp nhận (không mua gì). Nếu nhiều, thử hạ giá món đắt nhất.` });
@@ -223,6 +232,7 @@ export function render(name, c) {
     case 'ach': return wrap('⭐ Thành tích', achHtml(c));
     case 'report': return wrap('📊 Báo cáo', reportHtml(c));
     case 'menu': return wrap('☰ Menu', menuHtml(c));
+    case 'pol': return wrap('🤖 Đặt hàng tự động', polHtml(c));
     case 'guide': return wrap('📖 Hướng dẫn', guideHtml(c));
     case 'hist': return wrap('🏅 Hồ sơ', histHtml(c));
     default: return wrap('', '');
@@ -248,22 +258,24 @@ export function bind(name, box, c) {
     if ((b = x.closest('[data-tool]'))) { const t = c.D.IP_TOOLS.find(q => q.id === b.dataset.tool); const r = E.cmd(st, G.S, { t: 'TOOL', tool: t }); if (!r.ok) c.toast(r.reason, 2200); else c.toast('Đã mở: ' + t.name, 1600); c.save(false); c.refresh(); return; }
     if ((b = x.closest('[data-rp]'))) { G.rpTab = b.dataset.rp; c.refresh(); return; }
     if (histClick(x, c)) return;
+    if (opsClick(x, c)) return;
     if ((b = x.closest('[data-gd]'))) { G.gdTab = b.dataset.gd; G.gdQ = ''; c.refresh(); return; }
     if ((b = x.closest('[data-ins]'))) { G.calcExpr = (G.calcExpr || '') + b.dataset.ins; c.openCalc(); c.toast('Đã đưa vào máy tính: ' + b.dataset.ins, 1600); return; }
-    if ((b = x.closest('[data-svx]'))) { const hist = b.dataset.svx === 'cur' ? st.hist : (c.slots().find(q => q.id === +b.dataset.svx) || {}).hist || []; const csv = 'ngay,doanh_thu,gia_von,hang_hong,co_dinh,luong,lai,ly,het_hang,cho_lau,uy_tin,tien\n' + hist.map(h => [h.day, h.rev, h.cogs, h.spoil, h.fixed, h.wage, h.profit, h.cups, h.ls, h.lw, h.rep, h.cash].join(',')).join('\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = 'tealab-so-lieu.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return; }
+    if ((b = x.closest('[data-svx]'))) { const hist = b.dataset.svx === 'cur' ? st.hist : (c.slots().find(q => q.id === +b.dataset.svx) || {}).hist || []; const csv = 'ngay,doanh_thu,gia_von,hang_hong,co_dinh,luong,lai,ly,het_hang,cho_lau,uy_tin,tien,phi_giu,chi_khac\n' + hist.map(h => [h.day, h.rev, h.cogs, h.spoil, h.fixed, h.wage, h.profit, h.cups, h.ls, h.lw, h.rep, h.cash, h.hold || 0, h.other || 0].join(',')).join('\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = 'tealab-so-lieu.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return; }
     if ((b = x.closest('[data-svd]'))) { c.delSlot(+b.dataset.svd); c.refresh(); return; }
     if (x.closest('[data-nadd]')) { const t = box.querySelector('#tlNote').value.trim(); if (t) { (st.notes ||= []).push({ id: Date.now() % 1e9, day: st.day, text: t, st: 'open' }); c.save(false); c.refresh(); } return; }
     if ((b = x.closest('[data-ns]'))) { const [id, v] = b.dataset.ns.split(':'), n = st.notes.find(q => q.id === +id); if (n) { n.st = v; c.save(false); c.refresh(); } return; }
     if ((b = x.closest('[data-nd]'))) { st.notes = st.notes.filter(q => q.id !== +b.dataset.nd); c.save(false); c.refresh(); return; }
     if ((b = x.closest('[data-m]'))) menuAct(b, c);
   });
-  box.addEventListener('change', e => { const t = e.target; if (t.matches?.('input[type=file][data-m="import"]')) importSave(t, c); });
+  box.addEventListener('change', e => { const t = e.target; if (opsChange(t, c)) return; if (t.matches?.('input[type=file][data-m="import"]')) importSave(t, c); });
 }
 function menuAct(b, c) {
   const { G, st } = c, m = b.dataset.m;
   if (m === 'sleep') { if (confirm('Đi ngủ ngay? Các buổi còn lại chạy theo kế hoạch đứng (phí tự trông tiệm 5% doanh thu, không tính điểm chất lượng).')) { c.closeWin(); c.sleep(); } }
   else if (m === 'plan') { st.autoPlan.open[+b.dataset.k] = st.autoPlan.open[+b.dataset.k] ? 0 : 1; c.save(false); c.refresh(); }
   else if (m === 'auto') { G.noAutoMail = !G.noAutoMail; c.refresh(); }
+  else if (m === 'pol') { c.openWin('pol'); }
   else if (m === 'hist') { c.G.hsTab = c.G.hsTab || 'ov'; c.openWin('hist'); }
   else if (m === 'guide') { G.gdTab = G.gdTab || 'play'; c.openWin('guide'); }
   else if (m === 'zh') { G.profile.zh = !G.profile.zh; c.save(false); c.refresh(); }
