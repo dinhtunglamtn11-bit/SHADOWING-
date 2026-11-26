@@ -86,14 +86,14 @@ const saveProg = () => { try { localStorage.setItem(PKEY, JSON.stringify({ rsub:
 function loadProg() { // trả về true nếu khôi phục được một lượt đang dở
   try {
     const p = JSON.parse(localStorage.getItem(PKEY) || 'null');
-    if (!p || !ALL.some(it => it.id === p.cur)) return false;
+    if (!p || (p.cur !== null && !ALL.some(it => it.id === p.cur))) return false; // cur = null: lượt trước đã bấm Kết thúc
     const ok = k => ['type', 'disc', 'speak', 'rad'].includes(k);
     if (!ok(p.mode) || !GROUPS[p.grp]) return false;
     S.mode = p.mode; S.rsub = RSUB[p.rsub] ? p.rsub : 'card'; S.rg = RG[p.rg] ? p.rg : 'all'; S.flip = false; S.lv = +p.lv || 0; S.set = +p.set || 0; S.grp = p.grp;
     const have = new Set(ALL.map(it => it.id));
     S.bag = (p.bag || []).filter(id => have.has(id));
     S.n = +p.n || 0; S.ok = +p.ok || 0;
-    S.cur = findIt(p.cur); S.showHz = null; S.disc = S.mode === 'disc' ? makeDisc(S.cur) : S.mode === 'rad' && S.rsub === 'pick' ? makeRadPick(S.cur) : null;
+    S.cur = findIt(p.cur); if (!S.cur) return 'next'; S.showHz = null; S.disc = S.mode === 'disc' ? makeDisc(S.cur) : S.mode === 'rad' && S.rsub === 'pick' ? makeRadPick(S.cur) : null;
     S.done = false;
     if (p.done) { S.cur = null; return 'next'; } // câu cuối đã trả lời xong: sang câu kế
     return true;
@@ -154,7 +154,7 @@ bus.on('store', c => { if (c === 'prefs' || c === '*') { pullRemote(false); if (
 const inSet = it => S.set === 0 || it.set === S.set; // Bộ 1 / Bộ 2 / cả hai
 const modeItems = () => S.mode === 'rad' ? RADS.filter(r => inRG(r, S.rg)) : ITEMS.filter(it => inSet(it) && (S.lv === 0 || it.lv === S.lv) && inGroup(it, S.grp) && (S.mode !== 'disc' || it.lv === 2 || (it.lv === 1 && split(it.sy[0]).i))); // phân biệt: bỏ chữ không có thanh mẫu, bỏ câu dài
 function next() {
-  stopRec(true);
+  stopRec(true); S.ended = null;
   if (!S.bag.length) {
     const pool = modeItems();
     const ids = pool.flatMap(it => (weak(it.id) ? [it.id, it.id] : [it.id])); // mục hay sai xuất hiện gấp đôi
@@ -415,17 +415,36 @@ function drawPron() {
   (pronP ||= import('./pylab-pron.js').then(m => (pronMod = m)).catch(e => { pronP = null; toast('Không tải được mục Phát âm: kiểm tra mạng rồi thử lại', 4000); console.error(e); return null; }))
     .then(m => { if (m && S.mode === 'pron' && box?.isConnected) { const t = $('#pnBox', box); if (t) m.render(t); } });
 }
+// Kết thúc phiên bất kỳ lúc nào: chưa trả lời câu nào thì về Thư viện luôn, có rồi thì hiện kết quả trước
+function endSession() {
+  leave();
+  const sum = { n: S.n, ok: S.ok };
+  S.cur = null; S.done = false; S.disc = null; S.n = S.ok = 0; S.ended = sum.n ? sum : null;
+  saveProg(); clearTimeout(pushT); pushNow();
+  if (!sum.n) { backCb?.(); return; }
+  draw(); box.scrollIntoView({ block: 'start' });
+}
+function drawSummary() {
+  const { n, ok } = S.ended, pct = Math.round(100 * ok / n);
+  box.innerHTML = `${head()}<div class="qcard plcard"><div class="rvbig">${pct >= 90 ? '🏆' : pct >= 70 ? '👍' : '💪'} ${ok}/${n} câu đúng (${pct}%)</div>
+    <div class="dim">Đã kết thúc phiên luyện.</div>
+    <div class="row"><button class="btn primary" id="plAgain">↻ Làm lượt mới</button><button class="btn" id="plHome">← Thư viện</button></div></div>`;
+  bindHead();
+  $('#plAgain', box).onclick = next;
+  $('#plHome', box).onclick = () => { S.ended = null; leave(); backCb?.(); };
+}
 function draw() {
   if (!box) return;
   if (S.mode === 'pron') { drawPron(); return; }
+  if (S.ended) { drawSummary(); return; }
   const it = S.cur;
   if (!it) { box.innerHTML = head() + '<div class="empty">Không có mục nào khớp bộ lọc này. Hãy chọn nhóm khác.</div>'; bindHead(); return; }
-  box.innerHTML = `${head()}<div class="qcard plcard">${S.mode === 'type' ? drawType() : S.mode === 'disc' ? drawDisc() : S.mode === 'rad' ? drawRad() : drawSpeak()}</div>`;
+  box.innerHTML = `${head()}<div class="qcard plcard"><div class="row plend"><span class="grow"></span><button class="btn" id="plEnd">⏹ Kết thúc</button></div>${S.mode === 'type' ? drawType() : S.mode === 'disc' ? drawDisc() : S.mode === 'rad' ? drawRad() : drawSpeak()}</div>`;
   bindHead(); bindCard();
 }
 function bindHead() {
   $('#plBack', box)?.addEventListener('click', () => { leave(); backCb?.(); });
-  $$('#plMode [data-m]', box).forEach(b => b.onclick = () => { if (S.mode === b.dataset.m) return; pronMod?.leave(); S.mode = b.dataset.m; S.fopen = null; if (S.mode === 'pron') { stopRec(true); draw(); return; } if (S.mode === 'disc' && S.lv === 3) S.lv = 0; S.bag = []; S.n = S.ok = 0; next(); });
+  $$('#plMode [data-m]', box).forEach(b => b.onclick = () => { if (S.mode === b.dataset.m) return; pronMod?.leave(); S.mode = b.dataset.m; S.fopen = null; S.ended = null; if (S.mode === 'pron') { stopRec(true); draw(); return; } if (S.mode === 'disc' && S.lv === 3) S.lv = 0; S.bag = []; S.n = S.ok = 0; next(); });
   $$('.plf', box).forEach(b => b.onclick = () => { S.fopen = S.fopen === b.dataset.f ? null : b.dataset.f; refreshHead(); });
   $$('#plLv [data-l]', box).forEach(b => b.onclick = () => { S.lv = +b.dataset.l; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
   $$('#plSet [data-s]', box).forEach(b => b.onclick = () => { S.set = +b.dataset.s; S.fopen = null; S.bag = []; S.n = S.ok = 0; next(); });
@@ -452,6 +471,7 @@ function bindCard() {
   });
   $('#plSlow', box)?.addEventListener('click', () => play(true));
   $('#plNext', box)?.addEventListener('click', next);
+  $('#plEnd', box)?.addEventListener('click', endSession);
   if (S.mode === 'rad') {
     $('#radShow', box)?.addEventListener('click', () => { S.flip = true; draw(); });
     $$('[data-rself]', box).forEach(b => b.addEventListener('click', () => { const ok = b.dataset.rself === '1'; record(ok); toast(ok ? 'Tốt lắm! 👍' : 'Sẽ gặp lại bộ này nhiều hơn', 1200); next(); }));

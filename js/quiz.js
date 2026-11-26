@@ -198,6 +198,7 @@ async function start() {
 function draw() {
   stopClip();
   const { qs, i, res } = state;
+  if (state.ended) return summary();
   if (i >= qs.length) return state.free ? startFree() : summary();
   const q = qs[i], bcp = langInfo(q.lang).bcp, answered = res[i] != null;
   const done = res.filter(r => r).length;
@@ -211,8 +212,8 @@ function draw() {
     `<div class="qexp" lang="${bcp}">${q.lines.map((l, k) => `<div class="${k ? 'dim' : ''}">${k ? esc(l) : sayable(l, q.lang)}</div>`).join('')}</div>` +
     `<div class="row"><button class="btn primary" id="qNext">${state.free || i + 1 < qs.length ? 'Tiếp ▶' : 'Xem kết quả'}</button></div>` : '';
   const prog = state.free
-    ? `<div class="qprog"><span>🎲 Đã làm ${state.n} câu · đúng ${state.ok}${state.n ? ` (${Math.round(100 * state.ok / state.n)}%)` : ''}</span></div>`
-    : `<div class="qprog"><span>Câu ${i + 1}/${qs.length}</span><progress max="${qs.length}" value="${done}"></progress></div>`;
+    ? `<div class="qprog"><span style="flex:1">🎲 Đã làm ${state.n} câu · đúng ${state.ok}${state.n ? ` (${Math.round(100 * state.ok / state.n)}%)` : ''}</span><button class="btn" id="qEnd">⏹ Kết thúc</button></div>`
+    : `<div class="qprog"><span>Câu ${i + 1}/${qs.length}</span><progress max="${qs.length}" value="${done}"></progress><button class="btn" id="qEnd">⏹ Kết thúc</button></div>`;
   box.innerHTML = `${prog}<div class="qcard">${body}${fb}</div>`;
 
   $('#qPlay', box)?.addEventListener('click', async () => { if (!(await playClip(q.audio.itemId, q.audio.t0, q.audio.t1, q.lang))) toast('Không phát được: video chưa có file trên máy này'); });
@@ -221,6 +222,7 @@ function draw() {
   $('#qSubmit', box)?.addEventListener('click', submitTyped);
   $('#qType', box)?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); submitTyped(); } });
   $('#qNext', box)?.addEventListener('click', () => { state.i++; save(); draw(); });
+  $('#qEnd', box).onclick = end;
   if (!answered) autoFocus($('#qType', box));
 }
 
@@ -249,19 +251,42 @@ function submitTyped() {
   record(norm(zhText(v, q.lang)) === norm(zhText(q.ans, q.lang)), { typed: v });
 }
 
+// Kết thúc giữa chừng: hiện kết quả phần đã làm (chưa làm câu nào thì về trang ôn thẻ). Đề hằng ngày vẫn giữ để làm tiếp.
+const toCards = () => document.dispatchEvent(new CustomEvent('review-tab', { detail: 'cards' }));
+function end() {
+  stopClip();
+  const n = state.free ? state.n : state.res.filter(Boolean).length;
+  if (!n) { if (state.free) state = null; toCards(); return; }
+  state.ended = true; save(); summary();
+}
+function freeSummary() {
+  const { n, ok } = state, pct = Math.round(100 * ok / n);
+  box.innerHTML = `<div class="qcard"><div class="score ${pct >= 80 ? 'ok' : pct >= 50 ? 'miss' : 'bad'}">${ok}/${n} đúng · ${pct}%</div>` +
+    `<div class="dim">${ok === n ? '🎉 Hoàn hảo!' : 'Các câu sai đã được thêm vào sổ thẻ để ôn lại.'}</div>` +
+    `<div class="row"><button class="btn primary" id="qMore">↻ Làm lượt mới</button><button class="btn" id="qCards">📒 Ôn thẻ</button></div></div>`;
+  $('#qMore', box).onclick = () => startFree(true);
+  $('#qCards', box).onclick = () => { state = null; toCards(); };
+}
+
 function summary() {
-  const { qs, res } = state, ok = res.filter(r => r && r.ok).length;
+  if (state.free) return freeSummary();
+  // kết thúc giữa chừng: chỉ liệt kê các câu đã làm
+  const qs = state.ended ? state.qs.filter((_, k) => state.res[k]) : state.qs;
+  const res = state.ended ? state.res.filter(Boolean) : state.res;
+  const left = state.qs.length - qs.length, ok = res.filter(r => r && r.ok).length;
   const pct = Math.round(100 * ok / qs.length);
   box.innerHTML = `<div class="qcard"><div class="score ${pct >= 80 ? 'ok' : pct >= 50 ? 'miss' : 'bad'}">${ok}/${qs.length} đúng · ${pct}%</div>` +
     `<div class="qlist">${qs.map((q, k) => `<div class="${res[k]?.ok ? 'ok' : 'bad'}" lang="${langInfo(q.lang).bcp}">${res[k]?.ok ? '✓' : '✗'} ${esc(q.lines[0].slice(0, 60))}</div>`).join('')}</div>` +
     `<div class="dim">${ok === qs.length ? '🎉 Hoàn hảo!' : 'Các câu sai đã được thêm vào sổ thẻ để ôn lại.'}</div>` +
-    `<div class="row"><button class="btn primary" id="qMore">➕ Làm thêm ${N} câu nữa</button><button class="btn" id="qCards">📒 Ôn thẻ</button></div></div>`;
+    (left ? `<div class="dim">Còn ${left} câu chưa làm.</div>` : '') +
+    `<div class="row">${left ? '<button class="btn primary" id="qResume">▶ Làm tiếp</button>' : ''}<button class="btn ${left ? '' : 'primary'}" id="qMore">➕ Làm thêm ${N} câu nữa</button><button class="btn" id="qCards">📒 Ôn thẻ</button></div></div>`;
+  $('#qResume', box)?.addEventListener('click', () => { state.ended = false; if (state.res[state.i]) state.i++; save(); draw(); });
   $('#qMore', box).onclick = () => { round = todayRounds(); state = null; start(); };
-  $('#qCards', box).onclick = () => document.dispatchEvent(new CustomEvent('review-tab', { detail: 'cards' }));
+  $('#qCards', box).onclick = toCards;
 }
 
 document.addEventListener('keydown', e => {
-  if (!box || !box.isConnected || !state || document.body.dataset.view !== 'review' || e.target.matches('input,textarea')) return;
+  if (!box || !box.isConnected || !state || state.ended || document.body.dataset.view !== 'review' || e.target.matches('input,textarea')) return;
   const q = state.qs[state.i];
   if (!q || state.res[state.i] != null) { if (e.key === 'Enter' && state.res[state.i] != null) $('#qNext', box)?.click(); return; }
   if (/^[1-4]$/.test(e.key) && q.options && +e.key <= q.options.length) answer(+e.key - 1);

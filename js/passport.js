@@ -26,7 +26,7 @@ const firstIn = rk => Object.keys(CC).find(c => CC_REG[c] === rk); // nước đ
 const kk = (cc, x) => (cc === 'jp' ? x : cc + ':' + x); // khóa câu chuyện: Nhật giữ khóa cũ, nước khác thêm tiền tố
 const mine = () => K.items.filter(i => i.cc === S.cc);
 const t = (vi, en) => (uiLang === 'vi' ? vi : en);
-const SUBEN = { 'Địa danh': 'Landmarks', 'Mùa và thiên nhiên': 'Seasons and nature', 'Vùng miền': 'Regions', 'Hiện tượng đặc biệt': 'Natural phenomena', 'Trang phục': 'Clothing', 'Phụ kiện': 'Accessories', 'Nhà ở và đồ dùng': 'Home and household', 'Thói quen và phép tắc': 'Habits and etiquette', 'Món ăn': 'Dishes', 'Đồ uống và trà đạo': 'Drinks and tea ceremony', 'Món theo mùa và dịp lễ': 'Seasonal and festive food', 'Quy tắc bàn ăn': 'Table manners', 'Lễ hội và ngày lễ': 'Festivals and holidays', 'Nhạc cụ': 'Instruments', 'Nghệ thuật biểu diễn': 'Performing arts', 'Nghệ thuật truyền thống khác': 'Other traditional arts', 'Văn hóa hiện đại': 'Modern culture', 'Động vật': 'Animals', 'Linh vật': 'Mascots and spirits', 'Tín ngưỡng': 'Beliefs', 'Nhân vật và lịch sử': 'History and figures', 'Người nổi tiếng': 'Famous people' };
+const SUBEN = { 'Quốc kỳ': 'National flag', 'Địa danh': 'Landmarks', 'Mùa và thiên nhiên': 'Seasons and nature', 'Vùng miền': 'Regions', 'Hiện tượng đặc biệt': 'Natural phenomena', 'Trang phục': 'Clothing', 'Phụ kiện': 'Accessories', 'Nhà ở và đồ dùng': 'Home and household', 'Thói quen và phép tắc': 'Habits and etiquette', 'Món ăn': 'Dishes', 'Đồ uống và trà đạo': 'Drinks and tea ceremony', 'Món theo mùa và dịp lễ': 'Seasonal and festive food', 'Quy tắc bàn ăn': 'Table manners', 'Lễ hội và ngày lễ': 'Festivals and holidays', 'Nhạc cụ': 'Instruments', 'Nghệ thuật biểu diễn': 'Performing arts', 'Nghệ thuật truyền thống khác': 'Other traditional arts', 'Văn hóa hiện đại': 'Modern culture', 'Động vật': 'Animals', 'Linh vật': 'Mascots and spirits', 'Tín ngưỡng': 'Beliefs', 'Nhân vật và lịch sử': 'History and figures', 'Người nổi tiếng': 'Famous people' };
 const subName = s => t(s, SUBEN[s] || s);
 const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', 'Trả lời đúng': 'Correct answers', 'Đọc, viết, nghe, nói': 'Reading, writing, listening, speaking', 'Nhiệm vụ ngày': 'Daily quests', 'Đạt mục tiêu ngày': 'Daily goal reached', 'Thói quen': 'Habits', 'Thưởng chuỗi ngày': 'Streak bonus', 'Bài đọc Thế giới': 'World articles' };
 
@@ -174,10 +174,10 @@ function checkStamps() { // mặc đủ ≥3 món của cùng một nước thì
   for (const [c, n] of Object.entries(cnt)) if (n >= 3 && CC[c] && !(P.stamps || []).includes(c)) { (P.stamps ||= []).push(c); P.extra = (P.extra || 0) + 30; toast(t(`🛂 Tem mới: ${CC[c][0]}! +30 xu`, `🛂 New stamp: ${CC[c][1]}! +30 coins`), 4000); }
 }
 function buildQuiz() {
-  const pool = K.items.filter(i => own(i.id) && i.note && !i.shop); if (pool.length < 3) return null;
+  const pool = K.items.filter(i => own(i.id) && i.note && !i.shop && !i.flag); if (pool.length < 3) return null;
   return shuffle(pool).slice(0, 3).map(it => {
     const word = it.vi.split(' (')[0], q = word.length > 2 ? it.note.split(word).join('…') : it.note;
-    const others = shuffle(K.items.filter(i => i.id !== it.id && i.vi !== it.vi && !i.shop)).slice(0, 3);
+    const others = shuffle(K.items.filter(i => i.id !== it.id && i.vi !== it.vi && !i.shop && !i.flag)).slice(0, 3);
     return { q, ans: it.id, opts: shuffle([it, ...others]).map(i => i.id) };
   });
 }
@@ -215,7 +215,16 @@ function funHtml() {
 // ---------- vẽ ----------
 const gray = g => g.map(row => row.map(c => { if (!c) return null; const n = parseInt(c.slice(1), 16), r = n >> 16, gg = (n >> 8) & 255, b = n & 255, y = Math.round(0.3 * r + 0.59 * gg + 0.11 * b), v = Math.max(28, Math.round(y * 0.62)); return '#' + [v, v, v].map(x => x.toString(16).padStart(2, '0')).join(''); }));
 const cache = new Map();
+function flagSprite(cc, colored) { // thẻ quốc kỳ: dùng đúng hình cờ ở ô chọn nước, đặt giữa khung vuông như các thẻ khác
+  const f = document.createElement('canvas'); f.width = 64; f.height = 48; drawFlag(f, cc);
+  const cv = document.createElement('canvas'); cv.width = cv.height = 80; const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+  if (cc === 'ch') { c.fillStyle = '#2b1d3a'; c.fillRect(8, 8, 64, 64); c.drawImage(f, 8, 0, 48, 48, 10, 10, 60, 60); } // cờ Thụy Sĩ hình vuông
+  else { c.fillStyle = '#2b1d3a'; c.fillRect(2, 11, 76, 58); c.drawImage(f, 4, 13, 72, 54); }
+  if (!colored) { const d = c.getImageData(0, 0, 80, 80), p = d.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; const v = Math.max(28, Math.round((0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2]) * 0.62)); p[i] = p[i + 1] = p[i + 2] = v; } c.putImageData(d, 0, 0); }
+  return cv;
+}
 function sprite(it, colored) { // canvas mới mỗi lần; lưới được nhớ lại
+  if (it.flag) return flagSprite(it.cc, colored);
   let g = cache.get(it.id); if (!g) { g = K.render(it); cache.set(it.id, g); }
   const cv = document.createElement('canvas'); K.paint(cv, colored ? g : gray(g), g.length > 20 ? 4 : 5); return cv;
 }
@@ -262,11 +271,11 @@ function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
   const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 64, 48);
   if (cc === 'jp') { c.fillStyle = '#e8452c'; c.beginPath(); c.arc(32, 24, 14, 0, 7); c.fill(); return; }
   if (cc === 'my') { // cờ Malaysia: sọc đỏ trắng, ô xanh có trăng lưỡi liềm và sao vàng
-    for (let i = 0; i < 7; i++) { c.fillStyle = i % 2 ? '#fff' : '#cc0001'; c.fillRect(0, i * 7, 64, 7); }
-    c.fillStyle = '#010066'; c.fillRect(0, 0, 32, 28);
+    for (let i = 0; i < 14; i++) { c.fillStyle = i % 2 ? '#fff' : '#cc0001'; const y = Math.round(i * 48 / 14); c.fillRect(0, y, 64, Math.round((i + 1) * 48 / 14) - y); } // 14 sọc
+    c.fillStyle = '#010066'; c.fillRect(0, 0, 32, 27);
     c.fillStyle = '#ffcc00'; c.beginPath(); c.arc(12, 14, 8, 0, 7); c.fill();
     c.fillStyle = '#010066'; c.beginPath(); c.arc(15, 14, 7, 0, 7); c.fill();
-    c.fillStyle = '#ffcc00'; c.beginPath(); for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.4 : 6; c.lineTo(21 + Math.cos(a) * r, 14 + Math.sin(a) * r); } c.closePath(); c.fill();
+    c.fillStyle = '#ffcc00'; c.beginPath(); for (let i = 0; i < 28; i++) { const a = i * Math.PI / 14 - Math.PI / 2, r = i % 2 ? 3.4 : 6.5; c.lineTo(21 + Math.cos(a) * r, 14 + Math.sin(a) * r); } c.closePath(); c.fill(); // sao 14 cánh
     return;
   }
   if (cc === 'au') { // cờ Úc: nền xanh, góc Union Jack, sao Liên bang và chòm Nam Thập Tự
@@ -392,12 +401,13 @@ function draw() {
   }
   h.push(rankBar(S.cc));
   h.push(`<div class="pp-tabs">${Object.keys(GROUP).map(g => { const s = stat(mine().filter(i => i.gr === +g)); return `<button class="pp-tab${+g === S.group ? ' on' : ''}" data-g="${g}"><span class="ic">${GROUP[g][2]}</span><span class="tn">${esc(gName(+g))}</span><small>${s.n}/${s.t}</small></button>`; }).join('')}</div>`);
-  const items = mine().filter(i => i.gr === S.group), gs = stat(items), gDone = gs.n === gs.t;
+  // câu chuyện của mục không đòi thẻ quốc kỳ (người đã mở câu chuyện từ trước không bị khóa lại)
+  const items = mine().filter(i => i.gr === S.group), gs = stat(items), need = stat(items.filter(i => !i.flag)), gDone = need.n === need.t;
   h.push(`<div class="pp-grp"><b>${esc(gName(S.group))}</b><small>${gs.n}/${gs.t}</small><span class="grow"></span>
-    <button class="btn${gDone ? ' primary' : ''}" data-story="${kk(S.cc, 'g' + S.group)}" ${gDone ? '' : 'disabled'}>${gDone ? '📜 ' + t('Câu chuyện của mục này', 'Story of this section') : '🔒 ' + t(`Mua đủ ${gs.t} thẻ để mở câu chuyện`, `Buy all ${gs.t} cards to unlock the story`)}</button></div>`);
+    <button class="btn${gDone ? ' primary' : ''}" data-story="${kk(S.cc, 'g' + S.group)}" ${gDone ? '' : 'disabled'}>${gDone ? '📜 ' + t('Câu chuyện của mục này', 'Story of this section') : '🔒 ' + t(`Mua đủ ${need.t} thẻ để mở câu chuyện`, `Buy all ${need.t} cards to unlock the story`)}</button></div>`);
   for (const sub of subsOf(S.group)) {
     const list = items.filter(i => i.sub === sub), s = stat(list), done = s.n === s.t, shown = list;
-    h.push(`<div class="pp-sub"><b>${esc(subName(sub))}</b><small>${s.n}/${s.t}</small><span class="grow"></span><button class="btn${done ? ' primary' : ''}" data-story="${esc(kk(S.cc, 's:' + sub))}" ${done ? '' : 'disabled'}>${done ? '📜 ' + t('Câu chuyện', 'Story') : `🔒 ${s.n}/${s.t}`}</button></div>`);
+    h.push(`<div class="pp-sub"><b>${esc(subName(sub))}</b><small>${s.n}/${s.t}</small><span class="grow"></span>${list.every(i => i.flag) ? '' : `<button class="btn${done ? ' primary' : ''}" data-story="${esc(kk(S.cc, 's:' + sub))}" ${done ? '' : 'disabled'}>${done ? '📜 ' + t('Câu chuyện', 'Story') : `🔒 ${s.n}/${s.t}`}</button>`}</div>`);
     h.push(`<div class="pp-grid">${shown.map(i => `<button class="pp-card${own(i.id) ? ' own' : ''}" data-id="${i.id}"><span class="cv"></span><span class="nm gt">${esc(name(i))}</span><span class="pr">${own(i.id) ? '✓' : '🪙 ' + curPrice(i)}</span></button>`).join('') || `<div class="dim">${t('Không có thẻ nào.', 'No cards.')}</div>`}</div>`);
   }
   root.innerHTML = h.join('');
@@ -446,7 +456,7 @@ function openCard(id) {
   const it = K.byId[id], o = own(id), bal = balance(), dlg = $('#passDlg'), price = curPrice(it);
   $('#pdTitle').textContent = name(it); $('#pdSub').textContent = it.shop ? `${t('Cửa hàng trang trí', 'Decor shop')} · ${t(it.sub, SHOP_EN[it.sub] || it.sub)}` : `${gName(it.gr)} · ${subName(it.sub)}`;
   const holder = $('#pdArt'); holder.innerHTML = ''; const cv = sprite(it, o || !!it.shop); cv.style.width = cv.width * 2 + 'px'; cv.style.height = cv.height * 2 + 'px'; holder.append(cv);
-  $('#pdNote').className = 'gt' + (o || it.shop ? '' : ' lock'); $('#pdNote').textContent = o || it.shop ? it.note : t('🔒 Mua thẻ này để đọc nguồn gốc của nó.', '🔒 Buy this card to read its origin.');
+  $('#pdNote').className = 'gt' + (o || it.shop ? '' : ' lock') + (it.flag ? ' flag' : ''); $('#pdNote').textContent = o || it.shop ? it.note : it.flag ? t('🔒 Mua thẻ này để đọc giải thích và ý nghĩa lá cờ.', '🔒 Buy this card to read what the flag means.') : t('🔒 Mua thẻ này để đọc nguồn gốc của nó.', '🔒 Buy this card to read its origin.');
   $('#pdEn').textContent = o && uiLang !== 'vi' ? 'English text: coming soon' : '';
   $('#pdTag').textContent = it.deco ? { theme: t('🎨 Nền Passport', '🎨 Passport theme'), frame: t('🖼️ Khung thẻ', '🖼️ Card frame'), title: t('🏷️ Danh hiệu', '🏷️ Title'), fx: t('✨ Hiệu ứng mua', '✨ Purchase effect'), skin: t('🖥️ Giao diện cả app', '🖥️ Whole-app theme') }[it.deco] : it.use ? { wear: t('👕 Mặc được', '👕 Wearable'), hold: t('✋ Cầm được', '✋ Holdable'), pet: t('🐾 Đi cùng', '🐾 Companion') }[it.use] : '';
   const b = $('#pdBuy'), canUse = !!it.shop && o, used = isUsed(it); b.hidden = o && !canUse; b.disabled = !o && bal < price; const off = price < priceOf(it) ? t(' · giảm nửa giá (thẻ cuối của mục)', ' · half price (last card of the group)') : ''; b.textContent = canUse ? (it.deco ? (used ? t('Bỏ dùng', 'Remove') : t('Dùng ngay', 'Use now')) : (used ? t('Cởi ra', 'Take off') : t('Mặc cho Lame', 'Wear on Lame'))) : t(`Mua · 🪙 ${price}${off}`, `Buy · 🪙 ${price}${off}`);
@@ -458,9 +468,10 @@ function buy(id) {
   if (price !== priceOf(it)) (P.paid ||= {})[id] = price; P.own.push(id); { const w = weekNow(); if (!w.claimed && it.cc === w.cc) w.n++; } save(); sfx.play('unlock'); $('#passDlg').close(); toast(t(`Đã mua: ${name(it)} ✓`, `Bought: ${name(it)} ✓`), 2200);
   if (it.deco && !P.deco?.[it.deco]) { P.deco = { ...(P.deco || {}), [it.deco]: id }; P.decoT = Date.now(); save(); if (it.deco === 'skin') bus.emit('skin'); } // món trang trí mới mua dùng luôn nếu ô đó đang trống
   burst(decoOf('fx')?.val); bus.emit('lamefx', 'buy'); checkRanks();
-  const sub = it.shop ? [] : K.items.filter(i => i.cc === it.cc && i.sub === it.sub), grp = it.shop ? [] : K.items.filter(i => i.cc === it.cc && i.gr === it.gr);
-  const done = it.shop ? [] : [sub.every(i => own(i.id)) && kk(it.cc, 's:' + it.sub), grp.every(i => own(i.id)) && kk(it.cc, 'g' + it.gr)].filter(Boolean).filter(k => !P.seen.includes(k));
+  const sub = it.shop || it.flag ? [] : K.items.filter(i => i.cc === it.cc && i.sub === it.sub), grp = it.shop || it.flag ? [] : K.items.filter(i => i.cc === it.cc && i.gr === it.gr && !i.flag);
+  const done = it.shop || it.flag ? [] : [sub.every(i => own(i.id)) && kk(it.cc, 's:' + it.sub), grp.every(i => own(i.id)) && kk(it.cc, 'g' + it.gr)].filter(Boolean).filter(k => !P.seen.includes(k));
   draw();
+  if (it.flag) openCard(id); // mua cờ xong mở luôn phần giải thích
   if (done.length) { P.seen.push(...done); save(); const key = done[done.length - 1]; setTimeout(() => { sfx.play('reward'); toast(t('📜 Mở khóa câu chuyện mới!', '📜 New story unlocked!'), 2600); openStory(key); }, 900); }
 }
 function openStory(key0) {
@@ -540,6 +551,10 @@ function loadCC(cc) { // chỉ nạp thẻ + câu chuyện của nước cần x
       await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-${cc}${i}.js`)));
       if (cc !== 'jp' && cc !== 'kr') await import(`./pass-${cc}6.js`); // chỉnh lại / bỏ nền thẻ, phải nạp sau khi 1–5 đã đăng ký
       ST[cc] = await import(cc === 'jp' ? './pass-story.js' : `./pass-story-${cc}.js`);
+    }
+    if (cc !== 'sh') { // thẻ quốc kỳ đứng đầu nước, giá 5 xu
+      const F = (await import('./pass-flags.js')).FLAGS[cc];
+      if (F && !KT.items.some(i => i.id === cc + '-flag')) { const at = KT.items.findIndex(i => i.cc === cc); KT.items.splice(at < 0 ? KT.items.length : at, 0, { gr: 1, sub: 'Quốc kỳ', id: cc + '-flag', vi: F.vi, en: F.en, note: F.note, fn: d => d, cc, price: 5, flag: true }); }
     }
     for (const i of KT.items) if (i.cc === cc) KT.byId[i.id] = i;
     LOADED.add(cc);
