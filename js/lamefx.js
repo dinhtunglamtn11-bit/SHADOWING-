@@ -2,7 +2,8 @@
 // nhận dấu hạng thì xoay vòng, lâu không đụng tới thì ngủ gật. Nét mặt vẽ thẳng lên hình đã ghép nên đi theo mọi trang phục;
 // thú đi cùng và vật cầm cũng nhún nhảy theo (bằng độ lệch dọc trong lameGrid), và lời chào đổi theo nước của bộ đang mặc.
 // Tôn trọng "Hiệu ứng chuyển động: Tắt" và chế độ giảm chuyển động của hệ điều hành: khi đó chỉ còn nét mặt và bong bóng chữ, không có động tác.
-import { bus } from './util.js';
+import { bus, vnDate, vnHour } from './util.js';
+import { byDate } from './tracker.js';
 import { getUi } from './settings.js';
 
 let o = null; // { edge, repaint, eq, items }
@@ -36,7 +37,8 @@ export function compose(Lm, eq, items) {
 }
 
 // ---------- bong bóng chữ ----------
-const GREET = { jp: 'こんにちは!', kr: '안녕!', cn: '你好!', vn: 'Xin chào!', fr: 'Bonjour!', us: 'Hello!', eg: 'مرحبا!', nz: 'Kia ora!', in: 'नमस्ते!', my: 'Selamat!', ch: 'Grüezi!', ly: 'مرحبا!', au: "G'day!", ar: '¡Hola!', gh: 'Akwaaba!', nl: 'Hallo!', it: 'Ciao!', sa: 'مرحبا!', ru: 'Привет!' };
+// Lời chào: mỗi nước đã làm thẻ trong Passport phải có một dòng ở GREET (thêm nước mới thì thêm luôn ở đây).
+const GREET = { jp: 'こんにちは!', kr: '안녕!', cn: '你好!', vn: 'Xin chào!', fr: 'Bonjour!', us: 'Hello!', eg: 'مرحبا!', nz: 'Kia ora!', in: 'नमस्ते!', my: 'Apa khabar?', br: 'Olá!', ch: 'Grüezi!', ly: 'مرحبا!', au: "G'day!", ar: '¡Hola!', gh: 'Akwaaba!', nl: 'Hallo!', it: 'Ciao!', sa: 'مرحبا!', ru: 'Привет!' };
 function greeting() {
   const eq = o.eq(), items = o.items() || {};
   for (const s of ['outfit', 'head', 'face', 'waist', 'feet', 'hold', 'pet']) { const it = items[eq[s]]; if (it && GREET[it.cc]) return GREET[it.cc]; } // lời chào theo nước của món đang mặc (ưu tiên trang phục)
@@ -46,19 +48,43 @@ function bubble(text) {
   if (!text || !o.edge || o.edge.hidden) return;
   document.querySelectorAll('.lameBubble').forEach(b => b.remove());
   const r = o.edge.getBoundingClientRect(), b = document.createElement('div');
-  b.className = 'lameBubble'; b.textContent = text; b.style.left = Math.round(r.left + r.width / 2) + 'px'; b.style.top = Math.max(8, Math.round(r.top - 40)) + 'px';
-  document.body.append(b); setTimeout(() => b.remove(), 2300);
+  b.className = 'lameBubble'; b.textContent = text; document.body.append(b);
+  // câu dài thì xuống dòng và không được tràn ra ngoài màn hình; đuôi bong bóng vẫn chỉ vào Lame
+  const w = b.offsetWidth, h = b.offsetHeight, vw = document.documentElement.clientWidth, cx = r.left + r.width / 2;
+  const x = Math.min(Math.max(cx, w / 2 + 6), vw - w / 2 - 6);
+  b.style.left = Math.round(x) + 'px'; b.style.top = Math.max(8, Math.round(r.top - h - 12)) + 'px';
+  b.style.setProperty('--ax', Math.round(Math.min(Math.max(cx - x + w / 2, 12), w - 12)) + 'px');
+  const long = text.length > 12; if (long) b.style.animationDuration = '3.4s';
+  setTimeout(() => b.remove(), long ? 3500 : 2300);
 }
+
+// ---------- câu thoại ----------
+const studied = () => { const d = byDate().get(vnDate()); return !!d && ['sec', 's', 'r', 'w', 'd', 'k', 'c', 'q', 'x', 'n', 't'].some(k => d[k]); };
+function tapLines() { // câu nói được lúc chạm vào, tùy giờ và việc hôm nay đã học chưa
+  const h = vnHour(), out = ['Gì đó gì đó?'];
+  if (h >= 5 && h < 11) out.push('Sáng rồi, học vài từ đê! ☀️');
+  if (h >= 11 && h < 14) out.push('Trưa rồi, ăn gì đê?');
+  if (h >= 22 || h < 5) out.push('Khuya rồi, ngủ sớm đê');
+  if ((h >= 11 && h < 13) || (h >= 17 && h < 19)) out.push('Ăn đê');
+  try { if (!studied()) out.push('Bạn lười à?', 'Học đê'); } catch { /* chưa đọc được số liệu thì bỏ qua */ }
+  return out;
+}
+let lastLine = '';
+const fresh = list => { const pool = list.length > 1 ? list.filter(x => x !== lastLine) : list; return (lastLine = pick(pool)); };
+const TAP_ICONS = ['👋', '😆', '🙃', '😤', '💕', '🐾', '🤭'];
+const tapSay = () => { const r = Math.random(); return r < 0.55 ? fresh(tapLines()) : r < 0.8 ? greeting() : fresh(TAP_ICONS); };
+// phản ứng khi làm bài: chủ yếu là biểu tượng, thỉnh thoảng mới nói để khỏi lặp gây phiền
+const react = (icons, lines, often) => (Math.random() < often ? pick(lines) : pick(icons));
 
 // ---------- hiệu ứng theo sự kiện ----------
 const FX = {
-  ok: { expr: 'happy', anim: 'fx-hop', ms: 950, jump: 1, bub: () => (Math.random() < 0.5 ? pick(['👍', '✨', '😄', '💪', '🌟']) : '') },
-  bad: { expr: 'sad', anim: 'fx-shake', ms: 800, bub: () => (Math.random() < 0.5 ? pick(['😅', '💦', '🤔', '💪']) : '') },
-  buy: { expr: 'love', anim: 'fx-pop', ms: 1200, jump: 1, bub: () => pick(['🛍️', '💖', '✨']) },
+  ok: { expr: 'happy', anim: 'fx-hop', ms: 950, jump: 1, bub: () => (Math.random() < 0.5 ? react(['👍', '✨', '😄', '💪', '🌟', '🎯', '✅', '😎', '🔥', '👏', '🥳', '💯', '🤩'], ['Bạn thắng, nhưng tôi chưa bao giờ thuaaa'], 0.2) : '') },
+  bad: { expr: 'sad', anim: 'fx-shake', ms: 800, bub: () => (Math.random() < 0.5 ? react(['😅', '💦', '🤔', '💪', '🙈', '😵', '🥲', '🫠', '❓', '🩹'], ['Bạn sợ à?', 'Suýt đúng'], 0.35) : '') },
+  buy: { expr: 'love', anim: 'fx-pop', ms: 1200, jump: 1, bub: () => pick(['🛍️', '💖', '✨', '🤑', '🎀', '😍', '🛒', '💝']) },
   rank: { expr: 'wow', anim: 'fx-spin', ms: 1500, jump: 1, bub: arg => ({ bronze: '🥉', silver: '🥈', gold: '🥇', diamond: '💎' }[arg] || '🛂') + '!' },
-  chest: { expr: 'wow', anim: 'fx-cheer', ms: 1400, jump: 1, bub: () => '🎁' },
-  coin: { expr: 'happy', anim: 'fx-pop', ms: 800, bub: () => '🪙' },
-  cheer: { expr: 'happy', anim: 'fx-cheer', ms: 1400, jump: 1, bub: () => pick(['🎉', '🏆', '👏']) },
+  chest: { expr: 'wow', anim: 'fx-cheer', ms: 1400, jump: 1, bub: () => pick(['🎁', '🎊', '👀', '🗝️', '✨']) },
+  coin: { expr: 'happy', anim: 'fx-pop', ms: 800, bub: () => pick(['🪙', '💰', '🤑', '✨']) },
+  cheer: { expr: 'happy', anim: 'fx-cheer', ms: 1400, jump: 1, bub: () => react(['🎉', '🏆', '👏', '🥳', '🎇', '👑', '💯'], ['Bạn thắng, nhưng tôi chưa bao giờ thuaaa'], 0.4) },
   greet: { expr: 'wink', anim: 'fx-wave', ms: 1100, bub: () => greeting() },
 };
 function setExpr(x, ms) {
@@ -81,8 +107,20 @@ export function play(kind, arg) {
   wake(true); setExpr(f.expr, f.ms); anim(f.anim, f.ms); if (f.jump) jump(); const b = f.bub(arg); if (b) bubble(b);
 }
 
+// chạm vào Lame: mỗi lần một nét mặt và động tác khác lần trước, kèm lời chào
+const TAPS = [
+  { expr: 'wink', anim: 'fx-wave', ms: 1100 }, { expr: 'happy', anim: 'fx-hop', ms: 950, jump: 1 }, { expr: 'love', anim: 'fx-pop', ms: 1200 },
+  { expr: 'wow', anim: 'fx-shake', ms: 800 }, { expr: 'happy', anim: 'fx-cheer', ms: 1400, jump: 1 }, { expr: 'wink', anim: 'fx-spin', ms: 1500 },
+];
+let lastTap = -1;
+export function tap() {
+  if (!o || !o.edge || o.edge.hidden) return;
+  let i = Math.floor(Math.random() * TAPS.length); if (i === lastTap) i = (i + 1) % TAPS.length; lastTap = i;
+  const f = TAPS[i]; wake(true); setExpr(f.expr, f.ms); anim(f.anim, f.ms); if (f.jump) jump(); bubble(tapSay());
+}
+
 // ---------- đời sống lúc rảnh: chớp mắt, nhún nhảy, ngủ gật ----------
-function wake(quiet) { lastAct = Date.now(); if (!sleeping) return; sleeping = false; o.edge.classList.remove('fx-sleep'); if (!quiet) { setExpr('wow', 700); bubble('!'); } else expr = 'normal'; }
+function wake(quiet) { lastAct = Date.now(); if (!sleeping) return; sleeping = false; o.edge.classList.remove('fx-sleep'); if (!quiet) { setExpr('wow', 700); bubble(pick(['!', '😳', '⁉️', '🥱'])); } else expr = 'normal'; }
 function blinkLoop() {
   setTimeout(() => { if (o && o.edge && !o.edge.hidden && expr === 'normal' && !document.hidden) { expr = 'blink'; o.repaint(); setTimeout(() => { if (expr === 'blink') { expr = 'normal'; o.repaint(); } }, 140); } blinkLoop(); }, 2600 + Math.random() * 3600);
 }
@@ -92,8 +130,8 @@ function idleLoop() {
     const eq = o.eq();
     if ((eq.pet || eq.hold) && motionOk() && !sleeping && expr === 'normal') { tick++; pose = tick % 2 ? { pet: -1, hold: 0 } : { pet: 0, hold: -1 }; o.repaint(); } // thú và vật cầm nhún nhẹ khi rảnh
     else if (pose.pet || pose.hold) { if (sleeping || expr === 'normal') { pose = { pet: 0, hold: 0 }; o.repaint(); } }
-    if (!sleeping && Date.now() - lastAct > 150000) { sleeping = true; expr = 'sleep'; o.repaint(); if (motionOk()) o.edge.classList.add('fx-sleep'); bubble('💤'); }
-    else if (sleeping && Date.now() % 9000 < 700) bubble('💤');
+    if (!sleeping && Date.now() - lastAct > 150000) { sleeping = true; expr = 'sleep'; o.repaint(); if (motionOk()) o.edge.classList.add('fx-sleep'); bubble(pick(['💤', '😴', '🌙', '🛌'])); }
+    else if (sleeping && Date.now() % 9000 < 700) bubble(pick(['💤', '😴', '🌙', '🛌']));
   }, 700);
 }
 export function init(opts) {

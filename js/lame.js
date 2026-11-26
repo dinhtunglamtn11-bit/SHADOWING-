@@ -51,7 +51,7 @@ async function redrawAll() { await Promise.all([refresh(), drawPreview().catch((
 
 export function init() {
   edge = document.createElement('canvas'); edge.id = 'lameEdge'; edge.hidden = true; edge.setAttribute('role', 'button'); edge.setAttribute('aria-label', 'Lame');
-  edge.addEventListener('click', () => { fx.play('greet'); setTimeout(() => bus.emit('nav', 'passport'), 550); }); // chào một cái rồi mới sang Passport
+  edge.addEventListener('click', () => fx.tap()); // chạm vào chỉ có biểu cảm, động tác và câu thoại (vào Passport bằng thanh điều hướng)
   document.body.append(edge);
   fx.init({ edge, repaint: paintNow, eq: () => passport.getEq(), items: () => items });
   bus.on('show', () => refresh());
