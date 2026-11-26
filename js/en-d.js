@@ -1,5 +1,6 @@
 // Từ điển Việt → Anh, phần 4: thùng rác, nhắc sao lưu, tra từ, từ vựng, tìm kiếm, shadowing nâng cao, FSRS, phím tắt.
 export default {
+  "Không phát được tiếng đọc. Hãy tăng âm lượng, tắt chế độ im lặng và kiểm tra giọng đọc của ngôn ngữ đang học trong cài đặt máy.": "Couldn't play the audio. Turn up the volume, turn off silent mode and check the speech voice for the language you're learning in your device settings.",
   // ===== nhắc sao lưu =====
   "Đã {} ngày chưa sao lưu dữ liệu.": "It has been {1:day|days} since your last backup.",
   "Sao lưu ngay": "Back up now",
