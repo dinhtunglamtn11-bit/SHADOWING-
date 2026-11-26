@@ -36,19 +36,33 @@ export function voiceFor(bcp) {
 let speakingEl = null;
 const clearSpeaking = () => { speakingEl?.classList.remove('speaking'); speakingEl = null; };
 
+// Giữ tham chiếu câu đang đọc (một số trình duyệt bỏ sự kiện nếu nó bị dọn khỏi bộ nhớ)
+let current = null, watchdog = 0;
+const SILENT = 'Không phát được tiếng đọc. Hãy tăng âm lượng, tắt chế độ im lặng và kiểm tra giọng đọc của ngôn ngữ đang học trong cài đặt máy.';
+
 export function say(text, bcp, rate, el = null) {
   if (!text) return false;
   if (!('speechSynthesis' in window)) { toast('Trình duyệt này không có giọng đọc'); return false; }
   try { speechSynthesis.cancel(); } catch {}
   clearSpeaking();
   const u = new SpeechSynthesisUtterance(text);
+  const done = () => { if (!el) return; if (speakingEl === el) clearSpeaking(); else el.classList.remove('speaking'); };
   if (el) {
     speakingEl = el; el.classList.add('speaking');
-    const done = () => { if (speakingEl === el) clearSpeaking(); else el.classList.remove('speaking'); };
-    u.onend = done; u.onerror = done;
     setTimeout(done, Math.max(8000, text.length * 400)); // phòng khi trình duyệt không báo kết thúc
   }
+  // Máy không phát được (thiếu giọng, lỗi bộ đọc, hoặc im luôn không báo gì) thì nói rõ cho người dùng
+  current = u; clearTimeout(watchdog);
+  const heard = () => { if (current === u) clearTimeout(watchdog); };
+  u.onstart = heard;
+  u.onend = () => { heard(); done(); };
+  u.onerror = e => {
+    heard(); done();
+    if (current === u && e.error !== 'canceled' && e.error !== 'interrupted') toast(SILENT, 6000);
+  };
+  watchdog = setTimeout(() => { if (current === u) toast(SILENT, 6000); }, 5000);
   u.lang = bcp;
+  if (!voices.length) loadVoices();
   const v = voiceFor(bcp);
   if (v) u.voice = v;
   else if (!warned.has(bcp)) { warned.add(bcp); toast('Máy chưa có giọng đọc cho ngôn ngữ này (' + bcp + '). Hãy cài thêm giọng trong cài đặt hệ thống.', 6000); }
@@ -68,9 +82,10 @@ export function sayable(text, lang) {
 // Chỉ thêm loa (dùng trong nút đáp án: bấm chữ là chọn, bấm loa là nghe)
 export const withSpeaker = (text, lang) => esc(text) + (isTarget(text, lang) ? spk(text, langInfo(lang).bcp) : '');
 
-// Bắt mọi lần bấm vào chữ/loa, kể cả khi nằm trong nút đáp án
+// Bắt mọi lần bấm vào chữ/loa, kể cả khi nằm trong nút đáp án.
+// Chỉ nhận phần tử có cả data-lang: nơi khác dùng data-say làm mã riêng và tự xử lý bấm.
 document.addEventListener('click', e => {
-  const el = e.target.closest('[data-say]');
+  const el = e.target.closest('[data-say][data-lang]');
   if (!el) return;
   e.preventDefault(); e.stopPropagation();
   say(el.dataset.say, el.dataset.lang, undefined, el);

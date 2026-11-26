@@ -1,5 +1,6 @@
 // Bản dịch tiếng Trung giản thể, phần 4 (cài đặt, prompt, tính năng mới). Các dòng ví dụ chèn sẵn giữ nguyên tiếng Anh.
 export default {
+  "Couldn't play the audio. Turn up the volume, turn off silent mode and check the speech voice for the language you're learning in your device settings.": "无法播放语音。请调高音量、关闭静音模式，并在设备设置中检查所学语言的语音。",
   "Skip": "跳过",
   "No stroke data for this character; switching to trace-over mode (stroke order isn't checked).": "这个字没有笔画数据；改用描红模式（不检查笔顺）。",
   "{} stroke(s). Write each stroke in the right order and direction; wrong strokes are flagged and a hint appears after 3 mistakes.": "共 {} 笔。请按正确的顺序和方向写每一笔；写错会提示，错 3 次后出现笔画提示。",
