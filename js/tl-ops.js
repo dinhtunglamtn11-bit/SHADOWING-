@@ -7,7 +7,7 @@ import * as ART from './tl-art.js';
 const esc = s => String(s).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
 const mean = a => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / (a.length - 1)); };
-const kfmt = n => Math.round(n / 1000).toLocaleString('vi-VN') + 'k';
+const kfmt = n => Math.round(n / 1000).toLocaleString('vi-VN') + 'K';
 const num = (n, d = 1) => (Math.round(n * 10 ** d) / 10 ** d).toString().replace('.', ',');
 const pct = x => Math.round(100 * x) + '%';
 const PIC = { tranchau: 'prepPot', tra: 'teaPot' }, SIC = { cash: 'stCash', bar: 'stBar', pack: 'stPack', ship: 'truck' };
