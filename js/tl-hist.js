@@ -58,7 +58,7 @@ function runCard(c, r, runs) {
   const bd = D.BADGES.filter(b => r.badges[b.id]).map(b => `<span class="tl-pill">${c.A.ic(b.ic, 14)} ${esc(b.name)}</span>`).join(' ') || '<span class="dim">Chưa có huy hiệu.</span>';
   const got = M.filter(m => r.stars[m.id]).map(m => `<div class="hs-ms"><b>${m.id}</b> ${esc(m.name)}${stars(r.stars[m.id])}</div>`).join('') || '<div class="dim">Chưa đạt cột mốc nào.</div>';
   return `<details class="tl-more hs-run ${r.cur ? 'cur' : ''}"><summary><span class="hs-t"><b>${esc(runName(r))}</b> <small class="dim">${dstr(r.t0)} · ${esc(D.DIFFS[r.diff] || r.diff)}</small></span><span class="hs-s">★ ${r.total}/${M.length * 3} · 🏅 ${r.nb} · ngày ${r.day}${r.score != null ? ` · ${r.score}${uiLang === 'vi' ? 'đ' : ' pts'}` : ''}</span></summary>
-    <div class="tl-kpis"><div><b>${r.total}</b><small>sao</small></div><div><b>${r.nb}</b><small>huy hiệu</small></div><div><b>${r.score != null ? r.score : '—'}</b><small>Điểm Mùa</small></div><div><b>${Math.round(r.profit / 1e6)}${uiLang === 'vi' ? 'tr' : 'M'}</b><small>lãi cả lượt</small></div></div>
+    <div class="tl-kpis"><div><b>${r.total}</b><small>sao</small></div><div><b>${r.nb}</b><small>huy hiệu</small></div><div><b>${r.score != null ? r.score : '—'}</b><small>Điểm Mùa</small></div><div><b>${Math.round(r.profit / 1e6)}${'M'}</b><small>lãi cả lượt</small></div></div>
     ${r.title ? `<div class="tl-arr">Danh hiệu: <b>${esc(r.title)}</b>${r.final ? '' : ' (tạm tính)'}</div>` : ''}
     ${grp}<h4>Huy hiệu lượt này</h4><div>${bd}</div><h4>Cột mốc đã đạt (${Object.keys(r.stars).length})</h4>${got}</details>`;
 }

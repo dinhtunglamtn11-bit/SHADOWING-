@@ -283,7 +283,9 @@ function quickTest(list, time = 0) {
   if (!qs.length) { toast('Chưa có câu hỏi để ra bài kiểm tra'); return; }
   mode = 'sheet';
   const again = () => quickTest(setsOf(lang), time);
-  runSheet(box, {
+  box.innerHTML = '<div class="row"><button class="btn" id="qtQuit">← Thoát</button></div><div id="qtSheet"></div>';
+  $('#qtQuit', box).onclick = goBack;
+  runSheet($('#qtSheet', box), {
     qs, lang, title: '', src: 'Kiểm tra nhanh', submitLabel: 'Hoàn thành & nộp bài', timeLimit: time,
     intro: `<div class="dim">${qs.length} câu ngẫu nhiên</div>${time ? '<div class="dim">Có giới hạn thời gian: hết giờ bài tự nộp.</div>' : ''}<div class="dim">Làm hết rồi bấm nút nộp bài ở cuối trang để chấm điểm.</div>`,
     onDone: r => tracker.test(r.pct), onAgain: again, onExit: goBack, exitLabel: 'Danh sách',

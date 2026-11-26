@@ -71,8 +71,8 @@ function mailHtml(c) {
 // ---------- thành tích ----------
 function achHtml(c) {
   const { st, D, E, A, G } = c, rows = E.milestoneRows(st), tot = E.totalStars(st); _A = A;
-  const fmtV = (R, v) => (v == null ? '—' : R.M.k ? fmt(Math.round(v / R.M.k)) + 'k' : R.M.unit === '×' ? v.toFixed(2).replace('.', ',') : Math.round(v * 10) / 10 + (R.M.unit && R.M.unit !== '×' && R.M.unit !== 'ngày' ? R.M.unit : ''));
-  const thTxt = M => M.th.map(x => (M.dir > 0 ? '≥ ' : '≤ ') + (M.k ? fmt(x) + 'k' : M.unit === '×' ? String(x).replace('.', ',') : x + (M.unit && M.unit !== 'ngày' ? M.unit : ''))).join(' · ');
+  const fmtV = (R, v) => (v == null ? '—' : R.M.k ? fmt(Math.round(v / R.M.k)) + 'K' : R.M.unit === '×' ? v.toFixed(2).replace('.', ',') : Math.round(v * 10) / 10 + (R.M.unit && R.M.unit !== '×' && R.M.unit !== 'ngày' ? R.M.unit : ''));
+  const thTxt = M => M.th.map(x => (M.dir > 0 ? '≥ ' : '≤ ') + (M.k ? fmt(x) + 'K' : M.unit === '×' ? String(x).replace('.', ',') : x + (M.unit && M.unit !== 'ngày' ? M.unit : ''))).join(' · ');
   const groups = Object.entries(D.MG_NAME).map(([g, name]) => {
     const rs = rows.filter(r => r.M.g === g), s = rs.reduce((a, r) => a + r.stars, 0);
     return `<details class="tl-mg" ${G.mgOpen === g ? 'open' : ''} data-mg="${g}"><summary>${A.ic('grp' + g, 18)}<b>${g}. ${name}</b><span class="stars">${star(Math.min(3, Math.round(s / rs.length)))}</span><small class="dim">${s}/${rs.length * 3}</small></summary>${rs.map(r => `<div class="tl-ms ${r.open ? '' : 'lockd'}"><span class="msn"><b>${r.M.id}</b> ${esc(r.M.name)}</span><span class="stars">${star(r.stars)}</span>${(G.profile?.best?.[r.M.id] || 0) > r.stars ? `<span class="tl-rec" title="Kỷ lục trong hồ sơ: đã đạt ở lượt trước, vẫn được giữ">🏅 kỷ lục ${G.profile.best[r.M.id]}★</span>` : ''}<small class="dim">${r.open ? `Hạn ngày ${r.M.dl} · hiện ${fmtV(r, r.v)} · ${thTxt(r.M)}` : `Mở từ ngày ${r.M.open}`}${r.closed && !r.stars ? ' · chưa đạt' : ''}</small></div>`).join('')}</details>`;
@@ -294,9 +294,9 @@ const FA = [['x²', '^2'], ['1/x', '1÷('], ['|x|', 'ABS('], ['ln', 'LN('], ['e�
 const FB = [['NORM', 'NORM('], ['NORMINV', 'NORMINV('], ['CR', 'CR('], ['NV', 'NV('], ['BE', 'BE('], ['ROP', 'ROP('], ['CI', 'CI(']];
 const FC = [['EOQ', 'EOQ('], ['TC', 'TC('], ['SS', 'SS('], ['MK', 'MK('], ['ELA', 'ELA('], ['Z', 'Z('], ['TURN', 'TURN('], ['DOH', 'DOH('], ['ROI', 'ROI('], ['LITTLE', 'LITTLE('], ['UTIL', 'UTIL(']];
 function dataVars(c) { // biến công khai (mục 17.4), chốt giá trị lúc chèn
-  const { st, D, E } = c, v = [['TIEN', st.cash / 1000, 'Tiền mặt (k)'], ['R', st.rep, 'Danh tiếng R'], ['L', st.loyal, 'Khách quen L'], ['CPCD', D.PARAMS.fixedDay[st.stage] / 1000, 'Chi phí cố định/ngày (k)']];
-  for (const i of D.ITEM_ORDER.filter(i => D.ITEMS[i].stage <= st.stage)) { v.push(['GIA ' + D.ITEMS[i].name, st.prices[i], 'Giá bán (k)']); v.push(['VON ' + D.ITEMS[i].name, Math.round(E.unitCost(st, i) / 100) / 10, 'Giá vốn một ly (k)']); }
-  const h = st.hist.slice(-7); if (h.length) { v.push(['LY7', h.reduce((a, x) => a + x.cups, 0) / h.length, 'Số ly TB/ngày (7 ngày)']); v.push(['DT7', h.reduce((a, x) => a + x.rev, 0) / h.length / 1000, 'Doanh thu TB/ngày (k)']); v.push(['LAI7', h.reduce((a, x) => a + x.profit, 0) / h.length / 1000, 'Lãi TB/ngày (k)']); }
+  const { st, D, E } = c, v = [['TIEN', st.cash / 1000, 'Tiền mặt (K)'], ['R', st.rep, 'Danh tiếng R'], ['L', st.loyal, 'Khách quen L'], ['CPCD', D.PARAMS.fixedDay[st.stage] / 1000, 'Chi phí cố định/ngày (K)']];
+  for (const i of D.ITEM_ORDER.filter(i => D.ITEMS[i].stage <= st.stage)) { v.push(['GIA ' + D.ITEMS[i].name, st.prices[i], 'Giá bán (K)']); v.push(['VON ' + D.ITEMS[i].name, Math.round(E.unitCost(st, i) / 100) / 10, 'Giá vốn một ly (K)']); }
+  const h = st.hist.slice(-7); if (h.length) { v.push(['LY7', h.reduce((a, x) => a + x.cups, 0) / h.length, 'Số ly TB/ngày (7 ngày)']); v.push(['DT7', h.reduce((a, x) => a + x.rev, 0) / h.length / 1000, 'Doanh thu TB/ngày (K)']); v.push(['LAI7', h.reduce((a, x) => a + x.profit, 0) / h.length / 1000, 'Lãi TB/ngày (K)']); }
   if (h.length >= 7) { const per = st.hist.slice(-7).map(x => x.cups / Math.max(1, x.n || 4)), m = per.reduce((a, b) => a + b, 0) / per.length; v.push(['SDLY7', Math.sqrt(per.reduce((a, b) => a + (b - m) ** 2, 0) / 6), 'Độ lệch chuẩn số ly/buổi (7 ngày)']); }
   for (const g of D.ING_ORDER.filter(g => st.lots[g].length)) v.push(['TON ' + D.ING[g].name, E.stockOf(st, g), 'Số phần trong kho']);
   return v;

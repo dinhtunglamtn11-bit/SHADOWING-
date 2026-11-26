@@ -16,8 +16,8 @@ import { SSTART, SNAME } from './tl-data.js';
 const KEY = 'tealab:v1';
 export const G = { st: null, S: null, profile: null, speed: 1, paused: false, win: null, calc: false, acc: 0, last: 0, t: 0, vis: [], feed: [], sec: 'prices', sup: 'A', ord: {}, lastInput: null, alive: false, root: null, raf: 0, busy: false, tip: 0, openUrgent: -1 };
 const PROFILE0 = () => ({ coinsPrev: 0, best: {}, badges: {}, runs: 0, bestSeason: 0 });
-const kfmt = v => (Math.round(v / 1000)).toLocaleString('vi-VN') + 'k';
-const k1 = v => (Math.round(v / 100) / 10).toLocaleString('vi-VN') + 'k';
+const kfmt = v => (Math.round(v / 1000)).toLocaleString('vi-VN') + 'K';
+const k1 = v => (Math.round(v / 100) / 10).toLocaleString('vi-VN') + 'K';
 export { kfmt, k1 };
 const pad = n => String(n).padStart(2, '0');
 
@@ -159,6 +159,7 @@ export function mount(root) {
       <div class="tl-left"><div class="tl-scene"><canvas id="tlCv" width="${A.SCENE_W}" height="${A.SCENE_H}"></canvas><div class="tl-tags" id="tlTags"></div><button class="tl-viewbtn" id="tlView" title="Xem bên ngoài / bên trong tiệm">🏠 Vào trong</button></div></div>
       <div class="tl-right"><div class="tl-panel" id="tlPanel"></div></div>
     </div>
+    <button class="tl-cash" id="tlCash" type="button" aria-label="Tiền mặt"></button>
     <div class="tl-tools" id="tlTools">
       <button data-w="calendar">${A.ic('cal', 22)}<span>Lịch</span></button>
       <button data-w="mail">${A.ic('mail', 22)}<span>Thư</span><em id="tlMailBadge" hidden></em></button>
@@ -177,12 +178,22 @@ function newGameSilent() { G.st = E.newRun({ seed: 20261201, diff: 'chuan' }); G
 export function render() { hud(); panel(); renderWin(); fade(); drawNow(); }
 function fade() { const f = $('#tlFade'); if (f) { f.hidden = !G.busy; f.innerHTML = G.busy ? `<div>${A.illus('sleep')}<p>Đi ngủ…</p><small>Các buổi còn lại chạy theo kế hoạch đứng.</small></div>` : ''; } }
 const clockText = () => { const s = st(), S = G.S; const k = s.k, base = SSTART[k]; if (s.phase === 'LIVE' && S) { const m = S.tick; return `${pad(base + Math.floor(m / 60))}:${pad(m % 60)}`; } if (s.phase === 'REVIEW') return `${pad(base + (k === 4 ? 2 : 4))}:00`; return `${pad(base)}:00`; };
-const hudMoney = v => (Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(Math.abs(v) >= 1e8 ? 0 : 1).replace('.', ',') + (uiLang === 'vi' ? 'tr' : 'M') : kfmt(v)); // thanh trên: 240,0tr thay vì 240.028k cho gọn
+// thanh tiền: gọn theo K (nghìn), M (triệu), B (tỷ)
+const hudMoney = v => { const a = Math.abs(v), d = (x, n) => x.toFixed(n).replace('.', ','); return a >= 1e9 ? d(v / 1e9, 2) + 'B' : a >= 1e6 ? d(v / 1e6, a >= 1e8 ? 0 : 1) + 'M' : kfmt(v); };
+// đặt thanh tiền ngay trên hàng công cụ, và trên cả hàng nút "Mở cửa / Buổi tiếp theo" khi hàng đó đang dính ở đáy
+function placeCash() {
+  const el = $('#tlCash'), tools = $('#tlTools'); if (!el || !tools || !G.onScreen) return;
+  const vh = window.innerHeight; let top = Math.min(vh, tools.getBoundingClientRect().top);
+  const go = $('#tlPanel .tl-go'); if (go) { const r = go.getBoundingClientRect(); if (r.bottom > top - 40 && r.top < top) top = r.top; }
+  const bottom = Math.max(6, Math.round(vh - top + 6)) + 'px'; if (el.style.bottom !== bottom) el.style.bottom = bottom;
+  const left = Math.max(8, Math.round(tools.getBoundingClientRect().left)) + 'px'; if (el.style.left !== left) el.style.left = left;
+}
 export function hud() {
   const h = $('#tlHud'), s = st(); if (!h || !s) return; const card = E.dayCard(s.day), dt = card.date;
   const dayTxt = s.day > 90 ? 'N' + s.day : 'N' + s.day, wk = (uiLang === 'vi' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])[card.dow];
   const chip = (id, icon, val, sub, cls = '') => `<div class="hc ${cls}" id="${id}">${A.ic(icon, 20)}<b>${val}</b><small>${sub}</small></div>`;
-  h.innerHTML = chip('hD', 'day', dayTxt, `${wk} ${pad(dt.dd)}/${pad(dt.m)}`) + chip('hT', 'clock', clockText(), 'giờ game') + chip('hK', s.k >= 3 ? 'moon' : 'sun', 'S' + (s.k + 1), D.SNAME[s.k]) + chip('hM', 'coin', hudMoney(s.cash), 'tiền', s.cash < 0 ? 'bad' : '') + chip('hA', 'bolt', s.ap, 'AP', s.phase === 'LIVE' && s.ap < 2 ? 'low' : '') + chip('hR', 'rep', Math.round(s.rep), 'uy tín R');
+  h.innerHTML = chip('hD', 'day', dayTxt, `${wk} ${pad(dt.dd)}/${pad(dt.m)}`) + chip('hT', 'clock', clockText(), 'giờ game') + chip('hK', s.k >= 3 ? 'moon' : 'sun', 'S' + (s.k + 1), D.SNAME[s.k]) +  chip('hA', 'bolt', s.ap, 'AP', s.phase === 'LIVE' && s.ap < 2 ? 'low' : '') + chip('hR', 'rep', Math.round(s.rep), 'uy tín R');
+  const cash = $('#tlCash'); if (cash) { cash.innerHTML = `${A.ic('coin', 18)}<b>${hudMoney(s.cash)}</b>`; cash.classList.toggle('bad', s.cash < 0); requestAnimationFrame(placeCash); }
   const tb = $('#tlTools'); if (tb && tb.offsetHeight) tb.parentElement.style.setProperty('--tltools', tb.offsetHeight + 'px'); // thanh “Xong/Mở cửa” dính ngay trên hàng công cụ, không để hở
   const n = E.unreadCount(s), b = $('#tlMailBadge'); if (b) { b.hidden = !n; b.textContent = n > 9 ? '9+' : n; }
   tags();
@@ -204,7 +215,7 @@ function panel() {
   else if (s.phase === 'REVIEW') html = reviewHtml(s);
   else if (s.phase === 'DAYEND') html = dayEndHtml(s);
   else html = finalHtml(s);
-  p.innerHTML = html; bindPanel(p);
+  p.innerHTML = html; bindPanel(p); requestAnimationFrame(placeCash);
 }
 const sec = (id, title, body, badge = '') => `<section class="tl-sec ${G.sec === id ? 'open' : ''}" data-sec="${id}"><button class="tl-sech" data-a="sec" data-v="${id}"><span>${title}</span>${badge ? `<em>${badge}</em>` : ''}<i>${G.sec === id ? '▲' : '▼'}</i></button>${G.sec === id ? `<div class="tl-secb">${body}</div>` : ''}</section>`;
 const inShop = (s, i) => D.inSeason(i, s.day) || D.inSeason(i, s.day + 6); // món theo mùa: hiện từ 6 ngày trước mùa đến hết mùa
@@ -213,8 +224,8 @@ function priceRows(s, live) {
   const items = menuItems(s).filter(i => s.menu[i] || !live), maxOn = D.PARAMS.items[s.stage], on = D.ITEM_ORDER.filter(i => s.menu[i] && !D.ITEMS[i].seasonal).length, ex = s.exp && !s.exp.done ? s.exp.item : '';
   return items.map(i => {
     const it = D.ITEMS[i], p = s.prices[i], cost = E.unitCost(s, i), lo = Math.ceil(it.p * 0.7), hi = Math.floor(it.p * 1.5), avail = it.ing.every(g => qOf(s, g, 'a') > 0);
-    return `<div class="tl-row ${s.menu[i] ? '' : 'off'}"><span class="tl-ico">${A.cup(i, 28)}</span><div class="tl-nm"><b>${esc(it.name)}</b>${G.profile?.zh ? `<span class="zh" lang="zh">${esc(it.zh)}</span>` : ''}<small class="dim">${it.temp === 'hot' ? 'nóng' : 'lạnh'} · ref ${it.p}k · vốn ${k1(cost)} · lãi ${k1(p * 1000 - cost)}${avail ? '' : ' · <u class="bad">thiếu hàng</u>'}</small></div>
-      ${s.menu[i] ? (ex === i ? `<span class="chip on" title="Đang thử nghiệm giá ${s.exp.pa}k ↔ ${s.exp.pb}k">🧪 ${s.exp.pa}k↔${s.exp.pb}k</span>` : `<div class="tl-step"><button class="btn" data-a="pm" data-i="${i}" data-d="-1" aria-label="giảm giá">−</button><input class="tl-num" data-calc="price" data-i="${i}" type="text" inputmode="numeric" value="${p}" aria-label="Giá ${esc(it.name)}"><button class="btn" data-a="pm" data-i="${i}" data-d="1" aria-label="tăng giá">＋</button></div><small class="dim tl-rng">${lo}–${hi}k</small>`) : ''}
+    return `<div class="tl-row ${s.menu[i] ? '' : 'off'}"><span class="tl-ico">${A.cup(i, 28)}</span><div class="tl-nm"><b>${esc(it.name)}</b>${G.profile?.zh ? `<span class="zh" lang="zh">${esc(it.zh)}</span>` : ''}<small class="dim">${it.temp === 'hot' ? 'nóng' : 'lạnh'} · ref ${it.p}K · vốn ${k1(cost)} · lãi ${k1(p * 1000 - cost)}${avail ? '' : ' · <u class="bad">thiếu hàng</u>'}</small></div>
+      ${s.menu[i] ? (ex === i ? `<span class="chip on" title="Đang thử nghiệm giá ${s.exp.pa}K ↔ ${s.exp.pb}K">🧪 ${s.exp.pa}K↔${s.exp.pb}K</span>` : `<div class="tl-step"><button class="btn" data-a="pm" data-i="${i}" data-d="-1" aria-label="giảm giá">−</button><input class="tl-num" data-calc="price" data-i="${i}" type="text" inputmode="numeric" value="${p}" aria-label="Giá ${esc(it.name)}"><button class="btn" data-a="pm" data-i="${i}" data-d="1" aria-label="tăng giá">＋</button></div><small class="dim tl-rng">${lo}–${hi}K</small>`) : ''}
       ${(s.stage >= 2 || it.seasonal) && !live ? `<button class="btn tl-tg ${s.menu[i] ? 'on' : ''}" data-a="menu" data-i="${i}" ${!s.menu[i] && !it.seasonal && on >= maxOn ? 'disabled' : ''}>${s.menu[i] ? '☑' : '☐'}</button>` : ''}</div>`;
   }).join('');
 }
@@ -277,7 +288,7 @@ function orderHtml(s) {
     <details class="tl-grp" open><summary>Nhóm tươi (hỏng nhanh)</summary>${rows('fresh') || '<div class="dim">Không có.</div>'}</details>
     ${sd.fresh ? '' : `<details class="tl-grp"><summary>Nhóm khô (để được lâu)</summary>${rows('dry')}</details>`}
     ${v2 ? `<div class="row"><button class="btn" data-a="win" data-v="pol">🤖 Đặt hàng tự động${Object.keys(s.pol?.A || {}).length ? ` (${Object.keys(s.pol.A).length})` : ''}</button></div>` : ''}${pay}<div class="tl-note" id="tlOrdSum">${ordSum(s, sup)}</div>
-    <div class="row"><span class="grow">Tổng: <b id="tlOrdTotal">${total ? kfmt(total) : '0k'}</b></span><button class="btn primary" data-a="order" ${arr.ok ? '' : 'disabled'}>Đặt hàng</button></div>`;
+    <div class="row"><span class="grow">Tổng: <b id="tlOrdTotal">${total ? kfmt(total) : '0K'}</b></span><button class="btn primary" data-a="order" ${arr.ok ? '' : 'disabled'}>Đặt hàng</button></div>`;
 }
 function forecastHtml(s) {
   const a = E.avgCupsPerSession(s), f = s.forecast, last = s.lastReport;
@@ -294,14 +305,14 @@ function staffHtml(s) {
 }
 function upgradeHtml(s) {
   const u = E.upgradeStatus(s);
-  const info = { 2: 'thêm 4 món, nhân viên, trạm thu ngân, nhà cung cấp C, thiết bị, đối thủ. Chi phí cố định 1.750k mỗi ngày.', 3: 'thêm 4 món, tối đa 6 nhân viên, máy POS và xe giao hàng (kênh giao hàng tận nơi, cần một nhân viên chuyên giao). Chi phí cố định 4.100k mỗi ngày.', 4: 'chi nhánh thứ hai (kho, nhân viên và khách riêng; chuyển hàng giữa hai chi nhánh tốn 40k), lưu lượng lớn hơn nhiều, tối đa 8 nhân viên. Chi phí cố định 6.700k mỗi ngày.' }[u.to] || '';
+  const info = { 2: 'thêm 4 món, nhân viên, trạm thu ngân, nhà cung cấp C, thiết bị, đối thủ. Chi phí cố định 1.750K mỗi ngày.', 3: 'thêm 4 món, tối đa 6 nhân viên, máy POS và xe giao hàng (kênh giao hàng tận nơi, cần một nhân viên chuyên giao). Chi phí cố định 4.100K mỗi ngày.', 4: 'chi nhánh thứ hai (kho, nhân viên và khách riêng; chuyển hàng giữa hai chi nhánh tốn 40K), lưu lượng lớn hơn nhiều, tối đa 8 nhân viên. Chi phí cố định 6.700K mỗi ngày.' }[u.to] || '';
   return `<div class="dim tl-note">Nâng lên <b>${esc(u.name)}</b>: ${info}</div>${u.need.map(([t, ok]) => `<div class="tl-chk ${ok ? 'ok' : ''}">${A.ic(ok ? 'check' : 'lock', 16)} ${esc(t)}</div>`).join('')}<div class="row"><span class="grow dim">Phí nâng cấp ${kfmt(u.cost)}</span><button class="btn primary" data-a="upgrade" ${u.ok ? '' : 'disabled'}>Nâng cấp</button></div>`;
 }
 function expHtml(s) { // thử nghiệm giá: xen kẽ hai mức giá theo buổi, kết luận có ý nghĩa 90%
   const x = s.exp, items = D.ITEM_ORDER.filter(i => s.menu[i] && !D.ITEMS[i].seasonal && D.ITEMS[i].stage <= s.stage);
-  const list = (s.expList || []).slice(-4).reverse().map(r => `<div class="tl-dg ${r.conclusive ? 'good' : ''}">${esc(D.ITEMS[r.item].name)}: ${r.pa}k ↔ ${r.pb}k · ${r.conclusive ? `giá ${r.better === 'B' ? r.pb : r.pa}k tốt hơn ${Math.round(Math.abs(r.pct) * 100)}% (có ý nghĩa 90%)` : 'chưa kết luận được'}</div>`).join('');
-  const body = x && !x.done ? `<div class="tl-arr">Đang thử <b>${esc(D.ITEMS[x.item].name)}</b>: ${x.pa}k ↔ ${x.pb}k, buổi chẵn / lẻ xen kẽ. Tiến độ ${x.n}/${x.blocks} buổi.</div><div class="row"><button class="btn" data-a="expstop">Dừng thử nghiệm</button></div>`
-    : `<div class="dim tl-note">Chọn món và một mức giá thử. Giá sẽ xen kẽ giữa giá hiện tại và giá thử theo từng buổi; hết ${12} buổi game so lãi hai mức bằng kiểm định 90%. Thưởng 2 IP khi có kết luận.</div><div class="tl-step"><select id="tlXi">${items.map(i => `<option value="${i}">${esc(D.ITEMS[i].name)} (${s.prices[i]}k)</option>`).join('')}</select><input class="tl-num" data-calc="fc" id="tlXp" type="text" inputmode="numeric" placeholder="giá thử (k)"><button class="btn primary" data-a="expgo">Bắt đầu</button></div>`;
+  const list = (s.expList || []).slice(-4).reverse().map(r => `<div class="tl-dg ${r.conclusive ? 'good' : ''}">${esc(D.ITEMS[r.item].name)}: ${r.pa}K ↔ ${r.pb}K · ${r.conclusive ? `giá ${r.better === 'B' ? r.pb : r.pa}K tốt hơn ${Math.round(Math.abs(r.pct) * 100)}% (có ý nghĩa 90%)` : 'chưa kết luận được'}</div>`).join('');
+  const body = x && !x.done ? `<div class="tl-arr">Đang thử <b>${esc(D.ITEMS[x.item].name)}</b>: ${x.pa}K ↔ ${x.pb}K, buổi chẵn / lẻ xen kẽ. Tiến độ ${x.n}/${x.blocks} buổi.</div><div class="row"><button class="btn" data-a="expstop">Dừng thử nghiệm</button></div>`
+    : `<div class="dim tl-note">Chọn món và một mức giá thử. Giá sẽ xen kẽ giữa giá hiện tại và giá thử theo từng buổi; hết ${12} buổi game so lãi hai mức bằng kiểm định 90%. Thưởng 2 IP khi có kết luận.</div><div class="tl-step"><select id="tlXi">${items.map(i => `<option value="${i}">${esc(D.ITEMS[i].name)} (${s.prices[i]}K)</option>`).join('')}</select><input class="tl-num" data-calc="fc" id="tlXp" type="text" inputmode="numeric" placeholder="giá thử (K)"><button class="btn primary" data-a="expgo">Bắt đầu</button></div>`;
   return body + (list ? '<h4>Kết quả gần đây</h4>' + list : '');
 }
 function prepHtml(s) {
@@ -314,7 +325,7 @@ function prepHtml(s) {
     ${sec('prices', '💲 Giá & thực đơn', `<div class="dim tl-note">Giá có thể đổi bất cứ lúc nào (khi mở cửa tốn 1 AP). Khách vượt ngưỡng giá sẽ bỏ đi hẳn.</div>${priceRows(s, false)}`)}
     ${sec('order', '📦 Đặt hàng', orderHtml(s))}
     ${sec('fc', '🔮 Dự đoán', forecastHtml(s))}
-    ${s.b2 ? sec('tr', '🚚 Chuyển kho giữa hai chi nhánh', `<div class="dim tl-note">Mỗi chi nhánh có kho riêng. Chuyển hàng tốn 40k và đến đầu buổi kế. Kho chi nhánh 2 hiện ở mục Đặt hàng (chọn “Chi nhánh 2”).</div><div class="tl-step"><select id="tlTf"><option value="A">từ CN1 → CN2</option><option value="B">từ CN2 → CN1</option></select><select id="tlTg">${D.ING_ORDER.filter(g => E.stockOf(s, g) || E.stockB(s, g)).map(g => `<option value="${g}">${esc(D.ING[g].name)} (CN1 ${E.stockOf(s, g)} · CN2 ${E.stockB(s, g)})</option>`).join('')}</select><input class="tl-num" data-calc="qty" id="tlTq" type="text" inputmode="numeric" placeholder="số phần"><button class="btn primary" data-a="trgo">Chuyển</button></div>`) : ''}
+    ${s.b2 ? sec('tr', '🚚 Chuyển kho giữa hai chi nhánh', `<div class="dim tl-note">Mỗi chi nhánh có kho riêng. Chuyển hàng tốn 40K và đến đầu buổi kế. Kho chi nhánh 2 hiện ở mục Đặt hàng (chọn “Chi nhánh 2”).</div><div class="tl-step"><select id="tlTf"><option value="A">từ CN1 → CN2</option><option value="B">từ CN2 → CN1</option></select><select id="tlTg">${D.ING_ORDER.filter(g => E.stockOf(s, g) || E.stockB(s, g)).map(g => `<option value="${g}">${esc(D.ING[g].name)} (CN1 ${E.stockOf(s, g)} · CN2 ${E.stockB(s, g)})</option>`).join('')}</select><input class="tl-num" data-calc="qty" id="tlTq" type="text" inputmode="numeric" placeholder="số phần"><button class="btn primary" data-a="trgo">Chuyển</button></div>`) : ''}
     ${s.tools.exp ? sec('exp', '🧪 Thử nghiệm giá', expHtml(s), s.exp && !s.exp.done ? 'đang chạy' : '') : ''}
     ${E.prepItems(s).length ? sec('prep', '🧋 Sơ chế theo mẻ', O.prepSecHtml(s)) : ''}
     ${E.isV3(s) && s.stage >= D.CONTRACT.stage ? sec('con', '📃 Hợp đồng mua hàng', O.contractHtml(s), s.contracts?.length ? `${s.contracts.length}/${D.CONTRACT.max}` : '') : ''}
@@ -483,7 +494,10 @@ function bindRoot(root) {
     const a = e.target.closest('[data-a]'); if (a) onAct(a, e);
   });
   root.addEventListener('toggle', e => { if (e.target.id === 'tlGrow') G.growOpen = e.target.open; else if (e.target.id === 'tlStockBox') G.stkOpen = e.target.open; else if (e.target.classList?.contains('tl-stkall')) (G.stkAll ||= {})[e.target.id.slice(-1)] = e.target.open; }, true); // nhớ trạng thái mở/đóng khối theo dõi kho
-  root.addEventListener('click', e => { const hc = e.target.closest('#tlHud .hc'); if (hc && HUD_HELP[hc.id]) { toast(HUD_HELP[hc.id], 5200); return; } const b = e.target.closest('#tlView'); if (b) { G.view = G.view === 'in' ? 'out' : 'in'; b.textContent = G.view === 'in' ? '🚪 Ra ngoài' : '🏠 Vào trong'; drawNow(); } });
+  let cashT = 0; const moveCash = () => { if (!cashT) cashT = requestAnimationFrame(() => { cashT = 0; placeCash(); }); };
+  addEventListener('scroll', moveCash, { passive: true, capture: true }); addEventListener('resize', moveCash);
+  root.addEventListener('click', moveCash);
+  root.addEventListener('click', e => { if (e.target.closest('#tlCash')) { toast(HUD_HELP.hM, 5200); return; } const hc = e.target.closest('#tlHud .hc'); if (hc && HUD_HELP[hc.id]) { toast(HUD_HELP[hc.id], 5200); return; } const b = e.target.closest('#tlView'); if (b) { G.view = G.view === 'in' ? 'out' : 'in'; b.textContent = G.view === 'in' ? '🚪 Ra ngoài' : '🏠 Vào trong'; drawNow(); } });
   root.addEventListener('focusin', e => { if (e.target.matches?.('.tl-num')) G.lastInput = e.target; });
   root.addEventListener('change', e => {
     const t = e.target; if (t.dataset?.p3) { p3Change(t); return; } if (!t.matches?.('.tl-num')) return;
@@ -500,7 +514,7 @@ function renderPartial() { // vẽ lại sau khi con trỏ đã sang ô mới, r
   setTimeout(() => { const a = document.activeElement, i = a?.matches?.('.tl-num[data-i]') ? a.dataset.i : null; hud(); panel(); if (i) $(`.tl-num[data-i="${i}"]`, $('#tlPanel'))?.focus(); }, 0);
 }
 function orderTotal(s, sup) { return E.quote(s, sup, ordLines(), { credit: payCredit(s, sup), br: G.br }).total; }
-function updOrdTotal() { const s = st(), t = orderTotal(s, D.SUPPLIERS[G.sup] && D.SUPPLIERS[G.sup].stage <= s.stage ? G.sup : 'A'); const el = $('#tlOrdTotal'); if (el) el.textContent = t ? kfmt(t) : '0k'; const sm = $('#tlOrdSum'); if (sm) sm.innerHTML = ordSum(s, D.SUPPLIERS[G.sup] && D.SUPPLIERS[G.sup].stage <= s.stage ? G.sup : 'A'); }
+function updOrdTotal() { const s = st(), t = orderTotal(s, D.SUPPLIERS[G.sup] && D.SUPPLIERS[G.sup].stage <= s.stage ? G.sup : 'A'); const el = $('#tlOrdTotal'); if (el) el.textContent = t ? kfmt(t) : '0K'; const sm = $('#tlOrdSum'); if (sm) sm.innerHTML = ordSum(s, D.SUPPLIERS[G.sup] && D.SUPPLIERS[G.sup].stage <= s.stage ? G.sup : 'A'); }
 function onAct(a, ev) {
   const s = st(), d = a.dataset, act = d.a, res = r => { if (r && !r.ok) toast(r.reason, 2400); return r; };
   switch (act) {
@@ -622,7 +636,7 @@ function loop(ts) {
       const before = Math.floor(G.S.tick / 30);
       const done = E.advance(s, G.S, n); consume(G.S);
       const clk = $('#hT b'); if (clk) clk.textContent = clockText();
-      const m = $('#hM b'); if (m) m.textContent = hudMoney(s.cash); const ap = $('#hA b'); if (ap) ap.textContent = s.ap;
+      const m = $('#tlCash b'); if (m) m.textContent = hudMoney(s.cash); const ap = $('#hA b'); if (ap) ap.textContent = s.ap;
       liveStats();
       if (Math.floor(G.S.tick / 30) !== before && !done) save(false); // điểm lưu mỗi slot (30 phút game)
       if (done) finish();

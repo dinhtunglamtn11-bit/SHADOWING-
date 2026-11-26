@@ -197,7 +197,7 @@ const mastery = (lang, unit) => {
 };
 
 // ---------- giao diện ----------
-let box = null, state = { units: [], u: 0, p: 0, mode: 'free', view: 'list', hide: false, w: null, pad: null, done: null, mist: 0 };
+let box = null, state = { units: [], u: 0, p: 0, mode: 'free', view: 'list', hide: false, w: null, pad: null, done: null, mist: 0, log: new Map() };
 
 export function render(el) {
   // hai màn: luyện từng chữ trong danh sách, hoặc “Bộ viết” (nhập nghĩa + chữ, ẩn chữ khi làm bài)
@@ -285,12 +285,13 @@ async function stageSubmit(unit, lang, host) {
   const meaning = cards.allCards(lang).find(c => c.front.startsWith(unit))?.back?.filter(Boolean).join(' · ') || '';
   const hide = state.hide;
   host.innerHTML = `<div class="row between"><b lang="${langInfo(lang).bcp}">${hide ? `Chữ ${state.u + 1}/${state.units.length}` : esc(unit)}</b>
-      <span>${hide ? '' : '<button class="btn" id="hwSay" title="Nghe đọc">🔊</button>'}</span></div>
+      <span>${hide ? '' : '<button class="btn" id="hwSay" title="Nghe đọc">🔊</button> '}<button class="btn" id="hwEnd">⏹ Kết thúc</button></span></div>
     <div class="row">${MODES}</div>
     <label class="dim chk"><input type="checkbox" id="hwHide" ${hide ? 'checked' : ''}> Ẩn chữ mẫu (viết từ trí nhớ, chỉ hiện nghĩa/phiên âm)</label>
     <div id="hwSubmit"></div>
     <div class="dim hwcredit">Dữ liệu nét: Make Me a Hanzi (chữ Hán), hanzi-writer-data-jp (kanji), KanjiVG (kana, chữ Latin, CC BY-SA 3.0).</div>`;
   bindModes();
+  $('#hwEnd', box).onclick = endSession;
   $('#hwHide', box).onchange = e => { state.hide = e.target.checked; chips(); stage(); };
   $('#hwSay', box)?.addEventListener('click', () => say(unit, langInfo(lang).bcp));
   let pron = '';
@@ -300,7 +301,7 @@ async function stageSubmit(unit, lang, host) {
   mountSubmitWriter($('#hwSubmit', box), {
     answer: unit, lang, meaning: hide ? meaning : '', pron: hide ? pron : '', showPron: false, showModel: !hide,
     nextLabel: 'Chữ sau ▶',
-    onGraded: () => chips(),
+    onGraded: r => { state.log.set(unit, r?.score ?? 0); chips(); },
     onNext: () => { state.u = (state.u + 1) % Math.max(1, state.units.length); state.p = 0; chips(); stage(); },
   });
 }
@@ -315,7 +316,7 @@ async function stage() {
   const ch = ps[state.p], isHan = HAN.test(ch);
   const meaning = cards.allCards(lang).find(c => c.front.startsWith(unit))?.back?.filter(Boolean).join(' · ') || '';
   host.innerHTML = `<div class="row between"><b>${esc(unit)} <span class="dim">· chữ ${state.p + 1}/${ps.length}</span></b>
-      <span><button class="btn" id="hwSay" title="Nghe đọc">🔊</button></span></div>
+      <span><button class="btn" id="hwSay" title="Nghe đọc">🔊</button> <button class="btn" id="hwEnd">⏹ Kết thúc</button></span></div>
     ${meaning ? `<div class="dim">${esc(meaning)}</div>` : ''}<div class="dim" id="hwPy"></div>
     <div class="row">${MODES}</div>
     <div id="hwBox" class="hwbox"></div>
@@ -325,6 +326,7 @@ async function stage() {
     <div class="dim hwcredit">Dữ liệu nét: Make Me a Hanzi (chữ Hán), hanzi-writer-data-jp (kanji), KanjiVG (kana, chữ Latin, CC BY-SA 3.0).</div>`;
   bindModes();
   $('#hwSay', box).onclick = () => say(unit, langInfo(lang).bcp);
+  $('#hwEnd', box).onclick = endSession;
   if (lang === 'zh' && isHan) import('https://cdn.jsdelivr.net/npm/pinyin-pro@3.29.5/+esm').then(m => { const el = $('#hwPy', box); if (el) el.textContent = m.pinyin(ch, { toneType: 'symbol' }); }).catch(() => {});
   const size = Math.max(220, Math.min(340, ($('#hwBox', box).clientWidth || 320)));
   const code = ch.codePointAt(0), kana = code >= 0x3041 && code <= 0x30FF, latin = /^[A-Za-z0-9]$/.test(ch);
@@ -439,7 +441,21 @@ function startPad(ch, lang, size) {
 }
 
 // ---------- kết quả ----------
+// Kết thúc phiên luyện: điểm các chữ đã chấm trong phiên, rồi quay về đầu danh sách
+function endSession() {
+  cleanup();
+  const lang = getLang(), rows = [...state.log], good = rows.filter(([, s]) => s >= 60).length;
+  state.log.clear(); state.u = 0; state.p = 0; chips();
+  const host = $('#hwStage', box);
+  host.innerHTML = `${rows.length ? `<div class="score ${good === rows.length ? 'ok' : good ? 'miss' : 'bad'}">${good}/${rows.length} chữ đạt</div>
+      <div class="qlist">${rows.map(([c, s]) => `<div class="${s >= 60 ? 'ok' : 'bad'}">${s >= 60 ? '✓' : '✗'} <span class="gt" lang="${langInfo(lang).bcp}">${esc(c)}</span> (${s}%)</div>`).join('')}</div>`
+    : '<div class="dim">Bạn chưa chấm chữ nào trong phiên này.</div>'}
+    <div class="row"><button class="btn primary" id="hwRestart">↻ Làm lại từ đầu</button></div>`;
+  $('#hwRestart', box).onclick = stage;
+  host.scrollIntoView({ block: 'nearest' });
+}
 function finish(ch, lang, score, detail) {
+  state.log.set(ch, score);
   const id = hwId(lang, ch), old = store.get('hw', id) || {};
   store.put('hw', id, { lang, char: ch, best: Math.max(old.best ?? 0, score), last: score, tries: (old.tries || 0) + 1, at: Date.now(), deleted: false });
   tracker.hw();
@@ -461,5 +477,5 @@ function advance() {
 }
 
 export function init() {
-  bus.on('lang', () => { cleanup(); });
+  bus.on('lang', () => { cleanup(); state.log.clear(); });
 }

@@ -194,7 +194,7 @@ export function applyChoice(st, mailId, choiceId, auto = false) {
   const need = c.ap || 0;
   if (!auto && st.ap < need) return { ok: false, reason: 'Không đủ điểm hành động (AP).' };
   if (c.cash && !auto && st.cash + c.cash < -5000 * K) return { ok: false, reason: 'Không đủ tiền.' };
-  if (!auto && c.sp === 'fridgeSale' && (st.stage < 2 || st.equip.fridge || st.cash < 4800 * K)) return { ok: false, reason: st.equip.fridge ? 'Bạn đã có tủ mát.' : 'Không đủ tiền mua tủ (4.800k).' };
+  if (!auto && c.sp === 'fridgeSale' && (st.stage < 2 || st.equip.fridge || st.cash < 4800 * K)) return { ok: false, reason: st.equip.fridge ? 'Bạn đã có tủ mát.' : 'Không đủ tiền mua tủ (4.800K).' };
   if (!auto && c.fx?.length && c.fx.every(f => /@\d/.test(f.ts || ''))) { // đơn đặt trước: buổi khách hẹn đã qua thì không nhận được nữa
     const last = Math.max(...c.fx.map(f => +f.ts.split('@')[1]));
     if (st.day > m.day || st.k > last || (st.k === last && st.phase !== 'PREP' && st.phase !== 'LIVE')) return { ok: false, reason: 'Buổi khách hẹn đã qua.' };
@@ -215,7 +215,7 @@ export function applyChoice(st, mailId, choiceId, auto = false) {
 function inspectResult(st, dirty) { // kết quả kiểm tra vệ sinh (E33) ở cuối ngày xảy ra; dirty: cuối ngày còn lô đến hạn (đo trước khi bỏ hàng hỏng)
   const p = st.plan.find(x => x.ev === 'E33' && x.day === st.day && x.happened); if (!p) return;
   const bad = dirty && st.flags.clean !== st.day;
-  if (bad) { st.rep = clamp(st.rep - 3, 0, 100); st.cash -= 400 * K; spend(st, 400 * K); ledger(st, 'Phạt vệ sinh', -400 * K); pushMail(st, { kind: 'SYSTEM', src: 'official', title: 'Kiểm tra vệ sinh: chưa đạt', body: 'Kho còn lô hết hạn. Bạn bị phạt 400k và danh tiếng −3.' }); }
+  if (bad) { st.rep = clamp(st.rep - 3, 0, 100); st.cash -= 400 * K; spend(st, 400 * K); ledger(st, 'Phạt vệ sinh', -400 * K); pushMail(st, { kind: 'SYSTEM', src: 'official', title: 'Kiểm tra vệ sinh: chưa đạt', body: 'Kho còn lô hết hạn. Bạn bị phạt 400K và danh tiếng −3.' }); }
   else { st.rep = clamp(st.rep + 2, 0, 100); pushMail(st, { kind: 'REWARD', src: 'official', title: 'Kiểm tra vệ sinh: đạt', body: 'Kho sạch, giấy tờ đủ. Danh tiếng +2.' }); }
 }
 // khoản chi khác trong ngày (phí giao, phí tự trông, chuyển kho, sự kiện…), âm là khoản thu
@@ -359,11 +359,11 @@ function crisisTick(st) {
 export const supOpen = (st, sup, day) => supplierOpenOn(sup, day) && !(st.fx || []).some(f => f.t === 'supplier.closed' && f.ts === sup && f.from <= tau(day, 0) && tau(day, 0) <= f.to);
 export function dqiAvg(st, days = 14) { const a = (st.dqi || []).filter(x => x[0] > st.day - days); return a.length ? a.reduce((s, x) => s + x[1], 0) / a.length : 0; }
 export function upgradeStatus(st) { // điều kiện nâng lên giai đoạn kế tiếp
-  const k = n => (n / K).toLocaleString('vi-VN') + 'k';
+  const k = n => (n / K).toLocaleString('vi-VN') + 'K';
   const free = st.cash - owed(st); // tiền thật sự của mình: trừ phần còn nợ nhà cung cấp
-  if (st.stage === 1) { const U = P.upgrade2; const need = U.cash + 3000 * K; return { to: 2, ok: free >= need && st.rep >= U.rep && st.day >= U.days, cost: U.cash, name: 'Tiệm nhỏ', need: [['Tiền ≥ ' + k(need) + ' (phí nâng cấp + vốn lưu động 3.000k)', st.cash >= need], ['Danh tiếng R ≥ ' + U.rep, st.rep >= U.rep], ['Đã mở ≥ ' + U.days + ' ngày', st.day >= U.days]] }; }
-  if (st.stage === 2) { const U = P.upgrade3, sk = st.staff.filter(s => s.skill >= 1.1).length; const need = U.cash + 8000 * K; return { to: 3, ok: free >= need && st.rep >= U.rep && sk >= 2, cost: U.cash, name: 'Cửa hàng', need: [['Tiền ≥ ' + k(need) + ' (phí nâng cấp + vốn lưu động 8.000k)', st.cash >= need], ['Danh tiếng R ≥ ' + U.rep, st.rep >= U.rep], ['Có ít nhất 2 nhân viên giỏi (tay nghề ≥ 1,1): hiện ' + sk, sk >= 2]] }; }
-  if (st.stage === 3) { const U = P.upgrade4, d = dqiAvg(st); const need = U.cash + 15000 * K; return { to: 4, ok: free >= need && st.rep >= U.rep && d >= U.dqi, cost: U.cash, name: 'Chuỗi (chi nhánh 2)', need: [['Tiền ≥ ' + k(need) + ' (phí nâng cấp + vốn lưu động 15.000k)', st.cash >= need], ['Danh tiếng R ≥ ' + U.rep, st.rep >= U.rep], ['DQI trung bình 14 ngày ≥ ' + U.dqi + ' (hiện ' + Math.round(d) + ')', d >= U.dqi]] }; }
+  if (st.stage === 1) { const U = P.upgrade2; const need = U.cash + 3000 * K; return { to: 2, ok: free >= need && st.rep >= U.rep && st.day >= U.days, cost: U.cash, name: 'Tiệm nhỏ', need: [['Tiền ≥ ' + k(need) + ' (phí nâng cấp + vốn lưu động 3.000K)', st.cash >= need], ['Danh tiếng R ≥ ' + U.rep, st.rep >= U.rep], ['Đã mở ≥ ' + U.days + ' ngày', st.day >= U.days]] }; }
+  if (st.stage === 2) { const U = P.upgrade3, sk = st.staff.filter(s => s.skill >= 1.1).length; const need = U.cash + 8000 * K; return { to: 3, ok: free >= need && st.rep >= U.rep && sk >= 2, cost: U.cash, name: 'Cửa hàng', need: [['Tiền ≥ ' + k(need) + ' (phí nâng cấp + vốn lưu động 8.000K)', st.cash >= need], ['Danh tiếng R ≥ ' + U.rep, st.rep >= U.rep], ['Có ít nhất 2 nhân viên giỏi (tay nghề ≥ 1,1): hiện ' + sk, sk >= 2]] }; }
+  if (st.stage === 3) { const U = P.upgrade4, d = dqiAvg(st); const need = U.cash + 15000 * K; return { to: 4, ok: free >= need && st.rep >= U.rep && d >= U.dqi, cost: U.cash, name: 'Chuỗi (chi nhánh 2)', need: [['Tiền ≥ ' + k(need) + ' (phí nâng cấp + vốn lưu động 15.000K)', st.cash >= need], ['Danh tiếng R ≥ ' + U.rep, st.rep >= U.rep], ['DQI trung bình 14 ngày ≥ ' + U.dqi + ' (hiện ' + Math.round(d) + ')', d >= U.dqi]] }; }
   return { to: 0, ok: false, need: [], cost: 0, name: '' };
 }
 export const EQUIP = {
@@ -488,7 +488,7 @@ export function cmd(st, S, c) {
     case 'SET_MENU': { if (!phaseOK(st, ['PREP'])) return fail('Chỉ đổi thực đơn ở pha chuẩn bị.'); const it = ITEMS[c.item]; if (!it || it.stage > st.stage) return fail('Món chưa mở.'); if (it.seasonal) { st.menu[c.item] = !!c.on; return { ok: true }; } const on = ITEM_ORDER.filter(i => st.menu[i] && !ITEMS[i].seasonal).length; if (c.on && on >= P.items[st.stage]) return fail('Đã đủ số món tối đa của giai đoạn này.'); st.menu[c.item] = !!c.on; return { ok: true }; }
     case 'SET_PRICE': {
       if (!phaseOK(st, ['PREP', 'LIVE'])) return fail('Không đổi giá lúc này.'); const it = ITEMS[c.item]; if (!it) return fail('Món không có.'); if (st.exp && !st.exp.done && st.exp.item === c.item) return fail('Món này đang trong thử nghiệm giá: dừng thử nghiệm trước khi đổi giá.');
-      const p = Math.round(c.price), lo = Math.ceil(it.p * P.priceBand[0]), hi = Math.floor(it.p * P.priceBand[1]); if (!(p >= lo && p <= hi)) return fail(`Giá phải từ ${lo}k đến ${hi}k.`);
+      const p = Math.round(c.price), lo = Math.ceil(it.p * P.priceBand[0]), hi = Math.floor(it.p * P.priceBand[1]); if (!(p >= lo && p <= hi)) return fail(`Giá phải từ ${lo}K đến ${hi}K.`);
       if (p === st.prices[c.item]) return { ok: true };
       if (live) { if (st.ap < 1) return fail('Không đủ AP.'); st.ap -= 1; S.cmds.push({ tk: S.tick, ...c }); }
       st.prices[c.item] = p; return { ok: true };
@@ -515,9 +515,9 @@ export function cmd(st, S, c) {
       if (c.on != null) st.hub.on = !!c.on; if (c.share != null) st.hub.share = !!c.share; return { ok: true };
     }
     case 'PLACE_ORDER': return placeOrder(st, c.sup, c.lines, false, S, c.br, { credit: c.credit });
-    case 'TRANSFER': { // chuyển hàng giữa hai chi nhánh: phí 40k, đến đầu buổi kế
+    case 'TRANSFER': { // chuyển hàng giữa hai chi nhánh: phí 40K, đến đầu buổi kế
       if (st.stage < 4 || !st.b2) return fail('Chuyển kho chỉ có ở giai đoạn 4.'); const from = c.from === 'B' ? st.b2.lots : st.lots, to = c.from === 'B' ? 'A' : 'B', g = c.g, q = Math.floor(c.q);
-      if (!ING[g] || !(q > 0)) return fail('Chọn nguyên liệu và số phần.'); if (from[g].reduce((a, l) => a + l.q, 0) < q) return fail('Chi nhánh gửi không đủ hàng.'); if (st.cash < P.branch.fee) return fail('Không đủ tiền phí chuyển (40k).');
+      if (!ING[g] || !(q > 0)) return fail('Chọn nguyên liệu và số phần.'); if (from[g].reduce((a, l) => a + l.q, 0) < q) return fail('Chi nhánh gửi không đủ hàng.'); if (st.cash < P.branch.fee) return fail('Không đủ tiền phí chuyển (40K).');
       if (isV2(st) && q > freeOf(st, zoneOf(g), to)) return fail('Chi nhánh nhận không đủ chỗ trong kho.');
       let need = q; const moved = []; for (const l of from[g]) { if (need <= 0) break; const t = Math.min(l.q, need); l.q -= t; need -= t; moved.push({ g, q: t, last: l.last, cost: l.cost, qual: l.qual }); }
       st.cash -= P.branch.fee; spend(st, P.branch.fee); ledger(st, 'Phí chuyển kho', -P.branch.fee); const [nd, nk] = nextSess(st.day, st.k); st.pending.push({ id: ++st.orderId, sup: 'A', transfer: true, br: to, lots: moved, t: tau(nd, nk), at: 0, lines: [] });
@@ -532,7 +532,7 @@ export function cmd(st, S, c) {
     case 'CHOOSE': { const r = applyChoice(st, c.mail, c.choice, false); if (r.ok && live && S) { S.lam = lamTable(st, S); if (S.B) S.B.lam = lamTable(st, S.B, P.branch); } return r; } // chọn khi đang bán: tính lại lượng khách ngay
     case 'UPGRADE': { if (st.phase !== 'REVIEW' && st.phase !== 'PREP') return fail('Nâng cấp ở pha xem lại hoặc chuẩn bị.'); const s = upgradeStatus(st); if (!s.to) return fail('Đã ở giai đoạn cao nhất của mùa này.'); if (!s.ok) return fail('Chưa đủ điều kiện nâng cấp.'); st.cash -= s.cost; ledger(st, 'Nâng cấp lên ' + s.name, -s.cost); st.stage = s.to; st.stageDay[s.to] = st.day; st.cand = genCandidates(st);
       for (const it of ITEM_ORDER) if (ITEMS[it].stage === s.to && !(it in st.menu)) st.menu[it] = false; for (const it of ITEM_ORDER) if (!(it in st.prices)) st.prices[it] = ITEMS[it].p;
-      const body = { 2: 'Bạn có chỗ ngồi, hai trạm làm việc, thêm 4 món (bật trong Thực đơn), nhà cung cấp C và thiết bị. Chi phí cố định tăng lên 1.750k mỗi ngày: hãy tuyển người và tăng lưu lượng.', 3: 'Cửa hàng: thêm 4 món, tối đa 6 nhân viên, máy POS và xe giao hàng (kênh giao hàng tận nơi, cần một nhân viên chuyên giao), chi phí cố định 4.100k mỗi ngày, lưu lượng ×3,4.', 4: 'Chuỗi: chi nhánh thứ hai khai trương với kho và nhân viên riêng (đặt hàng cho từng nơi, chuyển hàng qua lại tốn 40k). Chi nhánh 2 thêm lưu lượng khách lớn, chi phí cố định 6.700k mỗi ngày, tối đa 8 nhân viên, 9 AP mỗi buổi.' }[s.to];
+      const body = { 2: 'Bạn có chỗ ngồi, hai trạm làm việc, thêm 4 món (bật trong Thực đơn), nhà cung cấp C và thiết bị. Chi phí cố định tăng lên 1.750K mỗi ngày: hãy tuyển người và tăng lưu lượng.', 3: 'Cửa hàng: thêm 4 món, tối đa 6 nhân viên, máy POS và xe giao hàng (kênh giao hàng tận nơi, cần một nhân viên chuyên giao), chi phí cố định 4.100K mỗi ngày, lưu lượng ×3,4.', 4: 'Chuỗi: chi nhánh thứ hai khai trương với kho và nhân viên riêng (đặt hàng cho từng nơi, chuyển hàng qua lại tốn 40K). Chi nhánh 2 thêm lưu lượng khách lớn, chi phí cố định 6.700K mỗi ngày, tối đa 8 nhân viên, 9 AP mỗi buổi.' }[s.to];
       if (s.to === 4) { st.b2 = { lots: Object.fromEntries(ING_ORDER.map(g => [g, []])) }; for (const [g, q] of Object.entries({ ly: 200, tra: 200, duong: 200, da: 120, chanh: 60, sua: 80, tranchau: 60, dao: 60, gung: 40, matong: 60 })) st.b2.lots[g].push({ q, last: st.day + ING[g].shelf - 1, cost: rm(ING[g].c * K), qual: 0.97 }); }
       if (s.to === 2) st.badges.A08 = st.badges.A08 || st.day; if (s.to === 3) st.badges.A09 = st.badges.A09 || st.day;
       pushMail(st, { kind: 'REWARD', src: 'official', title: 'Chào mừng giai đoạn ' + s.to + ': ' + s.name, body });
@@ -546,7 +546,7 @@ export function cmd(st, S, c) {
     case 'START_EXPERIMENT': {
       if (!st.tools.exp) return fail('Cần công cụ “Thử nghiệm giá” (mua bằng IP).'); if (st.phase !== 'PREP') return fail('Bắt đầu thử nghiệm ở pha chuẩn bị.'); if (st.exp && !st.exp.done) return fail('Đang có một thử nghiệm.');
       const it = ITEMS[c.item]; if (!it || !st.menu[c.item]) return fail('Món này chưa bán.'); const pa = st.prices[c.item], pb = Math.round(c.pb), lo = Math.ceil(it.p * P.priceBand[0]), hi = Math.floor(it.p * P.priceBand[1]);
-      if (!(pb >= lo && pb <= hi) || pb === pa) return fail(`Giá thử phải khác giá hiện tại và nằm trong ${lo}–${hi}k.`);
+      if (!(pb >= lo && pb <= hi) || pb === pa) return fail(`Giá thử phải khác giá hiện tại và nằm trong ${lo}–${hi}K.`);
       st.exp = { item: c.item, pa, pb, blocks: Math.max(6, Math.min(24, c.blocks || 12)), n: 0, a: [], b: [], arm: 0, done: false, start: st.day }; return { ok: true };
     }
     case 'STOP_EXPERIMENT': { if (st.exp && !st.exp.done) { st.prices[st.exp.item] = st.exp.pa; st.exp = null; } return { ok: true }; }
@@ -558,7 +558,7 @@ export function cmd(st, S, c) {
 const discountOf = (st, q) => (isV2(st) ? (TIERS.find(t => q >= t[0]) || [0, 0])[1] : q >= P.discountQty ? P.discountPct : 0);
 export const unitPrice = (st, sup, g, q = 0, express = false) => marketPrice(st, g) * (!express && contractOf(st, sup, g) ? 1 - CONTRACT.disc : 1) * SUPPLIERS[sup].mul * fxVal(st, 'supplier.price', sup) * (1 - discountOf(st, q)) * (st.equip.pearl && g === 'tranchau' ? 0.92 : 1) * (express ? P.expressMul : 1);
 function placeOrder(st, sup, lines, express, S, br, opt = {}) {
-  const sd = SUPPLIERS[sup], fail = reason => ({ ok: false, reason }), v2 = isV2(st), k$ = n => Math.round(n / K).toLocaleString('vi-VN') + 'k';
+  const sd = SUPPLIERS[sup], fail = reason => ({ ok: false, reason }), v2 = isV2(st), k$ = n => Math.round(n / K).toLocaleString('vi-VN') + 'K';
   if (!sd || sd.stage > st.stage || (sd.needFlag && !st.flags[sd.needFlag])) return fail('Nhà cung cấp này chưa mở.');
   lines = (lines || []).filter(l => l.q > 0 && ING[l.g]); if (!lines.length) return fail('Chưa chọn mặt hàng nào.');
   if (sd.fresh && lines.some(l => ING[l.g].grp !== 'fresh')) return fail('Nhà cung cấp C chỉ bán nhóm tươi.');
@@ -833,7 +833,7 @@ function trackExp(st, S, rep) {
     x.done = true; x.res = { conclusive, better, ma, mb, z, pct: ma ? (mb - ma) / Math.abs(ma) : 0 };
     st.prices[it] = conclusive ? (better === 'B' ? x.pb : x.pa) : x.pa; (st.expList ||= []).push({ day: S.day, item: it, ...x.res, pa: x.pa, pb: x.pb });
     if (conclusive) { st.expDone = (st.expDone || 0) + 1; st.ip += 2; if (Math.abs(x.res.pct) >= 0.08) st.flags.priceWin = S.day; }
-    pushMail(st, { kind: conclusive ? 'REWARD' : 'INFO', src: 'official', title: 'Kết quả thử nghiệm giá: ' + ITEMS[it].name, body: conclusive ? `Giá ${better === 'B' ? x.pb : x.pa}k cho lãi mỗi buổi cao hơn có ý nghĩa 90% (${Math.round(Math.abs(x.res.pct) * 100)}%). Thưởng 2 IP; giá đã được đặt về mức tốt hơn.` : `Chưa kết luận được (khác biệt nằm trong khoảng nhiễu). Giá về ${x.pa}k. Thử lại với khoảng giá khác hoặc nhiều buổi hơn.` });
+    pushMail(st, { kind: conclusive ? 'REWARD' : 'INFO', src: 'official', title: 'Kết quả thử nghiệm giá: ' + ITEMS[it].name, body: conclusive ? `Giá ${better === 'B' ? x.pb : x.pa}K cho lãi mỗi buổi cao hơn có ý nghĩa 90% (${Math.round(Math.abs(x.res.pct) * 100)}%). Thưởng 2 IP; giá đã được đặt về mức tốt hơn.` : `Chưa kết luận được (khác biệt nằm trong khoảng nhiễu). Giá về ${x.pa}K. Thử lại với khoảng giá khác hoặc nhiều buổi hơn.` });
   }
 }
 
@@ -900,7 +900,7 @@ export function closeDay(st) {
   const hold = holdCost(st); st.cash -= hold; // phí giữ hàng tính trên hàng còn lại sau khi bỏ hàng hỏng
   const due = (st.payables || []).filter(p => p.due <= day), paid = due.reduce((a, p) => a + p.amt, 0);
   if (paid > 0) { st.cash -= paid; st.payables = st.payables.filter(p => p.due > day); pushMail(st, { kind: 'SYSTEM', src: 'official', title: 'Đã trả công nợ đến hạn', body: 'Trả nhà cung cấp ' + Math.round(paid / K) + 'k.' }); }
-  // vay gia đình khi âm tiền (tối đa 5.000k)
+  // vay gia đình khi âm tiền (tối đa 5.000K)
   if (st.cash < 0 && st.debt < 5000 * K) { const b = Math.min(-st.cash, 5000 * K - st.debt); st.cash += b; st.debt += b; pushMail(st, { kind: 'SYSTEM', src: 'official', title: 'Vay gia đình', body: 'Tiền mặt âm nên bạn vay gia đình ' + Math.round(b / K) + 'k (lãi 0,05% mỗi ngày). Hãy tăng lợi nhuận để trả.' }); }
   else if (st.debt > 0 && st.cash > st.debt + 3000 * K) { st.cash -= st.debt; st.debt = 0; }
   inspectResult(st, dirty);

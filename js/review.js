@@ -59,14 +59,20 @@ function start() {
   renderSession();
 }
 
+// hết thẻ hoặc bấm Kết thúc: hiện số lượt đã ôn (chưa chấm thẻ nào thì về thẳng trang ôn thẻ)
+function endSession() {
+  const s = session; if (!s) return;
+  session = null; stopClip();
+  const left = new Set(s.queue).size;
+  if (left && !s.graded) return render();
+  body().innerHTML = `<div class="qcard"><div class="rvbig">🎉 Xong! Bạn đã ôn ${s.done} lượt</div>${left ? `<div class="dim">Còn ${left} thẻ chưa ôn xong.</div>` : ''}<div class="row"><button class="btn primary" id="rvHome">Về trang ôn thẻ</button><button class="btn" id="rvQuiz">🧩 Làm bài tập hôm nay</button></div></div>`;
+  $('#rvHome').onclick = render; $('#rvQuiz').onclick = () => setTab('quiz');
+  updateBadge();
+}
+
 async function renderSession() {
   const s = session;
-  if (!s.queue.length) {
-    session = null;
-    body().innerHTML = `<div class="qcard"><div class="rvbig">🎉 Xong! Bạn đã ôn ${s.done} lượt</div><div class="row"><button class="btn primary" id="rvHome">Về trang ôn thẻ</button><button class="btn" id="rvQuiz">🧩 Làm bài tập hôm nay</button></div></div>`;
-    $('#rvHome').onclick = render; $('#rvQuiz').onclick = () => setTab('quiz');
-    updateBadge(); return;
-  }
+  if (!s.queue.length) return endSession();
   const id = s.queue[0], c = store.get('cards', id);
   if (!c || c.deleted) { s.queue.shift(); return renderSession(); }
   const bcp = langInfo(c.lang).bcp;
@@ -76,7 +82,7 @@ async function renderSession() {
   const front = hide ? '<div class="dim">🎧 Nghe rồi nhớ lại câu và nghĩa</div>' : `<div class="qtext" lang="${bcp}">${sayable(c.front, c.lang)}</div>`;
   const back = s.flipped ? (hide ? '' : '') + (c.back || []).map(l => `<div class="qback" lang="${bcp}">${esc(l)}</div>`).join('') : '';
   const meta = `${c.weak ? '<span class="bad">câu yếu</span> · ' : ''}${c.reps ? `đã ôn ${c.reps} lần` : 'thẻ mới'}${c.title ? ' · ' + esc(c.title) : ''}`;
-  body().innerHTML = `<div class="qprog"><span>Còn ${s.queue.length} thẻ</span><progress max="${s.total}" value="${s.done}"></progress></div>
+  body().innerHTML = `<div class="qprog"><span>Còn ${s.queue.length} thẻ</span><progress max="${s.total}" value="${s.done}"></progress><button class="btn" id="rvEnd">⏹ Kết thúc</button></div>
     <div class="qcard">
       <div class="dim">${meta}</div>
       <div class="row c"><button class="btn big" id="rvPlay">🔊 ${hasClip ? 'Nghe câu' : 'Đọc to'}</button></div>
@@ -86,6 +92,7 @@ async function renderSession() {
     </div>`;
   const play = () => (hasClip ? playClip(c.itemId, c.t0, c.t1, c.lang) : say(c.front, bcp));
   $('#rvPlay').onclick = play;
+  $('#rvEnd').onclick = endSession;
   if (hide || s.listen) setTimeout(play, 150);
   $('#rvFlip')?.addEventListener('click', () => { s.flipped = true; renderSession(); });
   $$('.grades [data-g]', body()).forEach(b => b.onclick = () => gradeCard(id, +b.dataset.g));
@@ -95,6 +102,7 @@ function gradeCard(id, g) {
   const s = session; if (!s) return;
   stopClip();
   cards.grade(id, g);
+  s.graded = true;
   s.queue.shift();
   if (g === 0) s.queue.push(id); // quên: ôn lại ngay trong buổi này
   else s.done++;
