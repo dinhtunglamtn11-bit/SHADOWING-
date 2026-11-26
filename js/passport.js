@@ -318,6 +318,8 @@ function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
     c.fillStyle = '#009c3b'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#ffdf00'; c.beginPath(); c.moveTo(32, 5); c.lineTo(59, 24); c.lineTo(32, 43); c.lineTo(5, 24); c.closePath(); c.fill();
     c.fillStyle = '#002776'; c.beginPath(); c.arc(32, 24, 11, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2.4; c.beginPath(); c.arc(32, 50, 28, Math.PI * 1.17, Math.PI * 1.83); c.stroke(); return;
   }
+  if (cc === 'sa') { c.fillStyle = '#165d31'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#fff'; for (const [x, w] of [[14, 8], [24, 5], [31, 9], [42, 7]]) c.fillRect(x, 15, w, 3); for (const x of [16, 22, 27, 34, 38, 46]) c.fillRect(x, 19, 3, 3); c.fillRect(14, 31, 34, 2); c.fillRect(44, 29, 2, 6); c.fillRect(48, 31, 3, 2); return; } // cờ Ả Rập Xê Út (chữ và kiếm cách điệu)
+  if (cc === 'it') { c.fillStyle = '#009246'; c.fillRect(0, 0, 21, 48); c.fillStyle = '#fff'; c.fillRect(21, 0, 22, 48); c.fillStyle = '#ce2b37'; c.fillRect(43, 0, 21, 48); return; } // cờ Ý: xanh, trắng, đỏ
   if (cc === 'nl') { c.fillStyle = '#ae1c28'; c.fillRect(0, 0, 64, 16); c.fillStyle = '#fff'; c.fillRect(0, 16, 64, 16); c.fillStyle = '#21468b'; c.fillRect(0, 32, 64, 16); return; } // cờ Hà Lan: đỏ, trắng, xanh dương
   if (cc === 'gh') { // cờ Ghana: đỏ, vàng, xanh lá và ngôi sao đen ở giữa
     c.fillStyle = '#ce1126'; c.fillRect(0, 0, 64, 16); c.fillStyle = '#fcd116'; c.fillRect(0, 16, 64, 16); c.fillStyle = '#006b3f'; c.fillRect(0, 32, 64, 16);
