@@ -22,29 +22,70 @@ export { kfmt, k1 };
 const pad = n => String(n).padStart(2, '0');
 
 // ---------- lưu / tải ----------
-function save(sync) {
-  try {
-    const pf = G.profile; pf.live = G.st ? G.st.coins || 0 : 0; mergeLife(pf, G.st, D); // thành tích đã đạt luôn được giữ trong hồ sơ
-    localStorage.setItem(KEY, JSON.stringify({ v: 1, profile: pf, st: G.st, S: G.S ? { ...G.S, snap: null, out: [] } : null }));
-    localStorage.setItem('tealab:coins', String((pf.coinsPrev || 0) + (G.st ? G.st.coins || 0 : 0)));
-  } catch (e) { toast('Không lưu được TeaLab: ' + (e.message || e), 3500); }
-  if (sync) syncSoon();
+let lastSig = '';
+// dấu vân tay của lượt chơi (không tính mốc thời gian): chỉ khi nội dung đổi thật mới đóng mốc mt và đẩy lên máy chủ
+const sigOf = () => (G.st ? JSON.stringify(G.st, (k, v) => (k === 'mt' ? undefined : v)) + '|' + (G.S ? G.S.tick : '') : '');
+function writeLocal() {
+  const pf = G.profile; pf.live = G.st ? G.st.coins || 0 : 0; mergeLife(pf, G.st, D); // thành tích đã đạt luôn được giữ trong hồ sơ
+  localStorage.setItem(KEY, JSON.stringify({ v: 1, profile: pf, st: G.st, S: G.S ? { ...G.S, snap: null, out: [] } : null }));
+  localStorage.setItem('tealab:coins', String((pf.coinsPrev || 0) + (G.st ? G.st.coins || 0 : 0)));
 }
+function save(sync) {
+  let changed = false;
+  try {
+    const sig = sigOf(); changed = sig !== lastSig; if (changed && G.st) { G.st.mt = Date.now(); lastSig = sig; }
+    writeLocal();
+  } catch (e) { toast('Không lưu được TeaLab: ' + (e.message || e), 3500); }
+  if (sync || changed) syncSoon();
+}
+// ---------- đồng bộ giữa các máy ----------
+const untouched = s => !!s.silent && !s.sessionsPlayed; // lượt tự tạo khi mở game lần đầu, chưa chơi buổi nào
+const PH = { PREP: 0, LIVE: 1, REVIEW: 2, DAYEND: 3, FINAL: -1 };
+const cmpList = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] > b[i] ? 1 : -1; return 0; };
+const place = s => [s.day || 0, s.k || 0, PH[s.phase] ?? 0, s.mt || 0]; // đi xa đến đâu: ngày, buổi, pha, lần sửa cuối
+// bản a có đi trước bản b không (cả hai máy dùng cùng một quy tắc nên luôn về cùng một bản)
+function ahead(a, b) {
+  if (!a) return false; if (!b) return true;
+  if (untouched(a)) return false; if (untouched(b)) return true;
+  if ((a.imp || 0) !== (b.imp || 0)) return (a.imp || 0) > (b.imp || 0); // bản vừa nhập tay được ưu tiên
+  const ta = a.t0 || a.runId || 0, tb = b.t0 || b.runId || 0;
+  if (ta !== tb) {
+    if (!!a.silent !== !!b.silent) return !a.silent; // lượt bạn chủ động bắt đầu hơn lượt tự tạo
+    if (!a.silent) return ta > tb; // hai lượt chủ động: lượt mới hơn
+  }
+  return cmpList(place(a), place(b)) > 0;
+}
+const remoteSave = () => { try { const r = store.get('prefs', 'tealab'); return r?.json ? { json: r.json, o: JSON.parse(r.json) } : null; } catch { return null; } };
 let syncT = 0;
-function syncSoon() { clearTimeout(syncT); syncT = setTimeout(() => { try { const o = JSON.parse(localStorage.getItem(KEY)); const s = JSON.stringify(o); if (s.length < 700000) store.put('prefs', 'tealab', { json: s, t: Date.now() }); } catch { /* bỏ qua */ } }, 4000); }
+function pushNow() {
+  clearTimeout(syncT); syncT = 0;
+  try {
+    const s = localStorage.getItem(KEY), o = JSON.parse(s); if (!o?.st || untouched(o.st)) return;
+    const r = remoteSave();
+    if (r && ahead(r.o.st, o.st)) { pullRemote(); return; } // máy này đang cũ hơn: lấy về, không được đè lên
+    if (r?.json !== s && s.length < 700000) store.put('prefs', 'tealab', { json: s, t: Date.now() });
+  } catch { /* bỏ qua */ }
+}
+function syncSoon() { clearTimeout(syncT); syncT = setTimeout(pushNow, 4000); }
 function load() {
   try {
     const o = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (o && o.v === 1) { G.profile = o.profile || PROFILE0(); G.st = o.st; G.S = o.S; }
   } catch { /* bỏ qua */ }
   G.profile ||= PROFILE0(); ensureProfile(G.profile);
-  if (G.st) { E.ensure(G.st); G.st.runId ||= Date.now(); G.st.t0 ||= G.st.runId; mergeLife(G.profile, G.st, D); } // bản lưu cũ: gắn mã lượt, gộp thành tích vào hồ sơ // bản lưu cũ: bổ sung món / nguyên liệu / trường mới
+  if (G.st) { E.ensure(G.st); G.st.runId ||= Date.now(); G.st.t0 ||= G.st.runId; mergeLife(G.profile, G.st, D); lastSig = sigOf(); } // bản lưu cũ: gắn mã lượt, gộp thành tích vào hồ sơ // bản lưu cũ: bổ sung món / nguyên liệu / trường mới
 }
-function pullRemote() { // bản lưu từ máy khác: lấy bản có nhiều ngày hơn
-  const r = store.get('prefs', 'tealab'); if (!r || !r.json || G.alive && G.st && G.st.phase === 'LIVE') return;
-  try { const o = JSON.parse(r.json); const l = G.st, rt = o?.st?.t0 || o?.st?.runId || 0, lt = l?.t0 || 0; // lượt mới hơn thắng; cùng lượt thì lấy bản đi xa hơn (không để bản cũ đè lượt vừa chơi lại)
-    const ri = o?.st?.imp || 0, li = l?.imp || 0; // bản vừa nhập tay (imp) được ưu tiên hơn bản đồng bộ cũ
-    if (o && o.st && (!l || (l.silent && !l.sessionsPlayed && o.st.sessionsPlayed > 0) || (ri !== li ? ri > li : rt === lt ? o.st.day > l.day : rt > lt && !o.st.silent))) { G.profile = mergeProfile(G.profile, o.profile); G.st = E.ensure(o.st); G.st.runId ||= Date.now(); G.st.t0 ||= G.st.runId; G.S = o.S; if (G.root) render(); } } catch { /* bỏ qua */ }
+function pullRemote(entering) { // bản lưu từ máy khác: lấy bản đi xa hơn theo ngày, buổi, pha
+  const r = remoteSave(); if (!r?.o?.st) return;
+  if (!G.st) load(); // so với bản đang lưu trên máy này, kể cả khi chưa mở game
+  if (G.onScreen && !entering && G.st?.phase === 'LIVE') return; // đang bán ngay trên máy này thì không giật bản khác vào
+  try {
+    const o = r.o;
+    if (!ahead(o.st, G.st)) { if (G.st && ahead(G.st, o.st)) syncSoon(); return; } // máy này đi trước: đẩy lên lại
+    G.profile = mergeProfile(G.profile, o.profile); G.st = E.ensure(o.st); G.st.runId ||= Date.now(); G.st.t0 ||= G.st.runId; G.S = o.S;
+    G.lastS = null; G.ord = {}; G.vis = []; G.feed = []; lastSig = sigOf(); writeLocal();
+    if (G.root) { render(); if (G.onScreen) toast('🔄 Đã lấy bản chơi mới hơn từ máy khác', 2600); }
+  } catch { /* bỏ qua */ }
 }
 
 // ---------- vòng chơi ----------
@@ -450,7 +491,10 @@ function bindRoot(root) {
     if (t.dataset.calc === 'price') { const r = E.cmd(s, G.S, { t: 'SET_PRICE', item: t.dataset.i, price: parseInt(String(t.value).replace(/\D/g, '')) }); if (!r.ok) toast(r.reason, 2200); renderPartial(); }
     else if (t.dataset.calc === 'qty') { const v = Math.max(0, Math.floor(+String(t.value).replace(',', '.') || 0)); if (t.dataset.ex) { G.exq = G.exq || {}; G.exq[t.dataset.g] = v; } else { G.ord[t.dataset.g] = v; updOrdTotal(); } t.value = v || ''; }
   });
-  document.addEventListener('visibilitychange', () => { if (G.alive && document.hidden && st()?.phase === 'LIVE') save(false); });
+  // mọi thao tác (giá, đặt hàng, nhân sự, công cụ…) đều được lưu và đồng bộ, không đợi hết buổi
+  let autoT = 0; const autoSave = () => { clearTimeout(autoT); autoT = setTimeout(() => { if (G.st && !G.busy) save(false); }, 700); };
+  root.addEventListener('click', autoSave); root.addEventListener('change', autoSave);
+  document.addEventListener('visibilitychange', () => { if (G.alive && document.hidden) { save(false); pushNow(); } }); // cất máy: đẩy ngay, không chờ 4 giây
 }
 function renderPartial() { // vẽ lại sau khi con trỏ đã sang ô mới, rồi trả con trỏ về đúng ô đó
   setTimeout(() => { const a = document.activeElement, i = a?.matches?.('.tl-num[data-i]') ? a.dataset.i : null; hud(); panel(); if (i) $(`.tl-num[data-i="${i}"]`, $('#tlPanel'))?.focus(); }, 0);
@@ -589,13 +633,13 @@ function loop(ts) {
 export function enter() { // vào mục TeaLab
   if (!G.alive) { G.alive = true; G.raf = setInterval(() => loop(performance.now()), 50); } // đồng hồ game dùng bộ hẹn giờ (không phải rAF) để chạy đều và còn chạy được khi khung hình bị trình duyệt hạn chế
   if (!G.rafId) { G.fr = 0; G.rafId = requestAnimationFrame(rafLoop); }
-  pullRemote(); if (!G.root) return; render(); checkUrgent(); A.warm?.();
+  G.onScreen = true; pullRemote(true); if (!G.root) return; render(); checkUrgent(); A.warm?.();
 }
-export function leave() { if (G.st?.phase === 'LIVE') save(false); G.paused = true; if (G.rafId) { cancelAnimationFrame(G.rafId); G.rafId = 0; } }
+export function leave() { G.onScreen = false; if (G.st) { save(false); pushNow(); } G.paused = true; if (G.rafId) { cancelAnimationFrame(G.rafId); G.rafId = 0; } }
 export function init() {
   const host = $('#tlHost'); if (host && !G.root) mount(host);
   bus.on('show', v => { if (v === 'tealab') { G.paused = false; enter(); } else if (G.alive) leave(); });
-  bus.on('store', c => { if (c === 'prefs' || c === '*') pullRemote(); });
+  bus.on('store', c => { if (c === 'prefs' || c === '*') pullRemote(false); });
   bus.on('flush', () => { if (G.st) save(false); });
 }
 export const coins = () => { try { return +localStorage.getItem('tealab:coins') || 0; } catch { return 0; } };

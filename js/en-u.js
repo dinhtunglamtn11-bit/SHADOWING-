@@ -9,6 +9,7 @@ export default {
   "Từ giờ trân châu phải nấu và trà phải ủ theo mẻ: xem mục Sơ chế theo mẻ trước khi mở cửa. Bạn cũng phân được trạm cho nhân viên và ký hợp đồng mua hàng.": "From now on pearls must be cooked and tea brewed in batches: check Batch prep before opening. You can also assign staff to stations and sign supply contracts.",
   "Bạn mở được kho trung tâm cho hai chi nhánh ở pha chuẩn bị.": "You can now open a central warehouse for the two branches while preparing.",
   "Lãi đã trừ cả phí giao hàng, phí tự trông tiệm, phí chuyển kho và khoản chi do sự kiện. Riêng cột mốc về lãi chấm theo lãi chưa trừ các khoản này.": "Profit is after delivery fees, auto-run fees, transfer fees and event costs. Profit milestones alone are scored before these items.",
+  "Đã lấy bản chơi mới hơn từ máy khác": "Loaded a newer save from another device",
   // ===== phân tích sau mùa =====
   "Tốn tiền": "Costly calls", "Ba quyết định tốn tiền nhất": "Your three costliest decisions",
   "Chưa ghi được quyết định nào làm mất tiền. Chơi thêm vài ngày rồi xem lại.": "No money-losing decision recorded yet. Play a few more days and check again.",
