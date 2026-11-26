@@ -252,3 +252,52 @@ body[data-view="tealab"] #lameEdge { display: none !important; }
 .hs-best { background: #ffd84d66; font-weight: 700; } .hs-g td { background: var(--tl-chip); font-family: var(--pf); text-align: left !important; font-size: 15px; position: static; }
 .tl-rec { font-size: 12px; background: var(--tl-lowbg); color: var(--tl-card-t); border: 1px solid #d9a41c; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
 .tl-bd.rec { opacity: .85; border-style: dashed; }
+
+/* luật kho v2: thanh sức chứa, công nợ */
+.tl-caps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:4px 0}
+.tl-cap{background:var(--tl-card);color:var(--tl-card-t);border:1px solid rgba(128,128,128,.35);border-radius:8px;padding:5px 7px;font-size:12px;min-width:0}
+.tl-cap>div:first-child{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 6px}
+.tl-cap small{display:block;font-size:11px}
+.tl-cap .tl-bar{margin:3px 0}
+.tl-cap.full{border-color:#e8452c}
+.tl-cap.full .tl-bar i{background:#e8452c}
+.tl-debt{display:inline-block;margin-right:10px}
+.tl-terms{line-height:1.6}
+/* đợt 2: luật đặt hàng tự động, bảng chỉ số */
+.tl-pol{border:1px solid rgba(128,128,128,.35);border-radius:8px;padding:6px 8px;background:var(--tl-card);color:var(--tl-card-t);display:grid;gap:4px;margin:6px 0}
+.tl-pol.on{border:2px solid #2f9e57}
+.tl-polh{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.tl-polh .tl-nm{flex:1;min-width:110px}
+.tl-pol select{min-height:36px;max-width:100%;font:inherit;font-size:14px}
+.tl-polf{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px}
+.tl-polf .tl-num{width:68px}
+.tl-polog{font-size:14px;padding:2px 0;border-bottom:1px dashed var(--line)}
+.tl-kpig{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px}
+.tl-kpi{background:var(--tl-card);color:var(--tl-card-t);border:1px solid rgba(128,128,128,.35);border-radius:8px;padding:6px 8px;display:grid;gap:2px;line-height:1.25}
+.tl-kpi b{font-size:22px}
+.tl-kpi.good{border-left:5px solid #2f9e57}
+.tl-kpi.warn{border-left:5px solid #e8a02c}
+.tl-t tr.good td{font-weight:700}
+.tl-cls{display:inline-block;border-radius:4px;padding:0 5px;color:#1b1030;background:#cfd6e6;font-size:13px}
+.tl-cls.A{background:#ff9a8a}
+.tl-cls.B{background:#ffd84d}
+.tl-cls.C{background:#a8e0a0}
+/* đợt 3: sơ chế theo mẻ, công suất trạm */
+.tl-cook{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin:6px 0}
+.tl-cook .tl-sc{display:grid;justify-items:center;gap:2px;text-align:center}
+.tl-cook .btn{min-height:40px}
+.tl-util{display:grid;grid-template-columns:90px 1fr 48px;gap:6px;align-items:center;font-size:14px;margin:3px 0}
+.tl-util.hot .tl-bar i{background:#e8452c}
+.tl-row select[data-p3]{min-height:36px;font:inherit;font-size:14px;max-width:110px}
+/* phân tích sau mùa */
+.tl-loss{background:var(--tl-card);color:var(--tl-card-t);border:2px solid #e8452c;border-radius:8px;padding:7px 9px;display:grid;gap:3px;margin:6px 0;text-align:left;line-height:1.35}
+.tl-lossh{display:flex;align-items:center;gap:7px}
+.tl-lossh .n{font-size:22px;color:#e8452c}
+.tl-lossh .tl-nm{flex:1;min-width:0}
+.tl-lossh .amt{color:#e8452c;white-space:nowrap}
+:root[data-theme=night] .tl-lossh .n,:root[data-theme=night] .tl-lossh .amt{color:#ff9a8a}
+.tl-fix{display:block}
+.tl-pol .tl-polh .tlic,.tl-util .tlic{vertical-align:middle}
+.tl-art{display:flex;justify-content:center}
+.tl-secb .tl-ill,.tl-wb .tl-ill{max-width:100%;height:auto}
+.tl-go .btn.big{white-space:normal;line-height:1.15;min-width:0}
