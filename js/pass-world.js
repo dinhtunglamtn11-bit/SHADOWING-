@@ -20,7 +20,7 @@ export const WORLD = [
   { k: 'eu', vi: 'Châu Âu', en: 'Europe', regions: [
     R('we', 'Tây Âu & Bắc Âu', 'Western & Northern Europe', 'Pháp|France|fr; Đức|Germany; Anh|United Kingdom; Ireland|Ireland; Hà Lan|Netherlands|nl; Bỉ|Belgium; Luxembourg|Luxembourg; Thụy Sĩ|Switzerland|ch; Áo|Austria; Thụy Điển|Sweden; Na Uy|Norway; Phần Lan|Finland; Đan Mạch|Denmark; Iceland|Iceland'),
     R('se', 'Nam Âu', 'Southern Europe', 'Ý|Italy|it; Tây Ban Nha|Spain; Bồ Đào Nha|Portugal; Hy Lạp|Greece; Croatia|Croatia; Slovenia|Slovenia; Serbia|Serbia; Montenegro|Montenegro; Bosna và Hercegovina|Bosnia and Herzegovina; Bắc Macedonia|North Macedonia; Albania|Albania; Malta|Malta; San Marino|San Marino; Vatican|Vatican City; Andorra|Andorra'),
-    R('ee', 'Đông Âu & Trung Âu', 'Eastern & Central Europe', 'Ba Lan|Poland; Cộng hòa Séc|Czech Republic; Slovakia|Slovakia; Hungary|Hungary; România|Romania; Bulgaria|Bulgaria; Ukraina|Ukraine; Belarus|Belarus; Moldova|Moldova; Nga (phần châu Âu)|Russia (European part); Estonia|Estonia; Latvia|Latvia; Litva|Lithuania'),
+    R('ee', 'Đông Âu & Trung Âu', 'Eastern & Central Europe', 'Ba Lan|Poland; Cộng hòa Séc|Czech Republic; Slovakia|Slovakia; Hungary|Hungary; România|Romania; Bulgaria|Bulgaria; Ukraina|Ukraine; Belarus|Belarus; Moldova|Moldova; Nga|Russia|ru; Estonia|Estonia; Latvia|Latvia; Litva|Lithuania'),
   ] },
   { k: 'am', vi: 'Châu Mỹ', en: 'Americas', regions: [
     R('nca', 'Bắc Mỹ & Trung Mỹ', 'North & Central America', 'Hoa Kỳ|United States|us; Canada|Canada; México|Mexico; Guatemala|Guatemala; Belize|Belize; Honduras|Honduras; El Salvador|El Salvador; Nicaragua|Nicaragua; Costa Rica|Costa Rica; Panamá|Panama'),
