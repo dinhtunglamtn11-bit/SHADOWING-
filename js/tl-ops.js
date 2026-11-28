@@ -229,6 +229,7 @@ function describe(st, key, x) {
   if (kind === 'express') return ['truck', 'Phải gọi giao khẩn', `${u} lần giao khẩn, giá và phí cao hơn đặt thường.`, 'Đặt trước một buổi dựa trên dự báo.'];
   if (kind === 'contract') return ['contract', 'Cam kết hợp đồng quá cao', 'Trả phí vì mua không đủ lượng đã cam kết.', 'Chỉ cam kết nguyên liệu dùng đều.'];
   if (kind === 'loan') return ['coin', 'Để âm tiền phải vay', 'Trả lãi vay.', 'Giữ tiền mặt dự phòng trước khi nâng cấp hay trữ hàng.'];
+  if (kind === 'late') return ['coin', 'Không chừa tiền cho hóa đơn', 'Bị phạt vì không đủ tiền trả đúng hạn.', 'Xem Báo cáo → Dòng tiền trước khi mua sắm và chừa tiền cho hóa đơn.'];
   return ['coin', key, '', ''];
 }
 export function topLosses(st, n = 3) {
