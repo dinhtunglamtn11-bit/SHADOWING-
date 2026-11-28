@@ -50,30 +50,78 @@ export function icon(name, scale = 4, outline = true) {
 // vẽ các biểu tượng trong một vùng HTML: phần tử có data-art="tên" và data-sc="cỡ"
 export function paintIcons(root) { root.querySelectorAll('[data-art]').forEach(el => { if (el.dataset.done) return; el.dataset.done = '1'; el.replaceChildren(icon(el.dataset.art, +el.dataset.sc || 4, el.dataset.ol !== '0')); }); }
 
-// ---------- bảng hiệu cảng biển 192×60 ----------
+// ---------- bảng hiệu cảng biển 192×60 (ảnh động) ----------
 const BW = 192, BH = 60;
-export function banner(cv) {
-  cv.width = BW; cv.height = BH; const c = cv.getContext('2d'); const R = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
-  // trời hoàng hôn theo dải màu
+const COLS = ['#e8452c', '#ffd84d', '#2fa58f', '#4a7be0', '#ff9f43', '#c94a8a'];
+const lerp = (a, b, k) => Math.round(a + (b - a) * Math.max(0, Math.min(1, k)));
+const wrap = (x, span, lead) => ((x + lead) % span + span) % span - lead; // chạy hết khung thì vòng lại
+// chuyến cẩu hàng 9 giây: [giây, vị trí móc x, độ cao đáy móc y, có đang mang hàng]
+const CRANE = [[0, 56, 39, 1], [1.2, 56, 39, 1], [2.4, 56, 22, 1], [4.2, 74, 22, 1], [5.4, 74, 33, 1], [6, 74, 33, 0], [6.8, 74, 22, 0], [8.2, 56, 22, 0], [9, 56, 39, 0]];
+
+function frame(c, t) { // vẽ một khung hình ở thời điểm t (giây)
+  const R = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+  const tick = n => Math.floor(t * n);
+  // trời hoàng hôn theo dải màu, vài ngôi sao nhấp nháy
   ['#2b2f77', '#3b3f94', '#5a4aa8', '#8a5fb0', '#c777a8', '#f09a8a', '#ffc27a'].forEach((col, i) => R(0, i * 5, BW, 5, col));
+  [[8, 2], [52, 3], [88, 1], [126, 4], [178, 2], [162, 8]].forEach(([x, y], i) => { if ((tick(2) + i * 3) % 7 > 1) R(x, y, 1, 1, '#fff6d0'); });
+  // mặt trời
   R(140, 22, 22, 22, '#ffdf8a'); R(144, 18, 14, 4, '#ffdf8a'); R(144, 44, 14, 3, '#ffdf8a'); R(142, 24, 18, 18, '#fff2c0');
-  for (const [x, y, w] of [[10, 8, 24], [60, 14, 30], [110, 6, 22]]) { R(x, y, w, 3, '#d9b6e8'); R(x + 4, y - 3, w - 10, 3, '#e8cbf0'); }
-  // biển
-  R(0, 40, BW, 20, '#2a5aa8'); for (let y = 42; y < 60; y += 4) for (let x = (y % 8 ? 0 : 6); x < BW; x += 12) R(x, y, 6, 1, '#4d85d8');
+  // mây trôi
+  for (const [x0, y, w, v] of [[10, 8, 24, 2.2], [60, 14, 30, 1.4], [110, 6, 22, 3]]) { const x = Math.round(wrap(x0 + t * v, BW + 40, 36)); R(x, y, w, 3, '#d9b6e8'); R(x + 4, y - 3, w - 10, 3, '#e8cbf0'); }
+  // biển, sóng chạy, bóng nắng lấp lánh
+  R(0, 40, BW, 20, '#2a5aa8');
+  for (let y = 42; y < 60; y += 4) { const shift = Math.round(wrap(t * (y % 8 ? 3 : -4), 12, 0)); for (let x = (y % 8 ? 0 : 6) - 12 + shift; x < BW; x += 12) R(x, y, 6, 1, '#4d85d8'); }
   R(0, 40, BW, 2, '#7fb3ec');
-  // cầu cảng và kho
-  R(0, 44, 70, 16, '#4a4f6a'); R(0, 44, 70, 2, '#6a6f8c'); R(6, 28, 36, 16, '#c9704a'); R(6, 26, 36, 3, '#a8503a'); for (let x = 9; x < 40; x += 8) R(x, 34, 5, 10, '#4a3a5a');
-  // cần cẩu
-  R(50, 14, 3, 30, '#e8452c'); R(46, 14, 30, 3, '#e8452c'); R(46, 10, 3, 6, '#e8452c'); R(70, 17, 1, 12, '#222'); R(66, 29, 9, 5, '#2fa58f'); R(50, 14, 3, 30, '#ff6a4a'); R(52, 40, 9, 4, '#8a8fa8');
-  // tàu chở container
+  for (let i = 0; i < 4; i++) { const w = 3 + (tick(3) + i * 2) % 5 * 2; R(151 - (w >> 1) + ((tick(4) + i) % 3) - 1, 50 + i * 2, w, 1, 'rgba(255,223,138,.55)'); }
+  // cầu cảng và kho, đèn cửa kho sáng dần từng ô
+  R(0, 44, 70, 16, '#4a4f6a'); R(0, 44, 70, 2, '#6a6f8c'); R(6, 28, 36, 16, '#c9704a'); R(6, 26, 36, 3, '#a8503a');
+  for (let i = 0, x = 9; x < 40; i++, x += 8) { R(x, 34, 5, 10, '#4a3a5a'); if (i === tick(0.7) % 4) R(x + 1, 36, 3, 3, '#ffd84d'); }
+  // tàu container nhấp nhô, khói bay lên từ ống khói
+  const bob = Math.sin(t * 2) > 0.3 ? 1 : 0;
+  for (let i = 0; i < 3; i++) { const a = (t * 0.55 + i / 3) % 1; c.globalAlpha = 0.75 * (1 - a); R(Math.round(166 + a * 14), Math.round(26 - a * 14) + bob, 3 + Math.round(a * 3), 2 + Math.round(a * 2), '#e8e8f4'); }
+  c.globalAlpha = 1;
+  c.save(); c.translate(0, bob);
   R(80, 38, 90, 8, '#2b2b3a'); R(76, 42, 8, 4, '#2b2b3a'); R(160, 34, 14, 12, '#d9d9e8'); R(163, 36, 8, 4, '#4a7be0'); R(166, 28, 4, 6, '#e8452c');
-  const cols = ['#e8452c', '#ffd84d', '#2fa58f', '#4a7be0', '#ff9f43', '#c94a8a'];
-  for (let r = 0; r < 3; r++) for (let k = 0; k < 8 - r; k++) { const x = 84 + k * 9 + r * 4, y = 36 - r * 5; R(x, y, 8, 5, cols[(k * 2 + r * 3) % 6]); R(x, y, 8, 1, 'rgba(255,255,255,.35)'); R(x + 3, y + 1, 1, 4, 'rgba(0,0,0,.25)'); }
+  for (let r = 0; r < 3; r++) for (let k = 0; k < 8 - r; k++) { const x = 84 + k * 9 + r * 4, y = 36 - r * 5; R(x, y, 8, 5, COLS[(k * 2 + r * 3) % 6]); R(x, y, 8, 1, 'rgba(255,255,255,.35)'); R(x + 3, y + 1, 1, 4, 'rgba(0,0,0,.25)'); }
   R(78, 46, 94, 3, '#c0302a');
-  // máy bay nhỏ và đàn chim
-  R(30, 4, 8, 2, '#fff'); R(34, 2, 2, 6, '#fff'); R(28, 4, 3, 1, '#ffc27a'); for (const [x, y] of [[96, 10], [104, 7], [112, 12]]) { R(x, y, 3, 1, '#2b1d3a'); R(x + 3, y + 1, 3, 1, '#2b1d3a'); }
-  // người quản lý đội mũ bảo hộ đứng trên cầu cảng
-  R(20, 40, 6, 6, '#ffd84d'); R(19, 39, 8, 2, '#ffd84d'); R(20, 36, 6, 4, '#ffd5b5'); R(20, 35, 6, 2, '#ffd84d'); R(21, 37, 1, 1, '#1b1030'); R(24, 37, 1, 1, '#1b1030'); R(18, 40, 10, 8, '#ff9f43'); R(18, 44, 10, 1, '#ffd84d'); R(20, 48, 3, 6, '#2b3a8a'); R(24, 48, 3, 6, '#2b3a8a'); R(27, 41, 6, 8, '#fff'); R(28, 43, 4, 1, '#4a7be0'); R(28, 45, 4, 1, '#4a7be0');
+  c.restore();
+  // bọt nước quanh mũi và đuôi tàu
+  const f = tick(3) % 3; R(72 - f, 48, 4, 1, '#cfe4ff'); R(173 + f, 48, 4, 1, '#cfe4ff'); R(70 + f, 50, 3, 1, '#7fb3ec'); R(176 - f, 50, 3, 1, '#7fb3ec');
+  // cần cẩu: móc đi từ cầu cảng sang tàu rồi quay lại
+  const s = t % 9; let i = 1; while (i < CRANE.length - 1 && CRANE[i][0] < s) i++;
+  const a = CRANE[i - 1], b = CRANE[i], k = (s - a[0]) / (b[0] - a[0]), hx = lerp(a[1], b[1], k), hy = lerp(a[2], b[2], k);
+  R(46, 14, 34, 3, '#e8452c'); R(46, 10, 3, 6, '#e8452c'); R(50, 14, 3, 30, '#ff6a4a'); R(52, 40, 9, 4, '#8a8fa8');
+  R(hx - 2, 14, 5, 4, '#a8302a'); R(hx, 18, 1, Math.max(1, hy - 23), '#222'); R(hx - 2, hy - 6, 5, 1, '#222');
+  if (a[3]) { R(hx - 4, hy - 5, 9, 5, '#2fa58f'); R(hx - 4, hy - 5, 9, 1, 'rgba(255,255,255,.35)'); R(hx, hy - 4, 1, 4, 'rgba(0,0,0,.25)'); }
+  if (tick(2) % 2) R(46, 9, 3, 1, '#ffd84d'); // đèn báo trên đỉnh cẩu
+  // máy bay bay ngang, đàn chim vỗ cánh
+  const px = Math.round(wrap(30 + t * 9, BW + 90, 12)); R(px, 4, 8, 2, '#fff'); R(px + 4, 2, 2, 6, '#fff'); R(px - 2, 4, 3, 1, '#ffc27a'); if (tick(3) % 2) R(px + 8, 4, 1, 1, '#ff4a4a');
+  [[96, 10], [104, 7], [112, 12]].forEach(([x0, y], n) => {
+    const x = Math.round(wrap(x0 - t * 5, BW + 20, 8)), up = (tick(4) + n) % 2;
+    R(x, y - up + 1, 2, 1, '#2b1d3a'); R(x + 2, y + 1, 2, 1, '#2b1d3a'); R(x + 4, y - up + 1, 2, 1, '#2b1d3a');
+  });
+  // người quản lý đội mũ bảo hộ: nhún nhẹ, chớp mắt, đánh dấu vào bảng kiểm
+  const hop = tick(1.2) % 2, M = (x, y, w, h, col) => R(x, y + hop, w, h, col);
+  R(20, 48, 3, 6, '#2b3a8a'); R(24, 48, 3, 6, '#2b3a8a');
+  M(20, 40, 6, 6, '#ffd84d'); M(19, 39, 8, 2, '#ffd84d'); M(20, 36, 6, 4, '#ffd5b5'); M(20, 35, 6, 2, '#ffd84d');
+  if (t % 3.5 > 0.18) { M(21, 37, 1, 1, '#1b1030'); M(24, 37, 1, 1, '#1b1030'); }
+  M(18, 40, 10, 7, '#ff9f43'); M(18, 44, 10, 1, '#ffd84d'); M(27, 41, 6, 8, '#fff');
+  const done = tick(1) % 4;
+  [43, 45, 47].forEach((y, n) => M(28, y, 4, 1, n < done ? '#2fa58f' : '#4a7be0'));
+}
+
+let harborTimer = 0, harborWatch = null;
+export function banner(cv) {
+  cv.width = BW; cv.height = BH; const c = cv.getContext('2d'), t0 = performance.now();
+  const still = () => document.documentElement.dataset.motion === 'off' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  frame(c, 0);
+  clearInterval(harborTimer); harborWatch?.disconnect();
+  let seen = true; // cuộn khỏi màn hình thì thôi vẽ
+  if ('IntersectionObserver' in window) { harborWatch = new IntersectionObserver(l => { seen = l[l.length - 1].isIntersecting; }); harborWatch.observe(cv); }
+  harborTimer = setInterval(() => {
+    if (!cv.isConnected) { clearInterval(harborTimer); harborWatch?.disconnect(); return; }
+    if (seen && !document.hidden && !still()) frame(c, (performance.now() - t0) / 1000);
+  }, 83);
 }
 // nhân vật quản lý nhỏ (16×16) dùng làm "người hướng dẫn" trong màn kết quả
 export function mascot(scale = 5) {
