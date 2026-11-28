@@ -187,7 +187,8 @@
 .lf.full .prog i { --bc: #5fd068; --bd: #2f9a4a; }
 .lrow.done { background: var(--okbg); }
 .nextbar { align-items: center; margin: 10px 0; padding: 8px; background: #ffe9b8; border: var(--px) solid var(--ink); clip-path: var(--np); }
-.nextbar b { font-family: var(--pf); font-weight: 400; font-size: 21px; }
+.nextbar { color: #2d1f47; --text: #2d1f47; --dim: #5f4d7a; } /* nền kem cố định nên chữ luôn tối, kể cả giao diện tối / giao diện mua */
+.nextbar b { font-family: var(--pf); font-weight: 400; font-size: 21px; color: inherit; }
 .btn.tg { min-width: 40px; font-size: 22px; }
 /* ---------- từ vựng Thế giới ---------- */
 .wvl { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
@@ -1075,3 +1076,32 @@ body.vx-on #cueList { display: none; }
 .pnvi { overflow-wrap: anywhere; }
 .pnw .btn { padding: 2px 8px; }
 @media (max-width: 560px) { .pnw { grid-template-columns: minmax(48px, auto) minmax(0, 1fr) auto auto; } .pnw .pnvi { grid-column: 1 / -1; order: 5; } }
+
+/* ---------- Luyện âm tiếng Hàn: bảng chữ, bảng ghép âm, bàn phím Hangeul ---------- */
+.klgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; margin: 6px 0 12px; }
+.klc { display: grid; justify-items: center; padding: 6px 2px; cursor: pointer; font: inherit; color: inherit; background: var(--btn, var(--panel)); border: 2px solid var(--line); }
+.klc b { font-size: 28px; font-weight: 400; line-height: 1.2; }
+.klc small { font-size: 13px; color: var(--dim); }
+.klc.on { border-color: var(--hl, #ffd84d); box-shadow: inset 0 0 0 2px var(--hl, #ffd84d); }
+.klinfo .radhz { margin: 0; }
+.klwrap { overflow-x: auto; max-width: 100%; }
+.kltbl { border-collapse: collapse; width: 100%; }
+.kltbl th, .kltbl td { border: 2px solid var(--line); padding: 0; text-align: center; background: var(--panel); }
+.kltbl th { padding: 4px 6px; font-weight: 400; font-size: 20px; }
+.kltbl small { display: block; font-size: 11px; color: var(--dim); }
+.kltbl td button { width: 100%; min-width: 40px; padding: 5px 2px; border: 0; background: none; color: inherit; font: inherit; font-size: 20px; cursor: pointer; }
+.kltbl td button:hover, .kltbl td button:active { background: var(--field); }
+.klt { border-collapse: collapse; margin: 4px 0; font-size: 15px; line-height: 1.4; }
+.klt th, .klt td { border: 2px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.klt th { background: var(--field); }
+.klin { flex: 1; min-width: 0; font-size: 22px; }
+.klkb { display: grid; gap: 4px; }
+.klkb > div { display: flex; justify-content: center; gap: 3px; }
+.klkb .btn { flex: 1 1 0; min-width: 0; max-width: 52px; padding: 6px 0; font-size: 20px; justify-content: center; }
+.klkb .btn.klsp { max-width: 220px; font-size: 15px; }
+.klkb .btn.on { background: var(--accent); }
+/* Luyện âm tiếng Nhật: ô chữ đang chọn và sơ đồ trọng âm cao độ (ô đậm = cao) */
+.kltbl td.on { box-shadow: inset 0 0 0 3px var(--hl, #ffd84d); }
+.japit { display: inline-flex; gap: 2px; font-size: 18px; }
+.japit > span { padding: 2px 7px; border: 2px solid var(--line); }
+.japit > .h { background: var(--hl, #ffd84d); color: #3a2a00; transform: translateY(-5px); }

@@ -49,7 +49,7 @@ export function compose(Lm, eq, items) {
 
 // ---------- bong bóng chữ ----------
 // Lời chào: mỗi nước đã làm thẻ trong Passport phải có một dòng ở GREET (thêm nước mới thì thêm luôn ở đây).
-const GREET = { jp: 'こんにちは!', kr: '안녕!', cn: '你好!', vn: 'Xin chào!', fr: 'Bonjour!', us: 'Hello!', eg: 'مرحبا!', nz: 'Kia ora!', in: 'नमस्ते!', my: 'Apa khabar?', br: 'Olá!', ch: 'Grüezi!', ly: 'مرحبا!', au: "G'day!", ar: '¡Hola!', gh: 'Akwaaba!', nl: 'Hallo!', it: 'Ciao!', sa: 'مرحبا!', ru: 'Привет!' };
+const GREET = { jp: 'こんにちは!', kr: '안녕!', cn: '你好!', vn: 'Xin chào!', fr: 'Bonjour!', us: 'Hello!', eg: 'مرحبا!', nz: 'Kia ora!', in: 'नमस्ते!', my: 'Apa khabar?', br: 'Olá!', pt: 'Olá!', ch: 'Grüezi!', ly: 'مرحبا!', au: "G'day!", ar: '¡Hola!', gh: 'Akwaaba!', nl: 'Hallo!', it: 'Ciao!', sa: 'مرحبا!', ru: 'Привет!', mg: 'Salama!', ao: 'Olá!', ca: 'Hello! Bonjour!', lr: 'Hello!' };
 function greeting() {
   const eq = o.eq(), items = o.items() || {};
   for (const s of ['outfit', 'head', 'face', 'waist', 'feet', 'hold', 'pet']) { const it = items[eq[s]]; if (it && GREET[it.cc]) return GREET[it.cc]; } // lời chào theo nước của món đang mặc (ưu tiên trang phục)

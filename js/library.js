@@ -4,7 +4,19 @@ import * as store from './store.js';
 import * as tracker from './tracker.js';
 import { pickAndAdd, openItem, addByLink } from './player.js';
 import * as notes from './notes.js';
-let pylab = null; // nạp khi mở Luyện âm lần đầu (dữ liệu ~250KB)
+// Luyện âm theo ngôn ngữ (Trung, Hàn, Nhật): mỗi mục nạp khi mở lần đầu và có khung riêng trong #pronBox
+const LABS = {
+  zh: { load: () => import('./pylab.js'), title: 'Luyện nghe, phân biệt và nói pinyin (Tiếng Trung): 1000 mục tập trung vào k·h, z·c·s, zh·ch·sh·r, j·q·x' },
+  ko: { load: () => import('./kolab.js'), title: 'Luyện phát âm tiếng Hàn: bảng chữ Hangeul, nghe và gõ, phân biệt ba mức hơi, quy tắc biến âm' },
+  ja: { load: () => import('./jalab.js'), title: 'Luyện phát âm tiếng Nhật: bảng hiragana, katakana, nghe và gõ, trường âm, っ, ん, mora và cao độ' },
+};
+function openLab(l) {
+  const lab = LABS[l], host = $('#pronBox');
+  let el = host.firstElementChild;
+  if (el?.dataset.lab !== l) { el = document.createElement('div'); el.dataset.lab = l; host.replaceChildren(el); }
+  const go = m => { lab.mod = m; if (tab === 'pron' && getLang() === l && el.isConnected) m.render(el, { back: () => { tab = 'video'; render(); } }); };
+  if (lab.mod) go(lab.mod); else lab.load().then(go).catch(e => { console.error(e); toast('Không tải được mục Luyện âm: kiểm tra mạng rồi thử lại', 4000); });
+}
 import { plain } from './richtext.js';
 import * as tree from './tree.js';
 import * as lessons from './lessons.js';
@@ -30,15 +42,16 @@ const renderSoon = () => { if (!rq) rq = requestAnimationFrame(() => { rq = 0; r
 
 function render() {
   $$('#libTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
-  const zh = getLang() === 'zh';
-  $('#libPron').hidden = !zh; // “Luyện âm” chỉ có cho Tiếng Trung
-  if (tab === 'pron' && !zh) tab = 'video';
+  const lab = LABS[getLang()];
+  $('#libPron').hidden = !lab; // “Luyện âm” chỉ có cho Tiếng Trung, Tiếng Hàn và Tiếng Nhật
+  if (lab) $('#libPron').title = lab.title;
+  if (tab === 'pron' && !lab) tab = 'video';
   const isLesson = tab === 'lesson', isPron = tab === 'pron';
   $('#libMain').hidden = isLesson || isPron; $('#lessonBox').hidden = !isLesson; $('#pronBox').hidden = !isPron;
   $$('#libTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
   $('#libTabs').hidden = isPron; // trong khu Luyện âm tạm cất Bài học / Video / Tài liệu / Ghi chú
-  if (isPron) { const goPron = p => { if (tab === 'pron') p.render($('#pronBox'), { back: () => { tab = 'video'; render(); } }); }; if (pylab) goPron(pylab); else import('./pylab.js').then(m => { pylab = m; goPron(m); }); scrollTo(0, 0); return; }
-  if (!isPron) pylab?.leave();
+  if (isPron) { openLab(getLang()); scrollTo(0, 0); return; }
+  Object.values(LABS).forEach(l => l.mod?.leave());
   if (isLesson) { lessons.render($('#lessonBox'), { openDoc, openEdit, addDocs, addLink: openLinkDialog }); return; }
   const all = itemsOf(tab), folders = foldersOf(getLang());
   const q = ($('#libSearch').value || '').trim().toLowerCase();
