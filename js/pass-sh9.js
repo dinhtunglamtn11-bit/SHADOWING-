@@ -1,0 +1,60 @@
+import { addOv, c, two } from './pass-sh1.js';
+// Cửa hàng trang trí · đợt 3: thêm 32 mũ / tóc và 18 đồ đeo mặt
+const H = 'Mũ và tóc', F = 'Mặt';
+const k = '#2b2b3a', w = '#ffffff', r = '#e8452c', R = '#a8281a', y = '#ffd84d', Y = '#c9a227', g = '#5fb85a', G = '#2f7d3a', b = '#4a7be0', B = '#23306b', p = '#ff8fc8', P = '#c94a8a', n = '#8a5a2a', N = '#5a3a1a', o = '#ff9f43', v = '#7a3fc0', a = '#9aa4c4', A = '#5a6490', cy = '#8fd3ff', t = '#e6c892';
+const h = (id, vi, en, note, y0, pal, rows, price) => addOv(H, 'sh-n-' + id, vi, en, note, 'head', y0, pal, rows, price);
+const f = (id, vi, en, note, y0, pal, rows, price) => addOv(F, 'sh-n-' + id, vi, en, note, 'face', y0, pal, rows, price);
+
+// ----- Mũ và tóc (32) -----
+h('conical', 'Nón lá', 'Vietnamese conical hat', 'Chiếc nón lá che nắng che mưa quen thuộc.', -3, { t, n }, [c('tt'), c('tttttt'), c('ttnnnntttt'), c('tttttttttttttt'), c('nnnnnnnnnnnnnnnn')], 130);
+h('frog', 'Mũ ếch xanh', 'Frog hat', 'Hai mắt lồi trên đỉnh đầu.', -3, { g, G, w, k }, [two('ww', 6), two('wk', 6), c('gggggggggg'), c('gggggggggggg'), c('GGGGGGGGGGGG')], 120);
+h('shark', 'Mũ cá mập', 'Shark hood', 'Cá mập ngoạm đầu mà vẫn cười.', -3, { a, A, w }, [c('A'), c('AAaa'), c('aaaaaaaaaa'), c('aaaaaaaaaaaa'), c('wawawawawawa'), two('a', 10), two('a', 10), two('a', 10)], 180);
+h('sprout', 'Mầm cây trên đầu', 'Head sprout', 'Học đến đâu mầm lớn đến đó.', -4, { g, G }, [two('gg', 2), c('ggGGgg'), c('G'), c('G')], 60);
+h('flame', 'Tóc lửa', 'Flame hair', 'Ý chí bốc cháy.', -4, { r, o, y }, [c('r..r'), c('rr.orr'), c('rooyyoor'), c('rooyyyyoor'), c('rooooooooor'), two('rr', 8)], 190);
+h('icecrown', 'Vương miện băng', 'Ice crown', 'Lạnh trong veo như pha lê.', -4, { cy, w, b }, [c('w..w..w'), c('c..c..c'), c('cwc.cwc.cw'), c('cccccccccc'), c('bwbbwwbbwb')], 200);
+h('laurel', 'Vòng nguyệt quế', 'Laurel wreath', 'Dành cho người chiến thắng.', -1, { g: Y, G: y }, [c('gG......Gg'), two('gGg', 6), two('Gg', 10), two('gG', 10)], 170);
+h('turban', 'Khăn xếp', 'Turban', 'Quấn nhiều lớp, đính viên ngọc.', -3, { w, W: '#dfe6f8', r }, [c('wwwwww'), c('wWwwwwWw'), c('wwWrrWwwww'), c('WwwwwwwwwwwW'), c('wWWWWWWWWWWw')], 140);
+h('fez', 'Mũ phớt đỏ có tua', 'Fez', 'Chóp phẳng, tua đen đung đưa.', -3, { r, R, k }, [c('rrrrrr.k'), c('rrrrrrrk'), c('rrrrrr.k'), c('RRRRRRRR')], 100);
+h('sombrero', 'Mũ rộng vành Mexico', 'Sombrero', 'Vành to che cả bạn học.', -3, { y, r, g, Y }, [c('yyyy'), c('yyyyyy'), c('rgrgrg'), c('yyyyyyyyyyyyyyyy'), c('Y.Y.Y.Y.Y.Y.Y.Y.')], 150);
+h('tamate', 'Mũ nghệ nhân lông chim', 'Feathered cap', 'Một chiếc lông vũ rực rỡ.', -4, { g, G, r, y }, ['...........ry...', '..........ry....', '.....ggggry.....', '...gggggggggg...', '..GGGGGGGGGGGG..'], 110);
+h('nurse', 'Mũ y tá', 'Nurse cap', 'Trắng gọn với chữ thập đỏ.', -2, { w, r }, [c('wwwrwwww'), c('wwrrrwww'), c('wwwwrwwwww')], 90);
+h('police', 'Mũ cảnh sát', 'Police cap', 'Giữ trật tự cho bàn học.', -2, { B, b, y, k }, [c('bbbbbbbb'), c('BBByyBBBBB'), c('BBBBBBBBBB'), c('kkkkkkkkkkkk')], 120);
+h('fire', 'Mũ lính cứu hỏa', 'Firefighter helmet', 'Dập tắt mọi sự lười biếng.', -2, { r, R, y }, [c('rrrr'), c('rrryyrrr'), c('rrryyrrrrr'), c('RRRRRRRRRRRRRR')], 130);
+h('detective', 'Mũ thám tử', 'Detective cap', 'Soi ra mọi lỗi ngữ pháp.', -2, { n, N, t }, [c('nnnnnn'), c('ntnntnnt'), c('nnntnnnnnn'), c('NNNNNNNNNNNNNN'), two('nn', 10)], 150);
+h('jester', 'Mũ chú hề hoàng gia', 'Jester hat', 'Ba chuông leng keng.', -4, { r, g: v, y }, ['..y....y....y...', '..rr...gg..rr...', '...rr.gggg.rr...', '....rrrggggrr...', '....yyyyyyyy....'], 150);
+h('lotus', 'Hoa sen cài tóc', 'Lotus hairpin', 'Gần bùn mà chẳng hôi tanh mùi bùn.', -2, { p, P, y, g }, ['.........p.p....', '........pPpPp...', '........ppypp...', '.........ggg....'], 100);
+h('sakura', 'Kẹp tóc anh đào', 'Sakura clips', 'Hai bông hoa nhỏ hai bên.', 0, { p, y }, [two('p', 10), two('pyp', 6), two('p', 10)], 80);
+h('twintail', 'Tóc hai chùm tím', 'Purple twin tails', 'Hai chùm tóc dài tung tăng.', -1, { v, V: '#4a2680', y }, [c('vvvvvvvv'), c('vvvvvvvvvv'), two('yv', 8), '.vv..........vv.', 'vvv..........vvv', 'vv............vv', 'Vv............vV', '.V............V.', '.V............V.'], 170);
+h('mohawk', 'Tóc mào gà', 'Mohawk', 'Dựng đứng đầy cá tính.', -4, { g: cy, G: b }, [c('g.g'), c('gggg'), c('gGGg'), c('gGGg'), c('GGGGGG')], 120);
+h('afro', 'Tóc xù bồng', 'Afro', 'Tròn vo như đám mây.', -4, { n: N, N: n }, [c('nnnnnn'), c('nnNnnNnnnn'), c('nnnnnnnnnnnn'), c('nNnnnnnnnnNn'), c('nnnnnnnnnnnnnn'), two('nnn', 8), two('nn', 10), two('n', 10)], 160);
+h('beanie', 'Mũ len quả bông', 'Pom-pom beanie', 'Ấm đầu mùa đông.', -4, { b, B, w }, [c('ww'), c('wwww'), c('bbbbbbbb'), c('bwbwbwbwbw'), c('BBBBBBBBBBBB')], 90);
+h('earmuffs', 'Bịt tai bông', 'Earmuffs', 'Chỉ nghe thấy bài học.', -1, { k: A, p }, [c('kkkkkkkk'), two('k', 10), two('k', 10), two('k', 10), two('ppp', 8), two('ppp', 8), two('ppp', 8)], 100);
+h('swimcap', 'Mũ bơi kính bơi', 'Swim cap', 'Sẵn sàng lặn vào biển từ vựng.', -1, { b, cy, k }, [c('bbbbbbbb'), c('bbbbbbbbbb'), c('kcckkkkcck'), c('bbbbbbbbbbbb')], 90);
+h('bear', 'Mũ gấu trúc', 'Panda hood', 'Trùm đầu gấu trúc mềm mại.', -3, { w, k }, [two('kk', 6), two('kkk', 4), c('wwwwwwwwww'), c('wkkwwwwkkw'), c('wwwwwwwwwwww'), two('w', 10), two('w', 10), two('w', 10)], 170);
+h('octocap', 'Bạch tuộc đội đầu', 'Octopus hat', 'Tám xúc tu ôm lấy đầu.', -3, { v, w, k }, [c('vvvvvv'), c('vwkvvwkv'), c('vvvvvvvvvv'), c('vvvvvvvvvvvv'), '.v.v..v..v..v.v.', '.v............v.', '..v..........v..'], 180);
+h('bulb', 'Bóng đèn ý tưởng', 'Idea bulb', 'Nghĩ ra rồi!', -4, { y, w, a }, [c('yyyy'), c('ywyyyy'), c('yyyy'), c('aa'), c('aa')], 110);
+h('cloudhat', 'Đám mây riêng', 'Personal cloud', 'Mây nhỏ đi theo bạn.', -4, { w, cy }, [c('wwww..ww'), c('wwwwwwwwww'), c('wwwwwwwwwwww'), c('.c..c..c.')], 140);
+h('planet', 'Vành đai hành tinh', 'Planet ring', 'Đầu bạn là cả một thế giới.', -2, { y, o }, ['................', '.yy..........yy.', 'y..yyyyyyyyyy..y', '.ooooooooooooo..'], 190);
+h('tiara2', 'Mấn đính ngọc', 'Jewelled headband', 'Lấp lánh ngọc xanh đỏ.', -1, { y, r, b, g }, [c('r..b..g'), c('yryybyygyy'), two('yy', 10)], 150);
+h('graduategold', 'Mũ tiến sĩ viền vàng', 'Doctoral cap', 'Đỉnh cao của việc học.', -3, { k, y, r }, [c('kkkk'), c('kkkkkkkkkkkkkk'), c('yyyyyyyy..y'), c('rrrrrrrr..y'), '............yy..'], 240);
+h('boba', 'Mũ ly trà sữa', 'Boba hat', 'Ống hút chọc thẳng lên trời.', -4, { t, w, k, p }, ['..........pp....', c('wwwwpwww'), c('tttttttt'), c('tktktktktk'), c('tttttttttt')], 130);
+
+// ----- Mặt (18) -----
+f('roundgold', 'Kính gọng vàng tròn', 'Gold round glasses', 'Tri thức tỏa sáng.', 5, { y }, [two('yyy', 2), two('y.y', 2) , two('yyy', 2)], 80);
+f('pixelshades', 'Kính pixel ngầu', 'Deal-with-it shades', 'Hạ kính xuống một cách từ tốn.', 5, { k, w }, ['..kkkkkkkkkkkk..', '...kwkk..kwkk...', '....kk....kk....'], 100);
+f('cateye', 'Kính mắt mèo', 'Cat-eye glasses', 'Đuôi kính vút cao.', 5, { P }, ['..P..........P..', '...PPPP..PPPP...', '...P..PPPP..P...', '...PPPP..PPPP...'], 90);
+f('skimask', 'Kính trượt tuyết', 'Ski goggles', 'Một dải kính cam bóng loáng.', 5, { o, y, k }, [c('kkkkkkkkkk'), c('kyyooooook'), c('kooooooyyk'), c('kkkk..kkkk')], 120);
+f('gasmask', 'Mặt nạ phòng sạch', 'Face mask', 'Giữ gìn sức khỏe để học tiếp.', 7, { cy, w }, [c('wccccccw'), c('cccccc'), c('cwwc')], 60);
+f('beard', 'Râu quai nón', 'Full beard', 'Trông già dặn hẳn.', 7, { n: N }, [two('n', 6), c('nnn..nnn'), c('nnnnnnnn'), c('nnnnnn')], 90);
+f('santabeard', 'Râu trắng ông già', 'White beard', 'Hiền như ông bụt.', 7, { w, W: '#dfe6f8' }, [two('w', 6), c('wwW..Www'), c('wwwwwwww'), c('wWwwwwWw'), c('wwww')], 100);
+f('tigerpaint', 'Vẽ mặt hổ', 'Tiger face paint', 'Gầm lên trước giờ kiểm tra.', 5, { k, o }, [c('k..k..k'), c('......'), two('kk', 6), two('ok', 6)], 70);
+f('starpaint', 'Vẽ sao một mắt', 'Star face paint', 'Như ca sĩ trên sân khấu.', 5, { v, y }, ['..........v.....', '.........vyv....', '..........v.....', '.........v.v....'], 60);
+f('rainbowpaint', 'Vẽ cầu vồng má', 'Rainbow cheeks', 'Rực rỡ hai bên má.', 7, { r, y, b }, [two('r', 6), two('y', 6), two('b', 6)], 60);
+f('hero', 'Mặt nạ hiệp sĩ đêm', 'Hero mask', 'Giấu mặt mà không giấu tài.', 5, { B, w }, [c('BBBBBBBB'), c('BwBBBBwB'), c('BBB..BBB')], 90);
+f('carnival', 'Mặt nạ dạ hội', 'Masquerade mask', 'Có chùm lông ở một bên.', 4, { v, y, p }, ['..........pp....', '....vvvv.vvvpp..', '....v.yv.vy.v...', '....vvv...vvv...'], 140);
+f('foxmask', 'Mặt nạ cáo trắng', 'White fox mask', 'Bí ẩn như đêm hội.', 3, { w, r, k }, [two('w', 6), two('wr', 4), c('wwwwwwww'), c('wkkwwkkw'), c('wrwwwwrw'), c('wwkkww'), c('ww')], 150);
+f('eyepatchheart', 'Miếng che mắt trái tim', 'Heart eyepatch', 'Một mắt nhìn, một mắt yêu.', 5, { p, k }, [c('kkkkkkkk'), '.....p.p........', '.....ppp........', '......p.........'], 50);
+f('tears', 'Nước mắt hoạt hình', 'Cartoon tears', 'Khi bài khó quá.', 7, { cy, b }, [two('c', 4), two('c', 4), two('b', 4)], 40);
+f('sleepmask', 'Bịt mắt ngủ', 'Sleep mask', 'Nghỉ năm phút thôi.', 5, { B, w }, [c('BBBBBBBBBB'), c('BwwBBBBwwB'), c('BBBB..BBBB')], 50);
+f('bubblegum', 'Kẹo cao su thổi bóng', 'Bubble gum', 'Phập một cái là nổ.', 7, { p, w }, [c('pppp'), c('pwpppp'), c('pppppp'), c('pppp')], 60);
+f('monocleg', 'Kính lúp soi chữ', 'Magnifier', 'Chữ nhỏ mấy cũng thấy.', 4, { n, cy, w }, ['..........nnn...', '.........ncwcn..', '.........ncccn..', '..........nnn...', '............n...', '.............n..'], 110);

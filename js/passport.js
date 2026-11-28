@@ -505,7 +505,7 @@ const titleNow = (id, s) => { const d = TITLES[id], v = s[d.key]; return v == nu
 const SHOP_SUBS = ['Giao diện app', 'Mũ và tóc', 'Mặt', 'Eo và đuôi', 'Giày dép', 'Trang phục vui', 'Cầm tay', 'Thú cưng', 'Nền Passport', 'Khung thẻ', 'Danh hiệu', 'Hiệu ứng mua'];
 const SHOP_EN = { 'Giao diện app': 'App themes', 'Mũ và tóc': 'Hats and hair', 'Mặt': 'Face', 'Eo và đuôi': 'Waist and tails', 'Giày dép': 'Footwear', 'Trang phục vui': 'Fun outfits', 'Cầm tay': 'Held items', 'Thú cưng': 'Pets', 'Nền Passport': 'Passport themes', 'Khung thẻ': 'Card frames', 'Danh hiệu': 'Titles', 'Hiệu ứng mua': 'Purchase effects' };
 const SHOP_ICON = { 'Giao diện app': '🖥️', 'Mũ và tóc': '🎩', 'Mặt': '🕶️', 'Eo và đuôi': '🎀', 'Giày dép': '👟', 'Trang phục vui': '🦸', 'Cầm tay': '🎈', 'Thú cưng': '🐾', 'Nền Passport': '🎨', 'Khung thẻ': '🖼️', 'Danh hiệu': '🏷️', 'Hiệu ứng mua': '🎆' };
-const FXE = { confetti: ['🎉', '🎊', '✨'], stars: ['⭐', '🌟', '✨'], hearts: ['💖', '💗', '💕'], coins: ['🪙', '💰'], fireworks: ['🎆', '🎇', '✨'], petals: ['🌸', '💮', '🌺'], snow: ['❄️', '⛄', '✨'], bubbles: ['🫧', '💧', '✨'], rocket: ['🚀', '🌟', '💫'] };
+const FXE = { confetti: ['🎉', '🎊', '✨'], stars: ['⭐', '🌟', '✨'], hearts: ['💖', '💗', '💕'], coins: ['🪙', '💰'], fireworks: ['🎆', '🎇', '✨'], petals: ['🌸', '💮', '🌺'], snow: ['❄️', '⛄', '✨'], bubbles: ['🫧', '💧', '✨'], rocket: ['🚀', '🌟', '💫'], leaves: ['🍁', '🍂', '🌿'], music: ['🎵', '🎶', '🎼'], food: ['🍜', '🍣', '🍰'], balloons: ['🎈', '🎈', '🎊'], lightning: ['⚡', '⚡', '✨'], flowers: ['🌻', '🌼', '🌷'], ocean: ['🐠', '🐟', '🐬'], lanterns: ['🏮', '🏮', '✨'], rainbow: ['🌈', '☀️', '✨'] };
 const decoOf = kind => { const id = P.deco?.[kind]; return id && K?.byId[id] && own(id) ? K.byId[id] : null; };
 const isUsed = it => (it.deco ? P.deco?.[it.deco] === it.id : Object.values(P.eq || {}).includes(it.id));
 function applyDeco() { if (!root) return; for (const [k, kind] of [['th', 'theme'], ['fr', 'frame']]) { const v = decoOf(kind)?.val; if (v) root.dataset[k] = v; else delete root.dataset[k]; } } // bỏ hẳn thuộc tính khi không dùng (thuộc tính rỗng vẫn khớp [data-th])
@@ -639,7 +639,7 @@ const missing = () => P.own.some(id => !LOADED.has(ccOf(id)));
 function loadCC(cc) { // chỉ nạp thẻ + câu chuyện của nước cần xem (mỗi nước ~6 file), không nạp tất cả nước
   if (LOADED.has(cc)) return Promise.resolve();
   if (!LOADING.has(cc)) LOADING.set(cc, (async () => {
-    if (cc === 'sh') await Promise.all([1, 2, 3, 4, 5, 6, 7, 8].map(i => import(`./pass-sh${i}.js`))); // cửa hàng trang trí: không có câu chuyện
+    if (cc === 'sh') await Promise.all([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => import(`./pass-sh${i}.js`))); // cửa hàng trang trí: không có câu chuyện
     else {
       await Promise.all([1, 2, 3, 4, 5].map(i => import(`./pass-${cc}${i}.js`)));
       if (cc !== 'jp' && cc !== 'kr') await import(`./pass-${cc}6.js`); // chỉnh lại / bỏ nền thẻ, phải nạp sau khi 1–5 đã đăng ký

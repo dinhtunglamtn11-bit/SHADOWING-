@@ -1140,3 +1140,52 @@ body.vx-on #cueList { display: none; }
 .pp-card .pr.tt { color:inherit; opacity:.85; text-align:center; }
 
 @media (max-width: 600px) { .st-bar { flex-wrap: wrap; } .st-bar .st-title { flex: 1 0 100%; } }
+
+/* cửa hàng trang trí đợt 3: nền Passport */
+#passRoot[data-th="aurora"] { background: radial-gradient(ellipse at 30% 10%, rgba(122,255,192,.4), transparent 45%), radial-gradient(ellipse at 75% 20%, rgba(201,168,255,.4), transparent 45%), linear-gradient(#0a2a4a, #2a0a4a); }
+#passRoot[data-th="deepsea"] { background: radial-gradient(circle at 30% 40%, rgba(143,211,255,.4) 0 3px, transparent 4px) 0 0 / 80px 90px, linear-gradient(#064a6a, #01101f); }
+#passRoot[data-th="lantern"] { background: radial-gradient(circle at 20% 20%, #ff6a3a 0 5px, rgba(255,216,77,.35) 6px, transparent 12px) 0 0 / 110px 100px, linear-gradient(#3a0a2a, #12041a); }
+#passRoot[data-th="bamboo"] { background: repeating-linear-gradient(90deg, rgba(184,224,138,.16) 0 8px, rgba(47,90,26,.35) 8px 10px, transparent 10px 42px), linear-gradient(#2f6a3a, #0c2a18); }
+#passRoot[data-th="maple"] { background: radial-gradient(circle at 25% 30%, rgba(255,159,67,.55) 0 4px, transparent 5px) 0 0 / 70px 80px, radial-gradient(circle at 70% 70%, rgba(232,69,44,.5) 0 3px, transparent 4px) 0 0 / 90px 70px, linear-gradient(#8a3a1a, #2a0e08); }
+#passRoot[data-th="rain"] { background: repeating-linear-gradient(105deg, transparent 0 14px, rgba(143,211,255,.14) 14px 15px), linear-gradient(#2a3a5a, #0a1020); }
+#passRoot[data-th="circus"] { background: repeating-linear-gradient(90deg, rgba(255,255,255,.1) 0 26px, transparent 26px 52px), linear-gradient(#9a1a2a, #4a0a18); }
+#passRoot[data-th="chalk"] { background: repeating-linear-gradient(0deg, transparent 0 31px, rgba(255,255,255,.09) 31px 32px), linear-gradient(#2a4a3a, #182e24); }
+#passRoot[data-th="brick"] { background: repeating-linear-gradient(0deg, transparent 0 18px, rgba(230,200,146,.22) 18px 20px), repeating-linear-gradient(90deg, transparent 0 42px, rgba(230,200,146,.16) 42px 44px), linear-gradient(#7a3a2a, #3a1a14); }
+#passRoot[data-th="planets"] { background: radial-gradient(circle at 18% 25%, #ff9f43 0 14px, transparent 15px), radial-gradient(circle at 82% 62%, #8fd3ff 0 9px, transparent 10px), radial-gradient(circle at 40% 70%, #fff 0 1px, transparent 2px) 0 0 / 70px 70px, linear-gradient(#140a34, #040212); }
+#passRoot[data-th="lavender"] { background: repeating-linear-gradient(100deg, rgba(217,194,255,.14) 0 4px, transparent 4px 18px), linear-gradient(#6a4aa8, #2a1a4a); }
+#passRoot[data-th="dawn"] { background: radial-gradient(circle at 50% 18%, #ffd84d 0 22px, rgba(255,176,138,.45) 23px, transparent 60px), linear-gradient(#c9607a, #5a3a6a 55%, #2a2a5a); }
+#passRoot[data-th="royal"] { background: radial-gradient(circle at 50% 50%, rgba(255,216,77,.5) 0 2px, transparent 3px) 0 0 / 38px 38px, linear-gradient(#5a0a24, #24020e); }
+#passRoot[data-th="matrix"] { background: repeating-linear-gradient(90deg, rgba(77,255,122,.13) 0 2px, transparent 2px 16px), repeating-linear-gradient(0deg, transparent 0 9px, rgba(0,0,0,.45) 9px 13px), linear-gradient(#041a0a, #000); }
+/* khung thẻ đợt 3 */
+#passRoot[data-fr="silver"] .pp-card.own { border-color: #e8ecf8; box-shadow: 0 0 0 2px #9aa4c4, 0 0 8px #e8ecf866; }
+#passRoot[data-fr="bronze"] .pp-card.own { border-color: #c9873a; box-shadow: inset 0 0 0 2px #7a4a1a; }
+#passRoot[data-fr="ruby"] .pp-card.own { border-color: #a8182a; border-style: ridge; border-width: 5px; }
+#passRoot[data-fr="emerald"] .pp-card.own { border-color: #1fae7a; border-style: double; border-width: 6px; box-shadow: 0 0 8px #7affc088; }
+#passRoot[data-fr="bamboo"] .pp-card.own { border-color: transparent; border-image: repeating-linear-gradient(0deg, #8ac85a 0 12px, #2f5a1a 12px 15px) 1; }
+#passRoot[data-fr="lava"] .pp-card.own { border-color: #ff9f43; box-shadow: 0 0 10px #e8452c, inset 0 0 8px #ff9f4366; }
+#passRoot[data-fr="galaxy"] .pp-card.own { border-color: transparent; border-image: linear-gradient(135deg, #4a2a9a, #ff8fc8, #170c3a, #8fd3ff) 1; }
+#passRoot[data-fr="ocean"] .pp-card.own { border-color: #2f80b8; border-style: groove; border-width: 5px; }
+#passRoot[data-fr="ticket"] .pp-card.own { border-color: #ffe9a8; border-style: dashed; border-width: 4px; }
+#passRoot[data-fr="shadow"] .pp-card.own { border-color: #fff; box-shadow: 6px 6px 0 #1b1030; }
+#passRoot[data-fr="aurora"] .pp-card.own { border-color: transparent; border-image: linear-gradient(135deg, #7affc0, #2ee6ff, #a06aff, #c94ad8) 1; box-shadow: 0 0 10px #2ee6ff55; }
+/* giao diện app đợt 3 */
+:root[data-skin=aurora] { --s-bg: #07182e; --s-panel: #102a44; --s-text: #e8fff6; --s-acc: #7affc0; --s-wood: #14606a; --s-steel: #4a3a9a; --s-ink: #020a16; color-scheme: dark; }
+:root[data-skin=tet] { --s-bg: #ffe6cc; --s-panel: #fff8ea; --s-text: #5a0a10; --s-acc: #ffc527; --s-wood: #7a0e14; --s-steel: #c9821a; --s-ink: #4a060a; color-scheme: light; }
+:root[data-skin=cafe] { --s-bg: #d9c3a5; --s-panel: #f6ead8; --s-text: #3a2214; --s-acc: #c2662a; --s-wood: #6a4128; --s-steel: #9a6a42; --s-ink: #2e1a0e; color-scheme: light; }
+:root[data-skin=lavender] { --s-bg: #e6dcfa; --s-panel: #f8f4ff; --s-text: #2e1c54; --s-acc: #9a5ae0; --s-wood: #7a5ab8; --s-steel: #5a7ad0; --s-ink: #3a2668; color-scheme: light; }
+:root[data-skin=halloween] { --s-bg: #1c0f2a; --s-panel: #2e1a42; --s-text: #ffeede; --s-acc: #ff8a1a; --s-wood: #a84a0a; --s-steel: #4a2a7a; --s-ink: #0c0614; color-scheme: dark; }
+:root[data-skin=rain] { --s-bg: #2c3a4e; --s-panel: #3b4c64; --s-text: #eef4ff; --s-acc: #8fd3ff; --s-wood: #24505e; --s-steel: #4a6a96; --s-ink: #141c28; color-scheme: dark; }
+:root[data-skin=ember] { --s-bg: #1e0f0c; --s-panel: #33190f; --s-text: #ffeedd; --s-acc: #ffae33; --s-wood: #7a2a10; --s-steel: #8a4a1a; --s-ink: #0c0503; color-scheme: dark; }
+:root[data-skin=love] { --s-bg: #ffd9e0; --s-panel: #fff3f5; --s-text: #52101f; --s-acc: #e0245a; --s-wood: #c4455f; --s-steel: #e07a95; --s-ink: #5a1426; color-scheme: light; }
+:root[data-skin=matcha] { --s-bg: #dcebc4; --s-panel: #f4f9e8; --s-text: #1f3310; --s-acc: #4a8a2a; --s-wood: #5a7a30; --s-steel: #8aa84a; --s-ink: #2a3f14; color-scheme: light; }
+:root[data-skin=matrix] { --s-bg: #020c05; --s-panel: #07200f; --s-text: #d6ffe0; --s-acc: #4dff7a; --s-wood: #0a4a1e; --s-steel: #0f6a2e; --s-ink: #000000; color-scheme: dark; }
+:root[data-skin=aurora][data-bg] body { background-image: radial-gradient(ellipse at 20% 0%, rgba(122,255,192,.28), transparent 50%), radial-gradient(ellipse at 80% 10%, rgba(160,106,255,.3), transparent 50%), linear-gradient(#07182e, #020a16); background-size: auto, auto, auto; }
+:root[data-skin=tet][data-bg] body { background-image: radial-gradient(circle at 25% 25%, rgba(201, 130, 26, .35) 0 4px, transparent 5px), radial-gradient(circle at 75% 70%, rgba(168, 20, 28, .18) 0 3px, transparent 4px), linear-gradient(#fff0da, #ffdcbc); background-size: 80px 80px, 120px 120px, auto; }
+:root[data-skin=cafe][data-bg] body { background-image: repeating-linear-gradient(90deg, rgba(106,65,40,.08) 0 20px, transparent 20px 40px), linear-gradient(#e2cfb4, #cbb08c); background-size: auto, auto; }
+:root[data-skin=lavender][data-bg] body { background-image: radial-gradient(circle at 30% 30%, rgba(154,90,224,.25) 0 3px, transparent 4px), linear-gradient(#ece4fc, #d8c8f6); background-size: 60px 60px, auto; }
+:root[data-skin=halloween][data-bg] body { background-image: radial-gradient(circle at 20% 30%, rgba(255,138,26,.35) 0 3px, transparent 6px), linear-gradient(#2a1440, #100818); background-size: 150px 130px, auto; }
+:root[data-skin=rain][data-bg] body { background-image: repeating-linear-gradient(105deg, transparent 0 22px, rgba(143,211,255,.07) 22px 23px), linear-gradient(#34465e, #1e2838); background-size: auto, auto; }
+:root[data-skin=ember][data-bg] body { background-image: radial-gradient(ellipse at 50% 110%, rgba(255,122,26,.45), transparent 60%), linear-gradient(#1e0f0c, #120806); background-size: auto, auto; }
+:root[data-skin=love][data-bg] body { background-image: radial-gradient(circle at 25% 25%, rgba(224,36,90,.18) 0 4px, transparent 5px), radial-gradient(circle at 75% 75%, rgba(224,36,90,.12) 0 3px, transparent 4px), linear-gradient(#ffe0e6, #ffccd8); background-size: 70px 70px, 100px 100px, auto; }
+:root[data-skin=matcha][data-bg] body { background-image: repeating-conic-gradient(rgba(90,122,48,.07) 0 25%, transparent 0 50%), linear-gradient(#e4f0ce, #d0e2b2); background-size: 32px 32px, auto; }
+:root[data-skin=matrix][data-bg] body { background-image: repeating-linear-gradient(90deg, rgba(77,255,122,.07) 0 1px, transparent 1px 18px), linear-gradient(#020c05, #000); background-size: auto, auto; }

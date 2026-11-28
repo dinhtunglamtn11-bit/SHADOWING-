@@ -29,6 +29,31 @@ export const TITLES = Object.fromEntries([
   t('sh-tt-ambassador', 'Đại sứ văn hóa', 'Cultural ambassador', 1320, 'stories', 30, 'Mở khóa 30 câu chuyện Passport', 'Unlock 30 Passport stories'),
   t('sh-tt-sleepy', 'Vua ngủ nướng', 'Sleepyhead', 600, 'late', 7, 'Có 7 ngày đạt mục tiêu mà không học trước 10 giờ sáng', 'Hit your goal on 7 days without studying before 10:00'),
   t('sh-tt-rainbow', 'Cầu vồng sau mưa', 'Rainbow after rain', 840, 'comeback', 7, 'Nghỉ từ 3 ngày, quay lại học liền 7 ngày', 'After a 3+ day break, study 7 days in a row'),
+  // đợt 3
+  t('sh-tt-n-voice', 'Giọng vàng', 'Golden voice', 900, 's', 500, 'Shadow 500 câu', 'Shadow 500 sentences'),
+  t('sh-tt-n-ears', 'Đôi tai thính', 'Sharp ears', 900, 'd', 300, 'Chép chính tả 300 câu', 'Take dictation of 300 sentences'),
+  t('sh-tt-n-speaker', 'Diễn giả', 'Public speaker', 900, 'k', 300, 'Luyện nói 300 câu', 'Practise speaking 300 sentences'),
+  t('sh-tt-n-calligraphy', 'Nét chữ nết người', 'Fine handwriting', 1080, 'x', 500, 'Viết 500 chữ', 'Handwrite 500 characters'),
+  t('sh-tt-n-teaowner', 'Chủ quán trà', 'Tea shop owner', 900, 'tl', 30, 'Bán 30 buổi ở TeaLab', 'Complete 30 selling sessions in TeaLab'),
+  t('sh-tt-n-mathmind', 'Thần tính toán', 'Number wizard', 720, 'cm', 200, 'Tính 200 phép bằng máy tính TeaLab', 'Do 200 calculations on the TeaLab calculator'),
+  t('sh-tt-n-narrator', 'Người kể chuyện', 'Storyteller', 900, 'st', 30, 'Đọc hết 30 chương Story', 'Finish 30 story chapters'),
+  t('sh-tt-n-steady', 'Người bền bỉ', 'The steady one', 1200, 'days', 100, 'Có 100 ngày học', 'Study on 100 days'),
+  t('sh-tt-n-yearlong', 'Một năm trọn vẹn', 'A full year', 2400, 'days', 365, 'Có 365 ngày học', 'Study on 365 days'),
+  t('sh-tt-n-marathon', 'Chân chạy marathon', 'Marathoner', 1200, 'longDays', 20, 'Có 20 ngày học từ 1 giờ trở lên', 'Study 1 hour or more on 20 days'),
+  t('sh-tt-n-timelord', 'Chúa tể thời gian', 'Time lord', 1800, 'hours', 100, 'Học tổng cộng 100 giờ', 'Study 100 hours in total'),
+  t('sh-tt-n-sniper', 'Bách phát bách trúng', 'Never miss', 1200, 'qc', 2000, 'Trả lời đúng 2000 câu', 'Answer 2000 questions correctly'),
+  t('sh-tt-n-ace', 'Thủ khoa', 'Top of class', 1500, 'tp', 50, 'Có 50 bài kiểm tra từ 80 điểm', 'Score 80+ on 50 tests'),
+  t('sh-tt-n-earlybird', 'Chim sớm', 'Early bird', 900, 'early', 10, 'Có 10 ngày học ít nhất 10 phút trước 7 giờ sáng', 'Study 10+ minutes before 07:00 on 10 days'),
+  t('sh-tt-n-weekend', 'Chiến binh cuối tuần', 'Weekend warrior', 900, 'weekend', 20, 'Học vào 20 ngày thứ bảy, chủ nhật', 'Study on 20 weekend days'),
+  t('sh-tt-n-spark', 'Tia lửa đầu tiên', 'First spark', 600, 'streak', 7, 'Đạt mục tiêu ngày 7 ngày liên tiếp', 'Hit your daily goal 7 days in a row'),
+  t('sh-tt-n-legend', 'Huyền thoại chuỗi ngày', 'Streak legend', 2400, 'streak', 100, 'Đạt mục tiêu ngày 100 ngày liên tiếp', 'Hit your daily goal 100 days in a row'),
+  t('sh-tt-n-museum', 'Chủ bảo tàng', 'Museum keeper', 1800, 'cards', 1000, 'Sưu tầm 1000 thẻ Passport', 'Collect 1000 Passport cards'),
+  t('sh-tt-n-worldcitizen', 'Công dân toàn cầu', 'Global citizen', 1500, 'ccs', 25, 'Có thẻ của 25 nước', 'Own cards from 25 countries'),
+  t('sh-tt-n-diamond', 'Hộ chiếu kim cương', 'Diamond passport', 1500, 'diamond', 1, 'Đạt dấu Kim cương ở 1 nước (đủ thẻ)', 'Earn a Diamond stamp (all cards of one country)'),
+  t('sh-tt-n-stylist', 'Nhà tạo mẫu', 'Stylist', 1200, 'deco', 60, 'Có 60 món đồ mua ở Cửa hàng trang trí', 'Own 60 items from the Decor shop'),
+  t('sh-tt-n-tycoon', 'Tỷ phú chăm học', 'Study billionaire', 2400, 'coins', 50000, 'Kiếm tổng cộng 50000 xu (không tính xu thưởng danh hiệu)', 'Earn 50000 coins in total (title rewards not counted)'),
+  t('sh-tt-n-historian', 'Sử gia', 'Historian', 1500, 'history', 120, 'Sưu tầm 120 thẻ Lịch sử', 'Collect 120 history cards'),
+  t('sh-tt-n-allround', 'Đa tài', 'All-rounder', 900, 'kinds', 10, 'Làm ít nhất 10 loại hoạt động học khác nhau', 'Try at least 10 different kinds of activity'),
 ]);
 
 export const isTitle = id => id in TITLES;
@@ -54,6 +79,17 @@ export function studyStats(m, goal) {
       if (afterBreak) s.comeback = Math.max(s.comeback, back);
     }
   }
+  // số liệu cho các danh hiệu đợt 3
+  Object.assign(s, { s: 0, d: 0, k: 0, x: 0, tl: 0, cm: 0, st: 0, qc: 0, days: 0, longDays: 0, early: 0, weekend: 0, kinds: 0 });
+  const used = new Set();
+  for (const [date, x] of m) {
+    for (const key of ['s', 'd', 'k', 'x', 'tl', 'cm', 'st', 'qc']) s[key] += x[key] || 0;
+    for (const key of ['s', 'r', 'w', 'd', 'k', 'c', 'q', 'x', 'n', 't', 'tl', 'cm', 'st']) if (x[key] > 0) used.add(key);
+    if ((x.sec || 0) >= 3600) s.longDays++;
+    if (hrs(x, [4, 5, 6]) >= 600) s.early++;
+    if ((x.sec || 0) >= 60) { s.days++; const dow = new Date(date + 'T00:00:00Z').getUTCDay(); if (dow === 0 || dow === 6) s.weekend++; }
+  }
+  s.kinds = used.size;
   s.hours = Math.floor(sec / 3600);
   return s;
 }
