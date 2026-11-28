@@ -5,6 +5,7 @@ import * as player from './player.js';
 import * as library from './library.js';
 import * as notes from './notes.js';
 import * as quests from './quests.js';
+import * as calendar from './calendar.js';
 import * as side from './side.js';
 import * as alignui from './alignui.js';
 import * as dictation from './dictation.js';
@@ -48,11 +49,18 @@ const firebaseConfig = {
 
 // ---------- điều hướng ----------
 const cap = s => s[0].toUpperCase() + s.slice(1);
-const trail = [];      // các trang đã xem, trang gần nhất ở cuối: nút Back chung quay lại theo thứ tự này
+// Nút Back chỉ lùi BÊN TRONG mục lớn đang mở, không bao giờ nhảy sang mục lớn khác.
+// trail chỉ giữ đường đi vào trang con (video, tài liệu, ghi chú) và đường ra khỏi TeaLab (trong game thanh mục bị ẩn).
+const trail = [];
+const CHILD = new Set(['player', 'doc', 'notes', 'tealab']);
 let backing = false;
 function show(view) {
   const prev = document.body.dataset.view;
-  if (!backing && prev && prev !== view) { trail.push(prev); if (trail.length > 40) trail.shift(); }
+  if (!backing && prev && prev !== view) {
+    if (view === trail[trail.length - 1]) trail.pop();                      // trang con tự quay về trang mẹ
+    else if (CHILD.has(view)) { trail.push(prev); if (trail.length > 40) trail.shift(); }
+    else trail.length = 0;                                                  // sang mục lớn khác: không lùi ngược qua mục cũ
+  }
   document.body.dataset.view = view;
   $$('.view').forEach(s => s.classList.toggle('active', s.id === 'v' + cap(view)));
   const hl = view === 'doc' || view === 'notes' ? 'library' : view === 'player' ? (prev === 'passport' ? 'passport' : 'library') : view; // Học tiếp từ Passport thì giữ sáng Passport, còn lại coi video mở từ Thư viện
@@ -72,14 +80,84 @@ const topDialog = () => [...document.querySelectorAll('dialog[open]')].pop();
 const lookupOpen = () => { const p = $('#lkPop'); return !!p && !p.hidden; };
 const sideOpen = () => document.body.classList.contains('side-open');
 const pageBack = () => [...document.querySelectorAll('.view.active button')].find(b => /^\s*←/.test(b.textContent) && b.getClientRects().length); // getClientRects: đúng cả với nút nằm trong khung cố định (toàn màn hình)
-const canBack = () => !!(topDialog() || focusmode.on() || lookupOpen() || sideOpen() || pageBack() || trail.length);
+
+// ----- lịch sử các tab con của từng mục (Ôn tập: Ôn thẻ → Viết chữ → Từ mới…), mỗi mục giữ riêng -----
+// Mỗi dòng: [mã, nút đang chọn, nút để bấm lại, thuộc tính phân biệt]. Thêm một dải tab mới ở đâu thì thêm một dòng.
+const TABS = [
+  ['lib', '#libTabs button.on', '#libTabs button', 'data-t'],
+  ['rv', '#rvTabs button.on', '#rvTabs button', 'data-t'],
+  ['hw', '#hwView button.on', '#hwView button', 'data-v'],
+  ['vc', '.vc-nav button.on', '.vc-nav button', 'data-v'],
+  ['quest', '#qTabs button.on', '#qTabs button', 'data-qt'],
+  ['cal', '.cal-acts button[data-cal^="v"].primary', '.cal-acts button', 'data-cal'],
+  ['world', '#wSec button.on', '#wSec button', 'data-s'],
+  ['scm', '.scm-tabs button.on', '.scm-tabs button', 'data-tab'],
+  ['pl', '#plMode button.on', '#plMode button', 'data-m'],
+  ['plr', '#plRs button.on', '#plRs button', 'data-r'],
+  ['abc', '.seg button.on[data-abc]', '.seg button', 'data-abc'],
+  ['kmode', '#vLibrary .seg:not([id]) button.on[data-m]', '#vLibrary .seg:not([id]) button', 'data-m'],
+];
+const steps = {};   // view -> [{ was: {mã: giá trị trước đó}, page }]
+let undoing = false;
+const curView = () => document.body.dataset.view;
+const viewEl = () => $('#v' + cap(curView() || 'library'));
+function snapshot() {
+  const root = viewEl(), s = {};
+  if (!root) return s;
+  for (const [k, on, , attr] of TABS) { const b = root.querySelector(on); if (b) s[k] = b.getAttribute(attr); }
+  if (curView() === 'passport') { const p = passport.navState(); if (p) s.pass = p; }
+  return s;
+}
+const pageId = () => { const b = pageBack(); return b ? b.id || b.textContent.trim() : ''; }; // đang đứng ở trang con nào (nhận ra qua nút “←” của nó)
+document.addEventListener('click', e => {
+  if (undoing || !e.target.closest('.view.active')) return;
+  const btn = e.target.closest('button');
+  if (btn && /^\s*←/.test(btn.textContent)) return; // chính nó là nút quay lại: không ghi thành bước mới
+  const view = curView(), before = snapshot();
+  setTimeout(() => { // đợi mục vẽ xong rồi so: tab nào đổi thì nhớ giá trị cũ
+    if (curView() !== view) return;
+    const after = snapshot(), was = {};
+    for (const k in before) if (k in after && after[k] !== before[k]) was[k] = before[k];
+    if (!Object.keys(was).length) return;
+    const st = (steps[view] ||= []);
+    st.push({ was, page: pageId() });
+    if (st.length > 30) st.shift();
+    refreshBack();
+  }, 250);
+}, true);
+function undoStep() { // lùi một bước tab trong mục đang mở; bỏ qua những bước không còn gì để đổi
+  const st = steps[curView()];
+  while (st?.length) {
+    const { was } = st.pop(), now = snapshot(), root = viewEl();
+    if (was.pass !== undefined) {
+      if (was.pass !== now.pass) { passport.navRestore(was.pass); return true; }
+      continue;
+    }
+    const todo = TABS.filter(([k]) => was[k] !== undefined && was[k] !== now[k]);
+    if (!todo.length || !root) continue;
+    let done = false;
+    undoing = true;
+    try {
+      for (const [k, , all, attr] of todo) { // ngoài trước, trong sau
+        const b = viewEl().querySelector(`${all}[${attr}="${CSS.escape(was[k])}"]`);
+        if (b) { b.click(); done = true; }
+      }
+    } finally { undoing = false; }
+    if (done) return true;
+  }
+  return false;
+}
+const hasStep = () => !!steps[curView()]?.length;
+const canBack = () => !!(topDialog() || focusmode.on() || lookupOpen() || sideOpen() || pageBack() || hasStep() || trail.length);
 function goBack() {
   const d = topDialog();
   if (d) { d.close(); return true; }
   if (focusmode.on()) { focusmode.exit(); return true; }
   if (lookupOpen()) { $('#lkClose').click(); return true; }
   if (sideOpen()) { $('#sClose').click(); return true; }
-  const b = pageBack();
+  const b = pageBack(), top = steps[curView()]?.at(-1);
+  // vừa đổi tab ngay trên trang này thì lùi tab trước; còn nếu đã đi sâu hơn (có nút “←” mới) thì thoát trang đó trước
+  if (top && (!b || top.page === pageId()) && undoStep()) return true;
   if (b) { b.click(); return true; }
   if (trail.length) { backing = true; try { show(trail.pop()); } finally { backing = false; } return true; }
   return false;
@@ -180,7 +258,7 @@ syncSfx();
 bus.on('store', c => { if (c === 'prefs' || c === '*') { loadPrefs(); bus.emit('prefs'); } });
 renderLangs();
 // Mỗi mục tự khởi động trong khối try riêng: một mục lỗi (ví dụ thiếu file sau khi tải bản mới lên) không làm các mục còn lại ngừng chạy; lỗi được ghi lại để thanh báo lỗi hiển thị
-for (const [name, mod] of Object.entries({ player, side, library, notes, quests, alignui, dictation, speak, shadowrec, review, backup, subedit, subpaste, segments, trash, lookup, vocab, find, shortcuts, offline, readaloud, cueedit, music, focusmode, videx, passport, lame, skin, lbl, prompts })) {
+for (const [name, mod] of Object.entries({ player, side, library, notes, quests, calendar, alignui, dictation, speak, shadowrec, review, backup, subedit, subpaste, segments, trash, lookup, vocab, find, shortcuts, offline, readaloud, cueedit, music, focusmode, videx, passport, lame, skin, lbl, prompts })) {
   try { mod.init(); } catch (e) { console.error('Lỗi khởi động mục ' + name, e); (window.__bootErrors ||= []).push('init ' + name + ': ' + (e && e.message || e)); }
 }
 // ---------- nạp muộn các mục lớn không cần ngay lúc mở app (SCM, Thế giới): app mở nhanh hơn, vào mục đó lần đầu vẫn tức thì vì được nạp ngầm sau vài giây ----------
