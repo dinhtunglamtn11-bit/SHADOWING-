@@ -77,11 +77,11 @@ NG: こんにちは`,
 let box = null, mode = 'list', editId = null, draft = null, promptCtx = null, runner = null, runLang = null, backTo = null;
 // quay lại nơi đã mở màn này (ví dụ thư mục bài học) hoặc về danh sách
 const goBack = () => { runner = null; mode = 'list'; if (backTo) { const f = backTo; backTo = null; f(); } else drawList(); };
-const runOpts = { shuffle: true, listen: true, count: 0, kind: 'all' };
+const runOpts = { listen: true, count: 0, order: 'mix', skip: new Set() }; // order: mix = lẫn lộn, kind = theo từng dạng, file = đúng thứ tự trong bộ
+let pickArgs = null; // bộ đang chọn dạng câu để làm
 const pk = { kinds: ['TN', 'DS', 'S', 'K', 'N', 'G'], count: 5 };
 
 const SHORT = { mc: 'Trắc nghiệm', multi: 'Chọn nhiều', tf: 'Đúng/Sai', type: 'Tự luận', fill: 'Điền từ', order: 'Sắp xếp câu', listen: 'Nghe-chọn', listentype: 'Nghe-gõ', cloze: 'Kéo thả', vocab: 'Từ vựng' };
-const KIND_FILTER = [['all', 'Tất cả dạng'], ['mc', 'Trắc nghiệm'], ['multi', 'Chọn nhiều'], ['tf', 'Đúng/Sai'], ['type', 'Tự luận'], ['fill', 'Điền từ'], ['order', 'Sắp xếp câu'], ['cloze', 'Kéo thả'], ['listen', 'Có nghe']];
 const kindOfQ = q => (q.listen ? 'listen' : q.kind);
 
 const setsOf = lang => store.list('sets').filter(s => (s.lang || 'zh') === lang).sort((a, b) => (b.u || 0) - (a.u || 0));
@@ -96,6 +96,7 @@ export function render(el) {
     else { runner.attach(el); return; }
   }
   if (mode === 'sheet') { if (el.querySelector('.sheet')) return; mode = 'list'; }
+  if (mode === 'pick' && pickArgs) { if (pickArgs.lang !== getLang()) mode = 'list'; else { if (!el.querySelector('.xpick')) start(pickArgs.ids, pickArgs.title); return; } }
   if (mode === 'edit') return drawEditor();
   if (mode === 'prompt') return drawPromptView();
   mode = 'list'; drawList();
@@ -143,10 +144,7 @@ function drawList() {
   const keys = [...groups.keys()].sort((a, b) => (a === '') - (b === '') || Math.max(...groups.get(b).map(s => s.u || 0)) - Math.max(...groups.get(a).map(s => s.u || 0)));
   const total = s => groups.get(s).reduce((n, x) => n + countOf(parseSet(x.text || '')), 0);
   box.innerHTML = `<div class="row"><button class="btn primary" id="msNew">＋ Tạo bộ bài tập</button><button class="btn" id="msPrompt" title="Tạo prompt để nhờ ChatGPT / Claude tách văn bản thành nhiều câu hỏi">🤖 Prompt nhờ AI</button>${list.length ? '<button class="btn" id="msQuick" title="Ra một bài kiểm tra ngẫu nhiên từ mọi bộ bài tập, hiện trên một trang">📋 Kiểm tra nhanh</button>' + timeHtml('msQT', 0) : ''}<span class="grow"></span>
-      <label class="dim"><input type="checkbox" id="msShuf" ${runOpts.shuffle ? 'checked' : ''}> Trộn câu</label>
-      <label class="dim"><input type="checkbox" id="msListen" ${runOpts.listen ? 'checked' : ''}> Có câu nghe</label>
-      <label class="dim">Dạng <select id="msKind">${KIND_FILTER.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></label>
-      <label class="dim">Số câu <select id="msCount"><option value="0">Tất cả</option><option value="10">10</option><option value="20">20</option></select></label></div>
+      <label class="dim"><input type="checkbox" id="msListen" ${runOpts.listen ? 'checked' : ''}> Có câu nghe</label></div>
     <div class="dim" style="margin:4px 2px">Bài tập được chia theo mục video / tài liệu. Nhập nhiều câu cùng lúc: bấm “Tạo bộ bài tập” rồi dán các dòng theo cú pháp, hoặc bấm “Prompt nhờ AI” để AI tách văn bản thành câu hỏi.</div>
     ${list.length ? keys.map(k => {
       const it = k.startsWith('I:') ? items.get(k.slice(2)) : null, ss = groups.get(k), fid = k.startsWith('F:') ? k.slice(2) : '';
@@ -154,14 +152,12 @@ function drawList() {
         <div class="row"><button class="btn primary" data-grun="${esc(k)}">▶ Làm cả mục</button><button class="btn" data-gnew="${esc(k)}">＋ Bộ mới</button><button class="btn" data-gprompt="${esc(k)}">🤖 Prompt cho mục này</button></div>
         <div class="cards">${ss.map(setCard).join('')}</div></details>`;
     }).join('') : `<div class="empty">Chưa có bộ bài tập ${esc(langInfo().name)} nào.</div>`}`;
-  $('#msCount', box).value = String(runOpts.count);
-  $('#msKind', box).value = runOpts.kind;
+
   $('#msNew', box).onclick = () => { editId = null; draft = null; mode = 'edit'; drawEditor(); };
   $('#msPrompt', box).onclick = () => { promptCtx = { itemId: '' }; mode = 'prompt'; drawPromptView(); };
-  $('#msShuf', box).onchange = e => { runOpts.shuffle = e.target.checked; };
+
   $('#msListen', box).onchange = e => { runOpts.listen = e.target.checked; drawList(); };
-  $('#msKind', box).onchange = e => { runOpts.kind = e.target.value; };
-  $('#msCount', box).onchange = e => { runOpts.count = +e.target.value; };
+
   $$('[data-run]', box).forEach(b => b.onclick = () => start([b.dataset.run]));
   $$('[data-edit]', box).forEach(b => b.onclick = () => { editId = b.dataset.edit; draft = null; mode = 'edit'; drawEditor(); });
   $$('[data-del]', box).forEach(b => b.onclick = () => { if (confirm('Xóa bộ bài tập này?')) { store.del('sets', b.dataset.del); drawList(); } });
@@ -293,21 +289,62 @@ function quickTest(list, time = 0) {
 }
 
 // ---------- làm bài ----------
-function start(ids, title) {
+function gather(ids) {
   const sets = ids.map(id => { const d = store.get('sets', id); return d && { ...d, id }; }).filter(Boolean);
+  const rnd = rngOf('set' + ids.join() + Date.now());
+  const qs = sets.flatMap(s => build(parseSet(s.text || ''), { shuffle: false, listen: runOpts.listen, count: 0 }, rnd).map(q => ({ ...q, sid: s.id })));
+  return { sets, qs, rnd };
+}
+
+// bước chọn trước khi làm: dạng câu nào, lẫn lộn hay theo dạng, bao nhiêu câu
+function start(ids, title) {
+  const { sets, qs } = gather(ids);
   if (!sets.length) return;
-  const lang = sets[0].lang || 'zh', rnd = rngOf('set' + ids.join() + Date.now());
-  let qs = sets.flatMap(s => build(parseSet(s.text || ''), { shuffle: false, listen: runOpts.listen, count: 0 }, rnd).map(q => ({ ...q, sid: s.id })));
-  if (runOpts.kind !== 'all') qs = qs.filter(q => kindOfQ(q) === runOpts.kind);
-  if (!qs.length) { toast(runOpts.kind === 'all' ? 'Bộ này chưa đủ câu hỏi hợp lệ' : 'Không có câu thuộc dạng đã chọn'); return; }
-  if (runOpts.shuffle) qs = shuffle(qs, rnd);
+  if (!qs.length) { toast('Bộ này chưa đủ câu hỏi hợp lệ'); return; }
+  const n = new Map();
+  for (const q of qs) n.set(kindOfQ(q), (n.get(kindOfQ(q)) || 0) + 1);
+  const kinds = [...n.keys()], picked = new Set(kinds.filter(k => !runOpts.skip.has(k)));
+  if (!picked.size) kinds.forEach(k => picked.add(k));
+  runner?.stop(); runner = null;
+  mode = 'pick'; pickArgs = { ids, title, lang: sets[0].lang || 'zh' };
+  const radio = (name, v, cur, label) => `<label class="pk"><input type="radio" name="${name}" value="${v}" ${String(cur) === String(v) ? 'checked' : ''}> <span>${label}</span></label>`;
+  box.innerHTML = `<div class="xpick"><div class="row"><button class="btn" id="xpBack">← Quay lại</button><b class="gt">${esc(title || sets[0].title || 'Bộ bài tập')}</b></div>
+    <div class="qcard"><div class="row"><b>Chọn dạng câu hỏi</b><span class="grow"></span><button class="btn" id="xpAll">Chọn tất cả</button><button class="btn" id="xpNone">Bỏ chọn</button></div>
+      <div class="xpkinds">${kinds.map(k => `<button type="button" class="btn xpk" data-k="${k}"><span class="xpm"></span><span>${esc(SHORT[k] || k)}</span><small>${n.get(k)} câu</small></button>`).join('')}</div>
+      <div class="xprow"><b>Thứ tự</b>${radio('xpOrd', 'mix', runOpts.order, 'Làm lẫn lộn các dạng')}${radio('xpOrd', 'kind', runOpts.order, 'Theo từng dạng')}${radio('xpOrd', 'file', runOpts.order, 'Đúng thứ tự trong bộ')}</div>
+      <div class="xprow"><b>Số câu</b>${[0, 10, 20, 50].map(c => radio('xpNum', c, runOpts.count, c || 'Tất cả')).join('')}</div>
+      <div class="row"><button class="btn primary big" id="xpGo"></button></div></div></div>`;
+  const paint = () => {
+    $$('.xpk', box).forEach(b => { const on = picked.has(b.dataset.k); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); $('.xpm', b).textContent = on ? '✓' : ''; });
+    const total = kinds.reduce((a, k) => a + (picked.has(k) ? n.get(k) : 0), 0), go = $('#xpGo', box);
+    go.disabled = !total;
+    go.textContent = !total ? 'Hãy chọn ít nhất một dạng' : `▶ Bắt đầu làm ${runOpts.count ? Math.min(runOpts.count, total) : total} câu`;
+  };
+  $$('.xpk', box).forEach(b => b.onclick = () => { const k = b.dataset.k; if (picked.has(k)) picked.delete(k); else picked.add(k); paint(); });
+  $('#xpAll', box).onclick = () => { kinds.forEach(k => picked.add(k)); paint(); };
+  $('#xpNone', box).onclick = () => { picked.clear(); paint(); };
+  $$('[name=xpOrd]', box).forEach(r => r.onchange = () => { runOpts.order = r.value; });
+  $$('[name=xpNum]', box).forEach(r => r.onchange = () => { runOpts.count = +r.value; paint(); });
+  $('#xpBack', box).onclick = goBack;
+  $('#xpGo', box).onclick = () => { runOpts.skip = new Set(kinds.filter(k => !picked.has(k))); run(ids, title, picked); };
+  paint();
+  box.scrollIntoView({ block: 'start' });
+}
+
+function run(ids, title, picked) {
+  const g = gather(ids), { sets, rnd } = g, order = [...picked];
+  let qs = g.qs.filter(q => picked.has(kindOfQ(q)));
+  if (!sets.length || !qs.length) { toast('Không có câu thuộc dạng đã chọn'); goBack(); return; }
+  const lang = sets[0].lang || 'zh';
+  if (runOpts.order !== 'file') qs = shuffle(qs, rnd);
   if (runOpts.count > 0) qs = qs.slice(0, runOpts.count);
+  if (runOpts.order === 'kind') qs = qs.slice().sort((a, b) => order.indexOf(kindOfQ(a)) - order.indexOf(kindOfQ(b)));
   runner?.stop();
   mode = 'run'; runLang = lang;
   runner = runQuiz(box, {
     qs, lang, title: title || sets[0].title,
     onExit: goBack,
-    onAgain: () => start(ids, title),
+    onAgain: () => run(ids, title, picked),
     // ghi lại mỗi bộ đã làm (số lần + điểm cao nhất) để thư mục bài học tính tiến độ
     onDone: r => {
       const by = {};

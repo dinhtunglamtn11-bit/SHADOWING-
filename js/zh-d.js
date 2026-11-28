@@ -1614,4 +1614,11 @@ export default {
   "Rose": "粉红",
   "Lavender": "薰衣草紫",
   "Applies to the reading pages in Article, Story, Flash, Focus and Keyword. Switch quickly with the 🎨 button on those screens.": "适用于 Article、Story、Flash、Focus 和 Keyword 的阅读页面。可用这些页面上的 🎨 按钮快速切换。",
+  "Choose question types": "选择题型",
+  "Mix all types": "各题型混合",
+  "Type by type": "按题型顺序",
+  "Original order": "按原顺序",
+  "Order": "顺序",
+  "Pick at least one type": "请至少选择一种题型",
+  "▶ Start {} questions": "▶ 开始做 {1} 题",
 }

@@ -1595,4 +1595,11 @@ export default {
   "Hồng phấn": "Rose",
   "Oải hương": "Lavender",
   "Áp dụng cho trang đọc ở Article, Story, Flash, Focus và Keyword. Đổi nhanh bằng nút 🎨 ngay trên các màn đó.": "Applies to the reading pages in Article, Story, Flash, Focus and Keyword. Switch quickly with the 🎨 button on those screens.",
+  "Chọn dạng câu hỏi": "Choose question types",
+  "Làm lẫn lộn các dạng": "Mix all types",
+  "Theo từng dạng": "Type by type",
+  "Đúng thứ tự trong bộ": "Original order",
+  "Thứ tự": "Order",
+  "Hãy chọn ít nhất một dạng": "Pick at least one type",
+  "▶ Bắt đầu làm {*} câu": "▶ Start {} questions",
 }

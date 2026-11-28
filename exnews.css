@@ -1189,3 +1189,13 @@ body.vx-on #cueList { display: none; }
 :root[data-skin=love][data-bg] body { background-image: radial-gradient(circle at 25% 25%, rgba(224,36,90,.18) 0 4px, transparent 5px), radial-gradient(circle at 75% 75%, rgba(224,36,90,.12) 0 3px, transparent 4px), linear-gradient(#ffe0e6, #ffccd8); background-size: 70px 70px, 100px 100px, auto; }
 :root[data-skin=matcha][data-bg] body { background-image: repeating-conic-gradient(rgba(90,122,48,.07) 0 25%, transparent 0 50%), linear-gradient(#e4f0ce, #d0e2b2); background-size: 32px 32px, auto; }
 :root[data-skin=matrix][data-bg] body { background-image: repeating-linear-gradient(90deg, rgba(77,255,122,.07) 0 1px, transparent 1px 18px), linear-gradient(#020c05, #000); background-size: auto, auto; }
+
+/* chọn dạng câu hỏi trước khi làm bộ bài tập */
+.xpkinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin: 10px 0; }
+.xpk { display: flex; align-items: center; gap: 8px; justify-content: flex-start; text-align: left; opacity: .6; }
+.xpk.on { opacity: 1; background: var(--accent); }
+.xpk .xpm { flex: none; width: 20px; height: 20px; line-height: 20px; text-align: center; background: var(--field); color: var(--ink); border: 2px solid var(--ink); }
+.xpk small { margin-left: auto; white-space: nowrap; }
+.xprow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 10px 0; }
+#rvBody .xprow label.pk, .xprow label.pk { display: inline-flex; flex-direction: row; align-items: center; gap: 6px; margin: 0; cursor: pointer; }
+.xprow > b { min-width: 4.5em; }
