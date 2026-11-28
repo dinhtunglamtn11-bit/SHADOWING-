@@ -1,0 +1,83 @@
+import { add, SC, setCC } from './pass-kit.js';
+setCC('ao');
+// Angola · Nhóm 4: Văn hóa và nghệ thuật
+
+// ----- Lễ hội -----
+add(4, 'Lễ hội', 'ao-carnival-luanda', 'Carnaval de Luanda', 'Carnival of Luanda', 'lễ hội lớn nhất năm, thường vào tháng Hai hoặc tháng Ba, với các nhóm múa diễu hành qua trung tâm Luanda. Mỗi nhóm có trang phục, nhạc và chủ đề riêng.',
+  d => { d.bg('c'); d.r(0,12,16,4,'a'); for(const [x,c,k] of [[2,'r','y'],[7,'y','g'],[12,'p','b']]){ d.p(k,x,1,x+2,1,x+1,0,x+1,1); d.e(x+1,3.5,1.5,1.5,'N'); d.tri(x-1,5,5,6,c); d.p('w',x,8,x+2,8); d.p('N',x,11,x+2,11); } d.p('r',1,14,6,13,11,15); d.p('b',4,15,14,13); }, SC);
+add(4, 'Lễ hội', 'ao-carnival-vitoria', 'Carnaval da Vitória', 'Victory Carnival', 'một dạng carnaval gắn với kỷ niệm lịch sử trong năm, có diễu hành và biểu diễn. Các nhóm nghệ thuật chuẩn bị hàng tháng trước.',
+  d => { d.bg('o'); d.r(0,12,16,4,'k'); d.r(2,1,1,11,'N'); d.r(3,1,9,3,'r'); d.r(3,4,9,3,'k'); d.p('y',6,3,7,4,8,3,7,2); for(const [x,c] of [[5,'g'],[9,'b'],[13,'y']]){ d.e(x+.5,8.5,1.2,1.2,'N'); d.r(x-1,10,3,3,c); } d.p('w',13,2,14,1,12,1); }, SC);
+add(4, 'Lễ hội', 'ao-luanda-day', 'Ngày thành lập thành phố Luanda (25 tháng 1)', 'Luanda Day', 'kỷ niệm thành phố được lập năm 1576. Có các hoạt động văn hóa và âm nhạc ngoài trời.',
+  d => { d.bg('i'); d.r(0,11,16,5,'b'); for(const [x,h] of [[1,4],[4,6],[7,3],[10,5],[13,4]]){ d.r(x,11-h,2,h,'k'); d.p('y',x,12-h,x+1,13-h); } for(const [x,y,c] of [[4,2,'r'],[11,3,'y']]){ d.p(c,x,y-2,x,y+2,x-2,y,x+2,y,x-1,y-1,x+1,y+1,x+1,y-1,x-1,y+1); d.p('w',x,y); } d.p('y',2,13,9,14,13,12); }, SC);
+add(4, 'Lễ hội', 'ao-independence-day', 'Ngày Độc lập (11 tháng 11)', 'Independence Day', 'ngày Angola giành độc lập từ Bồ Đào Nha năm 1975. Có lễ chào cờ, diễn văn nghệ và bắn pháo hoa.',
+  d => { d.bg('c'); d.r(2,1,1,15,'a'); d.r(3,2,12,4,'r'); d.r(3,6,12,4,'k'); d.p('y',8,5,9,4,10,5,10,6,9,7,8,7,7,6,11,3); d.r(0,13,16,3,'g'); for(const [x,c] of [[6,'w'],[9,'r'],[12,'y']]){ d.p('N',x,11); d.p(c,x,12,x,13); d.p('k',x,14); } }, SC);
+add(4, 'Lễ hội', 'ao-muxima', 'Hành hương Muxima', 'Muxima pilgrimage', 'hàng năm, nhiều tín đồ Công giáo hành hương đến đền Muxima, nơi thờ Đức Mẹ. Đây là một trong những cuộc hành hương lớn của đất nước.',
+  d => { d.bg('u'); d.r(0,12,16,4,'t'); d.r(4,5,8,7,'w'); d.tri(3,2,10,3,'w'); d.p('k',8,0,8,1,7,1,9,1); d.fan(8,10,1.6,'N'); d.r(7,10,3,2,'N'); d.p('B',5,7,10,7); for(const x of [1,3,13]){ d.p('N',x,11); d.p('b',x,12,x,13); d.p('y',x+1,11); } d.r(0,14,16,2,'C'); }, SC);
+add(4, 'Lễ hội', 'ao-mukanda', 'Mukanda (nghi lễ trưởng thành của thiếu niên)', 'Mukanda initiation', 'thực hành truyền thống ở vùng Chokwe và Luvale, dạy thiếu niên tri thức cộng đồng. Nghi lễ thường có múa và những chiếc mặt nạ.',
+  d => { d.bg('o'); d.r(0,13,16,3,'O'); d.tri(3,0,10,3,'r'); d.e(8,6,3.4,3.6,'N'); d.p('w',6,5,10,5,6,8,7,8,8,8,9,8,10,8); d.p('k',7,5,9,5); d.p('y',4,6,12,6,8,3); d.tri(3,9,10,5,'Y'); d.p('O',5,11,7,12,9,11,11,12,6,13,10,13); d.r(1,7,1,7,'n'); d.r(14,7,1,7,'n'); }, SC);
+add(4, 'Lễ hội', 'ao-kuduro-party', 'Kuduro và đêm nhạc đường phố', 'Kuduro street party', 'những buổi tiệc ngoài trời ở khu dân cư với loa lớn và người trẻ thi nhảy. Đây là nơi nhiều vũ công trẻ bắt đầu sự nghiệp.',
+  d => { d.bg('i'); d.r(0,12,16,4,'k'); for(const x of [0,13]){ d.r(x,5,3,7,'K'); d.e(x+1.5,7,1,1,'a'); d.e(x+1.5,10,1,1,'a'); } d.e(8,4,1.5,1.5,'N'); d.r(7,6,3,3,'y'); d.l(7,6,4,4,'N'); d.l(9,6,11,9,'N'); d.l(7,9,5,12,'b'); d.l(9,9,11,11,'b'); d.p('p',5,1,10,2); d.p('c',12,2,3,2); }, SC);
+
+// ----- Nhạc cụ -----
+add(4, 'Nhạc cụ', 'ao-dikanza', 'Dikanza', 'Dikanza scraper', 'nhạc cụ gõ bằng tre có rãnh, người chơi cào que lên mà tạo tiếng rè. Nhạc cụ này rất quan trọng trong semba.',
+  d => { d.l(1,12,12,1,'t'); d.l(2,13,13,2,'t'); d.l(3,14,14,3,'Y'); d.l(2,12,13,1,'t'); for(let i=0;i<8;i+=2) d.l(4+i,8-i,6+i,10-i,'N'); d.l(5,3,12,13,'n'); d.p('N',12,13,13,14); d.p('t',1,13,2,14); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'ao-ngoma', 'Ngoma (trống)', 'Ngoma long drum', 'trống dài bằng gỗ và da, đánh bằng tay trong nghi lễ và vũ điệu. Tên gọi ngoma có trong nhiều ngôn ngữ Bantu.',
+  d => { d.r(2,3,6,2,'e'); d.r(2,5,6,4,'n'); d.r(3,9,4,6,'N'); d.p('y',2,6,3,7,4,6,5,7,6,6,7,7); d.r(2,15,6,1,'k'); d.r(9,7,6,2,'e'); d.r(9,9,6,3,'r'); d.r(10,12,4,3,'N'); d.p('w',9,10,11,11,13,10); d.l(11,2,10,6,'N'); d.p('N',14,2,13,5); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'ao-kissanje', 'Kissanje (đàn ngón cái, sanza)', 'Kissanje thumb piano', 'nhạc cụ có các lưỡi kim loại đặt trên hộp cộng hưởng, người chơi bật bằng ngón cái. Âm thanh nhẹ và trong trẻo.',
+  d => { d.r(2,6,12,9,'n'); d.r(2,6,12,1,'N'); d.r(2,14,12,1,'N'); for(const [x,h] of [[3,5],[5,7],[7,9],[9,8],[11,6],[12,4]]){ d.r(x,3,1,h,'a'); d.p('w',x,3); } d.r(2,5,12,1,'A'); d.e(8,12,1.4,1.4,'k'); d.p('t',3,13,12,13); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'ao-hungu', 'Hungu (cung đàn mbulumbumba)', 'Hungu musical bow', 'đàn cung một dây có quả bầu cộng hưởng, phổ biến ở vùng nam. Dùng để đệm cho giọng hát và kể chuyện.',
+  d => { for(const [x,y] of [[3,1],[5,2],[7,3],[8,5],[9,7],[9,9],[8,11],[7,12],[5,13],[3,14]]) d.r(x,y,2,1,'n'); d.l(3,1,3,14,'a'); d.e(11,11,3,3,'o'); d.e(11,11,1.4,1.4,'N'); d.p('y',12,9); d.l(1,6,6,9,'t'); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'ao-marimba', 'Marimba', 'Marimba', 'đàn phiến gỗ có ống cộng hưởng, chơi bằng dùi. Là nhạc cụ quen thuộc trong nhiều vùng châu Phi.',
+  d => { for(let i=0;i<7;i++){ d.r(1+i*2,4+Math.floor(i/2),1,8-i+Math.floor(i/2),i%2?'n':'t'); d.e(1.5+i*2,13.5,.8,1.2,'O'); } d.l(0,6,15,8,'N'); d.l(0,10,15,9,'N'); d.l(3,0,7,4,'t'); d.l(13,0,9,4,'t'); d.p('r',3,0,13,0,4,0,12,0); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'ao-puita', 'Puita (trống cọ xát)', 'Puita friction drum', 'trống nhỏ có que bên trong, tạo tiếng kêu đặc trưng. Loại trống tương tự, cuíca, có trong nhạc samba của Brazil.',
+  d => { d.e(8,5,5,2,'e'); d.r(3,5,11,8,'r'); d.e(8,13,5,2,'N'); d.p('y',3,7,5,10,7,7,9,10,11,7,13,10); d.e(8,5,3.6,1.2,'u'); d.l(8,5,13,1,'t'); d.p('N',13,1,14,0); d.e(2,2,1.6,1.6,'N'); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'ao-guitar-accordion', 'Guitar và accordion', 'Guitar and accordion', 'hai nhạc cụ nhập từ châu Âu đã được địa phương hóa. Guitar đặc biệt có vai trò lớn trong semba và kizomba.',
+  d => { d.e(4,11,3.4,3.4,'o'); d.e(4,7,2.4,2,'o'); d.e(4,10,1.2,1.2,'N'); d.r(3,1,2,6,'n'); d.r(3,0,2,2,'N'); d.r(9,6,2,9,'r'); d.r(14,6,2,9,'r'); for(let x=11;x<14;x++) d.r(x,6+(x%2),1,9-(x%2)*2,x%2?'k':'e'); d.p('w',9,8,9,10,15,9,15,11); }, { use: 'hold' });
+
+// ----- Nghệ thuật biểu diễn -----
+add(4, 'Nghệ thuật biểu diễn', 'ao-semba', 'Semba', 'Semba dance', 'thể loại nhạc khiêu vũ của Luanda, nổi lên mạnh từ những năm 1940–50, thường được xem là gốc rễ của kizomba. Một số nhà nghiên cứu cũng liên hệ nó với samba của Brazil.',
+  d => { d.bg('r'); d.r(0,13,16,3,'n'); d.e(5,3.5,1.6,1.6,'N'); d.r(4,5,3,4,'w'); d.r(4,9,3,4,'k'); d.e(11,4,1.6,1.6,'N'); d.p('y',10,2,11,2,12,2); d.tri(8,6,7,7,'y'); d.l(6,6,10,7,'N'); d.p('N',9,13,12,13,4,13,6,13); d.p('w',2,2,14,2,1,8); }, SC);
+add(4, 'Nghệ thuật biểu diễn', 'ao-kizomba', 'Kizomba', 'Kizomba couple dance', 'tiếng Kimbundu nghĩa là "bữa tiệc", phong cách nhảy cặp chậm và gần gũi. Phổ biến từ thập niên 1980 và hiện được nhảy ở nhiều nước.',
+  d => { d.bg('v'); d.r(0,13,16,3,'k'); d.e(6,4,1.7,1.7,'N'); d.e(9.5,4.5,1.7,1.7,'N'); d.p('k',8,3,9,2,10,2,11,3,11,4); d.r(4,6,4,4,'B'); d.r(8,6,3,3,'r'); d.tri(7,8,6,5,'r'); d.l(5,7,10,8,'N'); d.r(5,10,2,3,'k'); d.p('p',1,2,2,3,14,2,13,5); d.p('y',3,14,12,15); }, SC);
+add(4, 'Nghệ thuật biểu diễn', 'ao-kuduro', 'Kuduro', 'Kuduro dance', 'điệu nhạc điện tử nhanh với điệu nhảy mạnh, xuất hiện ở Luanda từ cuối thập niên 1980 đầu 1990. Các vũ công thường có những động tác rất sáng tạo.',
+  d => { d.bg('c'); d.r(0,13,16,3,'a'); d.e(10,9,1.8,1.8,'N'); d.l(9,8,6,6,'r'); d.l(10,8,7,6,'r'); d.l(9,7,7,5,'r'); d.l(6,6,3,2,'b'); d.l(7,5,10,1,'b'); d.p('w',2,1,3,1,11,1,12,1); d.l(9,10,6,12,'N'); d.l(11,9,13,12,'N'); d.p('k',5,13,13,13); d.p('y',1,8,2,9,14,5,15,6); }, SC);
+add(4, 'Nghệ thuật biểu diễn', 'ao-rebita', 'Rebita', 'Rebita courtly dance', 'điệu nhảy cặp của Luanda từ thế kỷ 19, nhịp đều và động tác lịch sự. Đây là một trong những vũ điệu cổ của thành phố.',
+  d => { d.bg('u'); d.r(0,13,16,3,'n'); for(const x of [3,10]){ d.e(x+.5,3,1.4,1.4,'N'); d.r(x-1,4,3,5,'k'); d.p('w',x,4,x,5); d.r(x-1,9,1,4,'k'); d.r(x+1,9,1,4,'k'); d.p('N',x+2,6); d.tri(x+1,6,4,7,'p'); d.e(x+3,5,1,1,'N'); } d.p('y',7,1,8,0,9,1); }, SC);
+add(4, 'Nghệ thuật biểu diễn', 'ao-batuque', 'Batuque', 'Batuque drumming', 'biểu diễn trống và nhảy tập thể trong các dịp vui. Tên này cũng được dùng ở nhiều nơi nói tiếng Bồ Đào Nha.',
+  d => { d.bg('o'); d.r(0,13,16,3,'O'); for(const [x,c] of [[2,'r'],[7,'g'],[12,'b']]){ d.e(x+1,4,1.5,1.5,'N'); d.r(x,6,3,3,c); d.r(x,9,3,2,'e'); d.r(x,11,3,3,'n'); d.p('y',x+1,12); d.p('N',x-1,8,x+3,8); } d.p('y',1,2,6,1,11,2,15,3); }, SC);
+add(4, 'Nghệ thuật biểu diễn', 'ao-chokwe-mask', 'Mặt nạ Chokwe (Pwo và Cihongo)', 'Chokwe masks Pwo and Cihongo', 'mặt nạ Pwo thể hiện hình ảnh người phụ nữ đẹp, còn Cihongo đại diện cho quyền lực. Các mặt nạ được đội trong nghi lễ và biểu diễn.',
+  d => { d.e(8,8,4.6,6,'n'); d.r(3,2,10,2,'r'); d.p('r',3,4,3,5,12,4,12,5); d.p('w',4,2,6,2,8,2,10,2,12,2); d.e(5.5,7,1.2,.8,'N'); d.e(10.5,7,1.2,.8,'N'); d.p('k',5,7,11,7); d.p('N',8,8,8,9,7,10,8,10); d.r(6,12,4,1,'m'); d.p('N',6,10,10,10,8,5,7,6,9,6); }, { use: 'hold' });
+add(4, 'Nghệ thuật biểu diễn', 'ao-ngolo', 'N\'golo (vũ điệu ngựa vằn)', 'N\'golo zebra dance', 'vũ điệu chiến đấu của người ở vùng nam. Một giả thuyết cho rằng nó liên quan đến nguồn gốc của capoeira, nhưng điều này còn tranh luận.',
+  d => { d.bg('u'); d.r(0,13,16,3,'t'); d.e(4,9,1.6,1.6,'N'); d.l(4,10,6,13,'N'); d.l(4,8,7,6,'N'); d.l(5,8,8,6,'N'); d.l(7,6,10,2,'N'); d.l(8,6,13,5,'N'); d.p('w',10,2,13,5); d.e(12,9,1.5,1.5,'N'); d.r(11,10,3,2,'w'); d.p('k',12,10,12,11); d.p('N',11,12,13,12,10,13,14,13); }, SC);
+
+// ----- Hội họa và kiến trúc -----
+add(4, 'Hội họa và kiến trúc', 'ao-sona', 'Sona (bản vẽ trên cát)', 'Sona sand drawing', 'nghệ thuật vẽ hình bằng đường liên tục quanh những chấm trên cát của người Chokwe. UNESCO đã ghi nhận đây là di sản phi vật thể.',
+  d => { d.r(1,1,14,14,'t'); for(const x of [4,8,12]) for(const y of [4,8,12]) d.p('N',x,y); d.l(2,6,6,2,'n'); d.l(6,2,14,10,'n'); d.l(14,10,10,14,'n'); d.l(10,14,2,6,'n'); d.l(10,2,14,6,'n'); d.l(14,6,6,14,'n'); d.l(6,14,2,10,'n'); d.l(2,10,10,2,'n'); }, { use: 'hold' });
+add(4, 'Hội họa và kiến trúc', 'ao-chibinda', 'Tượng Chibinda Ilunga', 'Chibinda Ilunga statue', 'pho tượng gỗ của nhân vật thợ săn anh hùng trong truyền thuyết Chokwe. Được nhiều bảo tàng trên thế giới trưng bày.',
+  d => { d.r(3,0,10,2,'N'); d.p('N',2,2,2,3,13,2,13,3,4,2,11,2); d.e(8,4,2.6,2.8,'n'); d.p('N',7,4,9,4,7,6,8,6,9,6); d.r(6,7,4,5,'n'); d.p('N',6,12,6,13,9,12,9,13); d.r(5,14,6,2,'N'); d.r(12,5,1,10,'t'); d.p('n',10,8,11,9); d.p('n',5,8,4,9,4,10); d.p('t',7,8,8,9); }, { use: 'hold' });
+add(4, 'Hội họa và kiến trúc', 'ao-fortress-museum', 'Pháo đài São Miguel', 'Fortress museum', 'công trình quân sự cổ nhìn ra vịnh Luanda. Hiện là nơi trưng bày lịch sử.',
+  d => { d.bg('o'); d.r(0,12,16,4,'C'); d.tri(0,6,16,10,'n'); d.r(1,6,14,4,'u'); for(let x=1;x<15;x+=3) d.r(x,5,2,1,'u'); d.r(3,7,2,1,'k'); d.r(9,8,3,1,'k'); d.p('a',2,7,8,7,12,8); d.e(6,5,1,1,'k'); d.p('k',7,4,8,4); d.p('w',3,14,12,13); }, SC);
+add(4, 'Hội họa và kiến trúc', 'ao-se-cathedral', 'Nhà thờ Chính tòa Luanda (Sé Catedral)', 'Luanda Cathedral', 'nhà thờ lớn mang kiến trúc Bồ Đào Nha, nằm ở khu phố cổ. Nhà thờ cùng các phố cổ tạo nên gương mặt lịch sử của Luanda.',
+  d => { d.bg('c'); d.r(0,14,16,2,'a'); d.r(4,6,8,8,'p'); d.tri(4,3,8,3,'r'); for(const x of [1,12]){ d.r(x,4,3,10,'w'); d.tri(x,1,3,3,'O'); d.p('k',x+1,6,x+1,9); } d.fan(8,11,1.8,'N'); d.r(7,11,2,3,'N'); d.e(8,7.5,1,1,'c'); d.p('y',8,1,8,2,7,1,9,1); }, SC);
+add(4, 'Hội họa và kiến trúc', 'ao-iron-palace', 'Palácio de Ferro (cung điện sắt)', 'Iron Palace', 'tòa nhà kim loại đặc biệt ở Luanda, tương truyền liên quan đến Gustave Eiffel. Nguồn gốc chính xác của nó còn được nhắc lại với nhiều câu chuyện.',
+  d => { d.bg('c'); d.r(0,14,16,2,'g'); d.r(2,4,12,10,'e'); d.tri(1,1,14,3,'A'); d.r(1,8,14,1,'A'); for(let x=2;x<15;x+=3){ d.r(x,4,1,10,'a'); } for(const x of [3,6,9,12]){ d.fan(x+.5,6,1,'B'); d.fan(x+.5,11,1,'B'); } d.r(1,3,14,1,'k'); d.p('k',8,0); }, SC);
+add(4, 'Hội họa và kiến trúc', 'ao-marginal', 'Marginal de Luanda', 'Marginal de Luanda', 'đại lộ ven vịnh dài, dùng để đi bộ, chạy bộ và tổ chức sự kiện. Ban đêm đèn sáng, nhiều người ra đây hóng mát.',
+  d => { d.bg('i'); d.r(0,10,16,6,'b'); d.l(0,13,15,8,'a'); d.l(0,14,15,9,'a'); d.l(0,15,15,10,'A'); for(const x of [2,6,10,14]){ d.r(x,8-(x>>2),1,4,'k'); d.p('y',x,7-(x>>2),x-1,7-(x>>2),x+1,7-(x>>2)); } d.r(1,3,2,4,'K'); d.r(4,2,2,5,'K'); d.p('y',1,4,5,3,2,5,4,5); }, SC);
+add(4, 'Hội họa và kiến trúc', 'ao-neto-mausoleum', 'Mausoleu Agostinho Neto', 'Agostinho Neto mausoleum', 'công trình tưởng niệm hình tháp cao, đặt trên đồi ở Luanda. Người dân và du khách thường nhắc đến nó như một cột mốc.',
+  d => { d.bg('c'); d.tri(0,11,16,5,'g'); d.r(3,11,10,2,'a'); d.tri(6,1,4,10,'w'); d.r(7,1,2,10,'a'); d.p('a',6,7,9,7); d.l(4,11,6,6,'w'); d.l(11,11,9,6,'w'); d.p('r',8,0); d.r(5,13,6,1,'A'); d.p('G',2,14,13,14); }, SC);
+add(4, 'Hội họa và kiến trúc', 'ao-street-art', 'Nghệ thuật đương đại', 'Contemporary street art', 'các nghệ sĩ trẻ ở Luanda tổ chức triển lãm, vẽ tranh tường và dùng nhiều chất liệu tái chế. Nhiều tác phẩm nói về đô thị và ký ức.',
+  d => { d.r(1,2,14,11,'a'); for(let y=4;y<13;y+=3) d.r(1,y,14,1,'A'); d.e(6,7,3.4,3.4,'p'); d.e(6,7,1.8,1.8,'y'); d.tri(8,5,6,6,'c'); d.l(2,11,13,3,'r'); d.p('g',12,11,13,10,12,10); d.r(12,11,3,5,'b'); d.r(13,10,1,1,'k'); d.p('p',11,10,10,9); }, { use: 'hold' });
+
+// ----- Văn hóa hiện đại -----
+add(4, 'Văn hóa hiện đại', 'ao-football', 'Bóng đá và đội tuyển Palancas Negras', 'Football and Girabola', 'đội tuyển được đặt theo tên linh dương đen khổng lồ, đã dự World Cup 2006. Giải vô địch quốc gia có tên là Girabola.',
+  d => { d.e(8,9,5.5,5.5,'w'); d.r(7,8,3,3,'k'); d.p('k',8,4,8,5,8,6,8,7,3,7,4,8,5,8,6,9,13,7,12,8,11,8,10,9,5,13,6,12,7,11,11,13,10,12,9,11); d.r(2,0,4,2,'r'); d.r(2,2,4,2,'k'); d.p('y',3,1,4,2); d.p('y',11,1,12,0,13,1,12,2); }, { use: 'hold' });
+add(4, 'Văn hóa hiện đại', 'ao-basketball', 'Bóng rổ', 'Basketball', 'Angola là một trong những đội mạnh nhất châu Phi, từng nhiều lần giành chức vô địch châu lục. Cả nam và nữ đều được nhiều người theo dõi.',
+  d => { d.e(6,10,5,5,'o'); d.l(6,5,6,15,'N'); d.l(1,10,11,10,'N'); d.p('N',3,6,2,8,2,11,3,13,9,6,10,8,10,11,9,13); d.r(9,0,6,4,'w'); d.r(11,1,2,2,'r'); d.r(10,4,4,1,'r'); d.p('a',10,5,12,5,11,6,13,5); }, { use: 'hold' });
+add(4, 'Văn hóa hiện đại', 'ao-literature', 'Văn học tiếng Bồ Đào Nha', 'Literature in Portuguese', 'các nhà văn như Pepetela, Ondjaki và José Eduardo Agualusa viết về chiến tranh, ký ức và đời sống đô thị. Sách của họ được dịch sang nhiều thứ tiếng.',
+  d => { d.r(2,2,5,12,'r'); d.r(7,3,4,11,'g'); d.r(11,4,3,10,'b'); d.p('y',3,4,4,4,5,4,3,11,4,11,5,11,8,5,9,5,12,6,12,7); d.r(1,14,14,1,'N'); d.p('w',3,6,4,6,5,6,8,12,9,12); }, { use: 'hold' });
+add(4, 'Văn hóa hiện đại', 'ao-music-video', 'Phim ảnh và video ca nhạc', 'Films and music videos', 'nhiều video kuduro và kizomba được quay ở Luanda và chia sẻ trên mạng. Các nhà làm phim trẻ kể chuyện về đời sống đô thị.',
+  d => { d.r(1,5,10,7,'k'); d.r(2,6,8,5,'b'); d.tri(4,7,4,3,'w'); d.r(11,7,2,3,'k'); d.tri(12,6,4,5,'K'); d.r(3,2,3,3,'a'); d.r(7,1,4,4,'a'); d.p('k',4,3,8,2,9,3); d.p('r',2,6); d.r(5,12,2,4,'a'); d.p('y',13,2,14,1,14,3,13,13); }, { use: 'hold' });
+add(4, 'Văn hóa hiện đại', 'ao-fashion-social', 'Thời trang và mạng xã hội', 'Fashion and social media', 'người trẻ dùng mạng để chia sẻ phong cách và âm nhạc. Nhiều nhà thiết kế dùng vải pano trong bộ sưu tập hiện đại.',
+  d => { d.tri(1,4,9,10,'o'); d.r(3,2,5,3,'o'); d.p('b',3,8,5,10,7,8,4,12,7,12,5,6); d.p('y',4,6,6,9,3,11,6,12); d.r(10,3,5,9,'k'); d.r(11,4,3,6,'w'); d.p('r',11,5,13,5,11,6,12,6,13,6,12,7); d.p('a',12,11); }, { use: 'hold' });
+add(4, 'Văn hóa hiện đại', 'ao-nightlife', 'Đời sống về đêm ở Luanda', 'Luanda nightlife', 'quán bar, nhà hàng và câu lạc bộ đông người vào cuối tuần, nhất là ven vịnh. Kizomba và kuduro được mở suốt đêm.',
+  d => { d.bg('i'); d.r(0,12,16,4,'b'); d.r(1,5,9,7,'m'); d.r(1,4,9,1,'p'); d.r(2,7,3,3,'y'); d.r(6,7,3,5,'o'); d.p('c',2,3,3,2,4,3); d.e(13,3,1.6,1.6,'e'); d.l(11,12,12,6,'n'); d.p('G',10,6,11,5,13,5,14,6,12,4); d.p('y',3,13,8,14,13,13); d.p('p',5,15,11,15); }, SC);

@@ -1,0 +1,81 @@
+import { add, SC, setCC } from './pass-kit.js';
+setCC('ao');
+// Angola · Nhóm 1: Nơi chốn và thiên nhiên
+
+// ----- Địa danh -----
+add(1, 'Địa danh', 'ao-luanda', 'Luanda', 'Luanda', 'thủ đô và thành phố lớn nhất, nằm ven biển. Thành phố có vịnh nhìn ra Đại Tây Dương, khu phố cổ thời thuộc địa và nhiều tòa nhà cao tầng mới.',
+  d => { d.bg('c'); d.r(0,11,16,5,'C'); d.r(0,10,16,1,'u'); for(const [x,h,c] of [[1,6,'w'],[4,8,'a'],[7,5,'e'],[10,9,'w'],[13,6,'u']]){ d.r(x,10-h,2,h,c); for(let y=11-h;y<9;y+=2) d.p('B',x,y,x+1,y); } d.p('r',1,3,2,3); d.p('w',2,13,9,14,13,12); }, SC);
+add(1, 'Địa danh', 'ao-ilha', 'Ilha de Luanda (đảo Luanda)', 'Ilha de Luanda', 'dải cát dài chắn vịnh, nơi có nhiều nhà hàng hải sản và bãi biển. Người dân thành phố thường đến đây vào cuối tuần.',
+  d => { d.bg('c'); d.r(0,6,16,4,'C'); d.r(0,10,16,3,'u'); d.r(0,13,16,3,'C'); for(const x of [1,3,5]) d.r(x,4,1,2,'A'); d.l(4,11,5,6,'n'); d.p('G',3,5,4,5,6,5,7,6,5,4,2,6); d.r(10,9,4,3,'w'); d.tri(9,7,6,2,'r'); d.p('B',11,10,12,10); d.p('w',2,14,9,15,13,14); }, SC);
+add(1, 'Địa danh', 'ao-sao-miguel', 'Pháo đài São Miguel (Fortaleza de São Miguel)', 'Fortress of Sao Miguel', 'pháo đài do người Bồ Đào Nha xây từ thế kỷ 16 ở Luanda. Ngày nay bên trong là bảo tàng quân sự.',
+  d => { d.bg('c'); d.tri(0,7,16,9,'n'); d.r(2,6,12,5,'t'); for(let x=2;x<14;x+=3) d.r(x,5,2,1,'t'); d.r(1,7,2,4,'u'); d.r(13,7,2,4,'u'); d.fan(8,10,1.8,'k'); d.r(7,10,3,1,'k'); d.r(8,1,1,5,'N'); d.r(9,1,3,1,'r'); d.r(9,2,3,1,'k'); d.p('N',4,8,11,8); d.p('G',1,13,14,12,5,14); }, SC);
+add(1, 'Địa danh', 'ao-kalandula', 'Thác Kalandula (Quedas de Kalandula)', 'Kalandula Falls', 'một trong những thác nước lớn nhất châu Phi theo lưu lượng, cao khoảng 100 m và rộng hơn 400 m. Thác nằm trên sông Lucala, tỉnh Malanje.',
+  d => { d.bg('c'); d.r(0,3,16,2,'G'); d.r(0,5,16,7,'N'); for(const x of [1,3,4,6,7,8,10,11,13]){ d.r(x,4,1,8,x%2?'w':'c'); } d.r(0,12,16,4,'C'); d.e(5,12,3,1.4,'w'); d.e(11,12,3,1.4,'w'); d.p('g',0,3,2,2,13,2,15,3); d.p('w',2,14,12,15); }, SC);
+add(1, 'Địa danh', 'ao-tundavala', 'Vách đá Tundavala (Fenda da Tundavala)', 'Tundavala Gap', 'vách đá dựng đứng gần Lubango, nhìn xuống vùng đồng bằng thấp phía dưới. Nơi đây thường được dùng làm điểm ngắm cảnh lúc bình minh.',
+  d => { d.bg('o'); d.r(0,11,16,5,'g'); d.r(0,13,16,3,'G'); d.r(0,4,5,12,'N'); d.r(1,2,3,2,'n'); d.r(11,6,5,10,'N'); d.r(12,5,4,1,'n'); d.p('n',3,7,3,10,13,9,14,12); d.e(8,6,2,2,'y'); d.p('G',0,3,4,3,14,4,11,5); d.p('k',7,3,8,2,9,3); }, SC);
+add(1, 'Địa danh', 'ao-cristo-rei', 'Tượng Cristo Rei ở Lubango', 'Cristo Rei in Lubango', 'tượng Chúa Giêsu đứng trên đỉnh đồi nhìn xuống thành phố, tương tự tượng ở Rio de Janeiro nhưng nhỏ hơn. Du khách thường lên đây để ngắm toàn cảnh.',
+  d => { d.bg('c'); d.tri(1,8,14,8,'g'); d.r(6,8,4,2,'a'); d.r(7,3,2,5,'w'); d.r(3,4,10,1,'w'); d.e(8,2,1.2,1.2,'w'); d.p('a',7,6,8,7); for(const [x,y] of [[2,14],[5,13],[11,14],[13,13]]){ d.p('r',x,y); d.p('w',x,y+1); } d.p('w',2,2,3,2,12,1,13,1); }, SC);
+add(1, 'Địa danh', 'ao-kissama', 'Công viên quốc gia Kissama (Quiçama)', 'Kissama National Park', 'khu bảo tồn gần Luanda, từng bị chiến tranh tàn phá và được phục hồi bằng nhiều đợt đưa thú rừng về. Nơi có voi, hươu cao cổ, linh dương và nhiều loài chim.',
+  d => { d.bg('u'); d.r(0,11,16,5,'t'); d.r(2,3,1,9,'N'); d.e(3,3,3.4,1.4,'G'); d.e(8,9,3,2.4,'a'); d.e(11,8,2,2,'a'); d.l(12,9,13,12,'a'); d.p('w',12,10); d.p('A',10,7,10,8); d.r(6,10,1,3,'A'); d.r(9,10,1,3,'A'); d.p('k',11,7); d.p('g',1,13,5,14,13,13,14,12); }, SC);
+add(1, 'Địa danh', 'ao-iona', 'Sa mạc Namib (Parque Nacional do Iona)', 'Iona desert meets the ocean', 'dải sa mạc ven biển ở cực nam, nơi cát gặp đại dương. Vườn quốc gia Iona là một trong những vùng hoang sơ nhất của đất nước.',
+  d => { d.bg('c'); d.r(0,8,16,8,'C'); d.tri(0,4,11,12,'o'); d.r(0,13,9,3,'o'); d.tri(1,7,8,6,'O'); d.p('u',2,12,3,11,4,10,5,9); d.e(13,3,2,2,'y'); d.p('w',11,9,12,10,13,12,12,14,10,15,14,11); d.p('G',3,14,2,13,4,13); }, SC);
+add(1, 'Địa danh', 'ao-benguela', 'Benguela và Lobito', 'Benguela and Lobito', 'hai thành phố cảng ở miền trung, có bãi biển dài và kiến trúc thuộc địa. Lobito còn là điểm đầu của tuyến đường sắt Benguela chạy sâu vào nội địa.',
+  d => { d.bg('c'); d.r(0,10,16,3,'C'); d.r(0,13,16,3,'u'); for(const [x,c] of [[1,'p'],[5,'y']]){ d.r(x,6,4,4,c); d.tri(x,4,4,2,'r'); d.p('B',x+1,7,x+2,7); d.p('N',x+1,9); } d.r(9,9,6,2,'k'); d.r(10,8,3,1,'r'); d.p('a',11,7,11,6); d.r(0,14,16,1,'N'); for(let x=1;x<16;x+=2) d.p('k',x,15); }, SC);
+add(1, 'Địa danh', 'ao-pedras-negras', 'Pedras Negras de Pungo Andongo', 'Black rocks of Pungo Andongo', 'những khối đá đen khổng lồ nhô lên giữa đồng bằng ở tỉnh Malanje. Nơi đây gắn với truyền thuyết về nữ hoàng Nzinga.',
+  d => { d.bg('c'); d.r(0,12,16,4,'g'); d.e(3,9,3,4,'k'); d.e(8,7,2.8,5.4,'K'); d.e(13,10,2.6,3.2,'k'); d.p('a',7,4,3,7,13,8); d.p('G',1,13,5,14,10,13,14,14,7,15); d.p('y',5,13,12,15); d.p('w',2,2,3,2,12,2); }, SC);
+add(1, 'Địa danh', 'ao-mbanza-kongo', 'M\'banza-Kongo', 'M\'banza-Kongo old capital', 'cố đô của Vương quốc Kongo, ở phía bắc, được UNESCO (Tổ chức Giáo dục, Khoa học và Văn hóa Liên Hợp Quốc) công nhận là di sản thế giới năm 2017. Thành phố còn dấu vết các nhà thờ đá đầu tiên thời Bồ Đào Nha.',
+  d => { d.bg('u'); d.r(0,13,16,3,'g'); d.r(2,7,2,6,'a'); d.r(4,5,2,8,'a'); d.r(10,6,2,7,'a'); d.r(12,9,2,4,'a'); d.fan(8,8,3,'a'); d.fan(8,9,1.8,'u'); d.r(7,9,3,4,'u'); d.p('A',3,8,4,10,11,8,12,11,5,6); d.p('N',8,2,8,3,8,4,7,3,9,3); d.p('G',1,14,6,13,13,14); }, SC);
+
+// ----- Núi, rừng, sông và biển -----
+add(1, 'Núi, rừng, sông và biển', 'ao-planalto', 'Cao nguyên Planalto Central', 'Central Highlands plateau', 'vùng cao ở trung tâm, khí hậu mát mẻ hơn ven biển, trồng nhiều ngô và khoai. Các thành phố như Huambo và Kuito nằm trên cao nguyên này.',
+  d => { d.bg('c'); d.tri(0,4,10,6,'a'); d.r(0,8,16,3,'g'); d.r(0,11,16,5,'h'); for(let x=1;x<16;x+=3){ d.r(x,11,1,5,'G'); d.p('y',x,10); } d.r(11,6,4,3,'O'); d.tri(10,4,6,2,'N'); d.p('w',3,2,4,2,5,2,12,1,13,1); }, SC);
+add(1, 'Núi, rừng, sông và biển', 'ao-moco', 'Núi Moco', 'Mount Moco', 'đỉnh cao nhất Angola, khoảng 2.620 m, thuộc tỉnh Huambo. Vùng quanh núi là rừng núi thấp và đồng cỏ.',
+  d => { d.bg('c'); d.tri(1,2,14,12,'a'); d.tri(5,2,6,4,'A'); d.tri(0,8,8,6,'G'); d.tri(9,9,7,5,'g'); d.r(0,14,16,2,'g'); d.p('w',2,3,3,3,4,3,11,5,12,5,13,5); d.p('r',8,1,9,1); d.p('k',8,2); d.p('y',3,15,12,15); }, SC);
+add(1, 'Núi, rừng, sông và biển', 'ao-cuanza', 'Sông Cuanza (Kwanza)', 'Cuanza River', 'con sông lớn nhất chảy hoàn toàn trong lãnh thổ Angola và đổ ra Đại Tây Dương ở phía nam Luanda. Dọc sông có nhiều đập thủy điện.',
+  d => { d.bg('o'); d.r(0,7,16,9,'g'); d.l(2,7,10,10,'b'); d.l(3,7,11,10,'b'); d.l(10,10,3,15,'b'); d.l(12,10,6,15,'b'); d.l(11,10,5,15,'C'); d.r(10,4,5,4,'a'); for(const x of [11,13]) d.r(x,6,1,3,'c'); d.e(4,3,2,2,'y'); d.p('G',1,10,14,12,13,14,2,12); }, SC);
+add(1, 'Núi, rừng, sông và biển', 'ao-cunene', 'Sông Cunene', 'Cunene River', 'sông ở miền nam, một phần là ranh giới với Namibia. Quanh sông là vùng đất của người chăn nuôi gia súc.',
+  d => { d.bg('u'); d.r(0,8,16,8,'t'); d.r(0,10,16,3,'C'); d.p('w',3,11,8,10,12,12); d.e(4,14,2.4,1.4,'N'); d.p('w',1,12,2,13); d.e(11,14,2.2,1.3,'n'); d.p('e',13,12,14,13); for(const x of [3,12]){ d.r(x,4,1,5,'N'); d.e(x+.5,4,2.6,1.4,'G'); } d.e(8,3,1.8,1.8,'o'); }, SC);
+add(1, 'Núi, rừng, sông và biển', 'ao-mayombe', 'Sông Congo và rừng Mayombe', 'Mayombe rainforest', 'vùng phía bắc có rừng mưa nhiệt đới, đặc biệt là rừng Mayombe thuộc tỉnh Cabinda. Rừng có cây gỗ lớn và nhiều loài khỉ.',
+  d => { d.bg('G'); for(const [x,y,c] of [[2,3,'g'],[7,2,'h'],[12,3,'g'],[4,7,'h'],[10,7,'g'],[14,8,'h']]) d.e(x,y,3,2.4,c); d.r(7,5,2,11,'N'); d.r(1,10,2,6,'n'); d.r(0,14,16,2,'g'); d.e(11,10,1.6,1.6,'N'); d.e(11,13,1.6,2,'N'); d.p('t',10,10,11,10,12,10); d.p('N',13,12,14,11,14,10); }, SC);
+add(1, 'Núi, rừng, sông và biển', 'ao-miradouro-lua', 'Miradouro da Lua (điểm ngắm cảnh Mặt Trăng)', 'Miradouro da Lua', 'vách đá xói mòn thành hình đồi trơ trụi, nằm phía nam Luanda. Cảnh quan trông giống bề mặt Mặt Trăng.',
+  d => { d.bg('c'); d.r(0,11,16,5,'u'); for(const [x,y] of [[0,5],[2,7],[4,4],[7,6],[9,3],[12,5],[14,7]]){ d.tri(x-1,y,4,14-y,'O'); d.p('t',x,y+2,x,y+3); d.p('r',x+1,y+5); } d.r(0,13,16,3,'t'); d.e(13,2,1.4,1.4,'w'); d.p('N',3,14,9,15,13,13); }, SC);
+add(1, 'Núi, rừng, sông và biển', 'ao-coast', 'Biển và bờ biển dài', 'Long Atlantic coast', 'vùng nước lạnh của dòng Benguela mang nhiều cá, nên nghề đánh cá phát triển. Bờ biển phía nam khô nóng, phía bắc ẩm hơn.',
+  d => { d.bg('c'); d.r(0,6,16,10,'C'); d.r(0,12,16,4,'B'); d.r(2,8,9,2,'r'); d.r(3,10,7,1,'N'); d.r(5,5,3,3,'w'); d.p('B',6,6); d.l(9,2,9,7,'N'); for(const [x,y] of [[3,13],[8,14],[12,12]]){ d.p('a',x,y,x+1,y,x+2,y-1,x+2,y+1); } d.p('w',2,3,3,2,4,3,12,4,13,3,14,4); }, SC);
+
+// ----- Mùa và thiên nhiên -----
+add(1, 'Mùa và thiên nhiên', 'ao-cacimbo', 'Mùa khô (Cacimbo, khoảng tháng 5–9)', 'Cacimbo dry season', 'trời mát, ít mưa và thường có sương mù buổi sáng ven biển. Đây là thời gian thuận lợi để đi thăm vườn quốc gia.',
+  d => { d.bg('a'); d.e(4,4,2.4,2.4,'w'); d.r(0,6,16,2,'w'); d.r(2,9,14,1,'w'); d.r(0,11,16,5,'t'); d.r(11,8,2,5,'N'); d.l(11,9,9,7,'N'); d.l(12,9,15,6,'N'); d.p('Y',2,13,3,12,4,13,7,14,8,13); d.r(0,12,8,1,'e'); }, SC);
+add(1, 'Mùa và thiên nhiên', 'ao-rainy-season', 'Mùa mưa (khoảng tháng 10–4)', 'Rainy season', 'mưa nhiều nhất ở phía bắc và cao nguyên, thường gây ngập đường đất. Nhiều thác nước dâng nước mạnh nhất vào thời gian này.',
+  d => { d.bg('K'); d.e(5,3,4,2.4,'a'); d.e(11,3.5,4,2.4,'A'); for(const [x,y] of [[2,7],[5,9],[8,7],[11,9],[14,7],[3,11],[9,11],[13,12]]) d.p('c',x,y,x-1,y+1); d.r(0,13,16,3,'O'); d.e(5,14,3,.8,'c'); d.p('y',9,5,8,6,9,7); d.p('g',1,12,14,12); }, SC);
+add(1, 'Mùa và thiên nhiên', 'ao-baobab', 'Cây baobab (embondeiro)', 'Baobab (embondeiro)', 'cây thân to, phổ biến ở vùng khô phía nam và ven biển. Người dân dùng quả làm thức ăn và vỏ làm sợi.',
+  d => { d.bg('o'); d.r(0,13,16,3,'O'); d.r(5,6,6,8,'n'); d.r(6,5,4,1,'n'); d.p('N',6,8,6,9,6,10,9,9,9,10,9,11,9,12); for(const [x,y] of [[2,3],[5,1],[8,2],[11,1],[13,3]]){ d.l(8,6,x,y,'N'); d.e(x+.5,y,1.4,1,'G'); } d.e(3,8,.9,1.4,'e'); d.e(13,9,.9,1.4,'e'); }, SC);
+add(1, 'Mùa và thiên nhiên', 'ao-welwitschia', 'Cây Welwitschia', 'Welwitschia plant', 'loài cây kỳ lạ ở sa mạc Namib, chỉ có hai lá nhưng có thể sống hàng nghìn năm. Tên gọi lấy từ nhà thực vật học Friedrich Welwitsch, người từng thám hiểm Angola.',
+  d => { d.bg('u'); d.r(0,10,16,6,'t'); d.e(8,10,2.4,1.8,'N'); d.l(7,10,1,13,'G'); d.l(7,11,0,15,'G'); d.l(6,10,2,11,'g'); d.l(9,10,15,13,'G'); d.l(9,11,15,15,'G'); d.l(10,10,13,11,'g'); d.p('r',7,8,8,7,9,8,8,9); d.e(13,3,2,2,'y'); d.p('O',3,8,12,8); }, SC);
+add(1, 'Mùa và thiên nhiên', 'ao-miombo', 'Rừng miombo', 'Miombo woodland', 'rừng thưa trên cao nguyên, cây rụng lá vào mùa khô. Đây là môi trường của nhiều loài chim và côn trùng.',
+  d => { d.bg('u'); d.r(0,12,16,4,'t'); for(const [x,c] of [[2,'o'],[6,'g'],[10,'r'],[14,'y']]){ d.r(x,7,1,7,'N'); d.e(x+.5,6,2.4,2.4,c); } d.p('N',1,9,3,9,9,9,11,9); d.p('O',3,14,4,13,8,15,12,13,13,14); d.p('k',7,2,8,1,9,2); }, SC);
+add(1, 'Mùa và thiên nhiên', 'ao-jacaranda', 'Hoa phượng tím (jacaranda) ở thành phố', 'Jacaranda street', 'nhiều thành phố trên cao nguyên có cây hoa tím nở rộ vào cuối mùa khô. Cảnh hoa phủ đường làm thành phố thêm đẹp.',
+  d => { d.bg('c'); d.r(0,12,16,4,'a'); d.tri(5,8,6,8,'A'); for(const x of [1,13]){ d.r(x,7,2,6,'N'); d.e(x+1,5,3.6,3,'v'); d.p('p',x,4,x+2,6); } d.r(6,6,4,3,'e'); d.tri(5,4,6,2,'r'); d.p('v',3,13,12,14,5,15,10,13,2,15,14,13); }, SC);
+
+// ----- Vùng miền -----
+add(1, 'Vùng miền', 'ao-coast-zone', 'Vùng ven biển', 'Coastal region', 'dải đất thấp từ Cabinda đến Namibe, có Luanda, Lobito và Benguela. Đây là nơi tập trung dân cư và công nghiệp.',
+  d => { d.bg('c'); d.r(0,10,16,6,'C'); d.r(0,9,9,4,'u'); d.l(2,10,3,4,'n'); d.p('G',2,3,1,4,4,3,5,4,3,2); d.r(6,6,3,3,'w'); d.tri(5,4,5,2,'r'); d.r(11,8,4,2,'k'); d.r(13,4,1,4,'o'); d.p('w',2,14,8,13,12,15); }, SC);
+add(1, 'Vùng miền', 'ao-central-plateau', 'Cao nguyên miền trung', 'Central plateau region', 'vùng núi cao với Huambo, Bié và Kuito, nơi người Ovimbundu sinh sống đông nhất. Khí hậu dễ chịu và đất đai màu mỡ.',
+  d => { d.bg('c'); d.tri(0,3,10,7,'G'); d.tri(7,4,9,6,'g'); d.r(0,10,16,6,'h'); for(let x=1;x<16;x+=2){ d.p('y',x,11,x,13); d.p('G',x,12,x,14); } d.r(2,8,3,3,'n'); d.tri(1,6,5,2,'t'); d.p('w',12,1,13,1,14,1); }, SC);
+add(1, 'Vùng miền', 'ao-north-zone', 'Miền bắc', 'The north', 'vùng rừng, sông và đồi, quê hương của người Kongo và Mbundu. Cabinda là vùng đất tách biệt, nằm phía bắc sông Congo.',
+  d => { d.bg('c'); d.tri(0,3,9,9,'G'); d.tri(7,5,9,7,'g'); d.r(0,11,16,5,'g'); d.l(15,8,8,12,'b'); d.l(8,12,11,15,'b'); d.l(9,12,12,15,'C'); for(const x of [2,5]){ d.r(x,9,1,4,'N'); d.p('G',x-1,8,x,7,x+1,8,x-1,10,x+1,10); } d.p('r',13,2,14,2); }, SC);
+add(1, 'Vùng miền', 'ao-east-zone', 'Miền đông', 'The east', 'vùng cao nguyên thấp, ít dân, có nhiều sông lớn như Zambezi và Cuando. Đây là một trong những khu vực xa xôi nhất.',
+  d => { d.bg('u'); d.r(0,8,16,8,'g'); d.l(0,12,6,10,'C'); d.l(6,10,10,13,'C'); d.l(10,13,15,11,'C'); d.l(0,13,6,11,'C'); d.l(6,11,10,14,'C'); d.r(3,5,1,4,'N'); d.e(3.5,4.5,2.4,1.4,'G'); d.r(12,6,1,4,'N'); d.e(12.5,5.5,2,1.2,'G'); d.e(8,3,2,2,'o'); }, SC);
+add(1, 'Vùng miền', 'ao-south-zone', 'Miền nam', 'The south', 'vùng khô hạn quanh Namibe, Cunene và Cuando Cubango, nơi người chăn nuôi gia súc như Himba và Herero sinh sống. Cảnh quan là thảo nguyên và sa mạc.',
+  d => { d.bg('o'); d.r(0,10,16,6,'O'); d.e(4,4,2.4,2.4,'y'); d.r(11,6,1,6,'N'); d.e(11.5,5.5,3.6,1.4,'G'); d.e(6,10,3,2,'n'); d.e(9,9,1.8,1.6,'n'); d.p('e',8,7,7,6,10,7,11,6); d.p('k',10,9); d.r(4,11,1,3,'N'); d.r(7,11,1,3,'N'); d.p('t',2,14,13,13); }, SC);
+add(1, 'Vùng miền', 'ao-cabinda', 'Cabinda', 'Cabinda', 'vùng đất ở phía bắc sông Congo, tách khỏi phần còn lại của Angola bởi một dải lãnh thổ của Cộng hòa Dân chủ Congo. Vùng có rừng nhiệt đới và dầu mỏ.',
+  d => { d.bg('C'); d.r(2,1,6,6,'g'); d.r(8,2,2,3,'g'); d.r(4,7,3,2,'t'); d.r(5,9,11,7,'h'); d.r(8,8,8,1,'h'); d.p('G',3,2,5,3,6,5,3,5,8,3); d.p('k',11,3,12,2,13,3,12,4,12,5,11,6,13,6); d.p('r',12,1); d.p('w',2,12,3,11,1,14); }, SC);
+
+// ----- Hiện tượng đặc biệt -----
+add(1, 'Hiện tượng đặc biệt', 'ao-benguela-current', 'Dòng hải lưu lạnh Benguela', 'Cold Benguela current', 'dòng nước lạnh chảy dọc bờ biển phía nam, tạo ra sương mù dày và giúp sa mạc Namib hình thành. Đây cũng là nguyên nhân của nguồn cá phong phú.',
+  d => { d.bg('B'); d.r(10,0,6,16,'o'); d.r(9,0,2,16,'t'); for(const y of [12,8,4]){ d.l(3,y+2,5,y,'w'); d.l(5,y,7,y+2,'w'); d.l(5,y+1,5,y+3,'c'); } d.p('a',1,3,2,3,3,3,2,2,1,13,2,13,3,13); d.p('y',13,2,14,2,13,3); }, SC);
+add(1, 'Hiện tượng đặc biệt', 'ao-coastal-fog', 'Sương mù ven biển', 'Coastal fog', 'sương mù từ biển vào sa mạc là nguồn nước cho nhiều loài cây và côn trùng. Một số loài bọ có cách thu nước từ sương trên lưng.',
+  d => { d.bg('a'); d.r(0,10,16,6,'t'); for(const [y,x,w] of [[3,0,12],[5,4,12],[7,1,10],[9,6,10]]) d.r(x,y,w,1,'w'); d.e(8,13,2.6,1.8,'k'); d.e(5,12,1.2,1.2,'k'); d.p('k',6,11,7,10,9,15,11,15,6,15,4,10); d.p('c',9,11,10,12); d.p('w',8,12); }, SC);
+add(1, 'Hiện tượng đặc biệt', 'ao-rock-footprints', 'Những khối đá đen nhô lên giữa đồng cỏ', 'Rocks with legendary footprints', 'cảnh quan đặc biệt ở Malanje, nơi đá nổi lên đột ngột giữa vùng đồng cỏ. Nhiều người địa phương kể chuyện về dấu chân khắc trên đá, một truyền thuyết liên quan đến Nzinga.',
+  d => { d.bg('c'); d.r(0,11,16,5,'g'); d.e(8,10,7,5,'K'); d.r(1,11,14,3,'K'); d.e(6,8,1.2,2,'a'); d.e(10,10,1.2,2,'a'); d.p('a',5,5,6,5,7,6,9,7,10,7,11,8); d.p('G',1,15,5,14,11,15,14,14); d.p('y',13,3,14,3,13,2); }, SC);
+add(1, 'Hiện tượng đặc biệt', 'ao-floods', 'Thủy văn và lũ', 'Seasonal floods', 'mùa mưa có thể làm sông dâng nhanh và gây ngập vùng ven. Người dân quen với chuyện đường xá bị chia cắt trong thời gian đó.',
+  d => { d.bg('a'); d.e(5,2,4,1.8,'A'); d.e(11,2,4,1.8,'K'); d.r(4,6,7,6,'O'); d.tri(3,3,9,3,'N'); d.r(6,8,2,3,'k'); d.r(0,10,16,6,'n'); d.p('t',2,12,3,12,4,12,10,13,11,13,7,14,8,14); d.p('c',2,5,1,6,13,5,12,6,14,8); }, SC);

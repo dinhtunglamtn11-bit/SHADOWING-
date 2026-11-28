@@ -1,0 +1,87 @@
+import { add, SC, setCC } from './pass-kit.js';
+setCC('mg');
+// Madagascar · Nhóm 4: Văn hóa và nghệ thuật
+
+// ----- Lễ hội -----
+add(4, 'Lễ hội', 'mg-famadihana', 'Famadihana (lễ trở xương)', 'Famadihana turning of the bones', 'gia đình mang hài cốt tổ tiên ra khỏi lăng mộ, bọc lại bằng vải mới rồi cùng nhảy múa với âm nhạc. Lễ thường diễn ra ở cao nguyên vào mùa khô, cách nhau nhiều năm.',
+  d => { d.bg('c'); d.r(0,13,16,3,'g'); d.r(2,3,12,3,'r'); d.p('R',5,3,5,4,5,5,10,3,10,4,10,5); d.p('e',1,4,14,4); for(const [x,c] of [[3,'b'],[8,'w'],[12,'y']]){ d.e(x+.5,7,1.4,1.4,'N'); d.r(x-1,8,3,4,c); d.p('k',x-1,12,x+1,12); d.p('N',x-1,6,x+1,6); } d.p('k',1,1,2,1,14,2,14,1); }, SC);
+add(4, 'Lễ hội', 'mg-fandroana', 'Fandroana (lễ tắm hoàng gia)', 'Fandroana royal bath', 'nghi lễ gắn với năm mới của triều đình Merina, có việc tắm nước và dùng thịt zebu. Ngày nay lễ vẫn được nhắc đến và tổ chức ở một số nơi.',
+  d => { d.bg('B'); d.e(8,12,6,3,'a'); d.e(8,11,5,2,'c'); d.p('w',5,11,10,10,8,12); d.e(8,5,2,2,'N'); d.p('y',6,3,7,2,8,3,9,2,10,3); d.r(6,7,5,4,'r'); d.p('c',3,7,4,8,3,9,12,6,13,7,12,8); for(const [x,y] of [[1,2],[14,1],[13,4],[2,5]]) d.p('y',x,y); }, SC);
+add(4, 'Lễ hội', 'mg-alahamady', 'Alahamady Be (năm mới truyền thống)', 'Alahamady Be new year', 'ngày đầu năm theo lịch cổ, gia đình tụ họp và cầu chúc. Thời điểm cụ thể phụ thuộc lịch âm của từng vùng.',
+  d => { d.bg('i'); d.e(8,5,3.6,3.6,'e'); d.e(9.5,4,3,3,'i'); d.r(0,12,16,4,'N'); for(const x of [3,8,13]){ d.e(x+.5,9,1.2,1.2,'s'); d.r(x-1,10,3,3,'w'); d.p('r',x,10); } d.p('y',2,2,13,2,14,6,1,6,11,1); d.p('o',5,12,11,12); }, SC);
+add(4, 'Lễ hội', 'mg-independence-day', 'Ngày Độc lập (26 tháng 6)', 'Independence Day', 'ngày lễ quốc gia, có diễu hành và biểu diễn ở thủ đô. Nhiều gia đình ra đường xem hội và ăn uống.',
+  d => { d.bg('c'); d.r(2,1,1,15,'N'); d.r(3,1,4,9,'w'); d.r(7,1,8,5,'r'); d.r(7,6,8,4,'g'); d.r(0,13,16,3,'a'); for(const [x,c] of [[6,'b'],[9,'y'],[12,'r']]){ d.p('s',x,11); d.p(c,x,12,x,13); d.p('k',x,14); } d.p('y',1,0,2,0); }, SC);
+add(4, 'Lễ hội', 'mg-donia', 'Donia (lễ hội âm nhạc ở Nosy Be)', 'Donia music festival', 'lễ hội âm nhạc ở đảo Nosy Be, tập hợp nghệ sĩ từ nhiều vùng và nước khác. Thường diễn ra vào khoảng tháng Năm hoặc tháng Sáu.',
+  d => { d.bg('v'); d.r(0,11,16,5,'k'); d.r(1,6,3,6,'K'); d.r(12,6,3,6,'K'); d.p('a',2,8,13,8,2,10,13,10); d.e(8,6,1.4,1.4,'s'); d.r(7,8,3,3,'y'); d.l(9,9,11,6,'N'); for(const [x,y,c] of [[5,2,'y'],[10,1,'p'],[7,3,'c'],[13,3,'g'],[2,3,'o']]) d.p(c,x,y,x,y+1,x-1,y+2); d.p('w',4,12,7,13,10,12,12,13); }, SC);
+add(4, 'Lễ hội', 'mg-sambatra', 'Sambatra (lễ cắt bao quy đầu của người Antambahoaka)', 'Sambatra ceremony', 'nghi lễ tập thể ở Mananjary, theo truyền thống diễn ra khoảng bảy năm một lần. Cộng đồng tụ họp để cầu phúc cho các bé trai.',
+  d => { d.bg('u'); d.r(0,13,16,3,'n'); for(const x of [2,6,10,13]){ d.e(x+.5,6,1.2,1.2,'N'); d.r(x-1,7,3,5,'w'); d.p(x%4===2?'r':'b',x,8,x,9); d.p('k',x-1,12,x+1,12); } d.r(1,2,14,1,'N'); for(let x=2;x<15;x+=3) d.dtri(x-1,3,3,2,'r'); d.p('y',8,0,8,1); }, SC);
+add(4, 'Lễ hội', 'mg-savika', 'Savika (trò nhảy bắt bò zebu)', 'Savika zebu wrestling', 'truyền thống của người Bara, thanh niên đối mặt với con bò zebu để thể hiện sự dũng cảm. Trò này giống đấu bò hơn là một cuộc thi thể thao.',
+  d => { d.bg('c'); d.r(0,12,16,4,'O'); d.e(9,9,4.6,2.8,'N'); d.e(9,6,2,1.6,'N'); d.r(3,7,3,4,'N'); d.p('w',2,6,2,5,3,4,5,6,6,5); d.p('k',3,8); d.r(5,11,1,3,'k'); d.r(12,11,1,3,'k'); d.e(10,3,1.2,1.2,'s'); d.r(9,4,3,3,'r'); d.p('s',8,5,7,6,12,5); d.p('t',1,13,14,12,15,11); }, SC);
+add(4, 'Lễ hội', 'mg-moraingy', 'Moraingy (quyền đấu truyền thống)', 'Moraingy boxing', 'môn đấu tay không ở vùng ven biển phía tây, thường biểu diễn trong dịp lễ. Võ sĩ đấu theo luật riêng, có nhạc và trống cổ vũ.',
+  d => { d.bg('o'); d.r(0,13,16,3,'t'); for(const [x,c,dir] of [[3,'r',1],[11,'b',-1]]){ d.e(x+1,3.5,1.5,1.5,'N'); d.r(x,5,3,4,'N'); d.r(x,9,3,2,c); d.p('N',x,11,x,12,x+2,11,x+2,12); d.l(x+1,6,x+1+dir*4,5,'N'); d.p(c,x+1+dir*4,5); } d.p('y',7,3,8,2,8,4); }, SC);
+add(4, 'Lễ hội', 'mg-madajazzcar', 'Madajazzcar', 'Madajazzcar festival', 'liên hoan nhạc jazz ở Antananarivo, thu hút nhiều nghệ sĩ trong và ngoài nước. Lễ hội cho thấy sự kết nối của đảo với âm nhạc thế giới.',
+  d => { d.r(7,1,3,2,'y'); d.l(8,2,8,9,'y'); d.l(9,2,9,9,'Y'); d.e(6.5,11,3.2,3.2,'y'); d.e(6,10.5,1.8,1.8,'N'); d.p('w',8,4,8,6,8,8); d.l(4,12,2,8,'y'); d.p('Y',2,7,3,7,1,7); d.p('v',13,3,13,4,13,5,12,5,14,3,12,6); d.p('r',12,10,12,11,12,12,11,12,13,10); }, { use: 'hold' });
+
+// ----- Nhạc cụ -----
+add(4, 'Nhạc cụ', 'mg-valiha', 'Valiha', 'Valiha bamboo zither', 'đàn ống tre có nhiều dây căng quanh thân, thường được xem là nhạc cụ tiêu biểu của đảo. Âm thanh trong và vang như tiếng nước chảy.',
+  d => { d.l(2,13,12,3,'t'); d.l(3,14,13,4,'t'); d.l(2,12,11,3,'Y'); d.l(4,14,13,5,'Y'); d.l(3,13,12,4,'w'); d.p('N',2,13,3,14,12,3,13,4,6,9,7,10,9,6,10,7); d.p('n',5,11,8,8,11,5); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'mg-marovany', 'Marovany', 'Marovany box zither', 'đàn hộp bằng gỗ có dây ở hai mặt, người chơi dùng cả hai tay gảy. Nhạc cụ này phổ biến ở vùng ven biển và phía tây.',
+  d => { d.r(2,4,12,9,'n'); d.r(2,4,12,1,'N'); d.r(2,12,12,1,'N'); for(let y=5;y<12;y+=2) d.r(3,y,10,1,'w'); for(let x=4;x<13;x+=2) d.p('k',x,5,x,11); d.p('t',3,6,8,8,12,10); d.p('r',2,8,13,8); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'mg-kabosy', 'Kabosy', 'Kabosy guitar', 'cây đàn nhỏ giống guitar, đệm cho hát và nhảy trong nhiều thể loại nhạc. Dễ mang theo nên thường thấy trong các buổi tụ họp.',
+  d => { d.r(3,8,7,6,'o'); d.r(4,7,5,1,'o'); d.r(4,14,5,1,'O'); d.e(6.5,10.5,1.4,1.4,'N'); d.l(8,8,13,3,'N'); d.l(9,8,14,3,'n'); d.r(12,1,3,3,'N'); d.p('y',11,1,15,3); d.l(5,12,12,4,'w'); d.p('N',5,13,6,13,7,13); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'mg-jejy', 'Jejy voatavo', 'Jejy voatavo', 'đàn dây có bầu cộng hưởng làm từ quả bầu, thuộc họ đàn ống. Tiếng đàn nhẹ và sâu, đệm cho các bài hát dân gian.',
+  d => { d.e(5,10,3.4,3.4,'O'); d.e(5,10,2,2,'o'); d.p('t',4,9); d.l(2,13,13,2,'n'); d.l(3,14,14,3,'N'); d.l(3,12,12,3,'w'); d.p('t',12,1,13,1,14,4,15,4); d.e(10,8,1.6,1.6,'O'); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'mg-sodina', 'Sodina', 'Sodina flute', 'sáo trúc dài, thổi ngang, dùng trong nhạc dân gian và nhạc nhà thờ. Âm sắc mềm, thường ứng tấu theo nhịp hát.',
+  d => { d.l(1,12,13,4,'t'); d.l(2,13,14,5,'n'); d.l(2,12,13,5,'Y'); for(const [x,y] of [[5,10],[7,9],[9,7],[11,6]]) d.p('k',x,y); d.p('N',1,12,2,13,13,4,14,5); d.p('b',3,3,3,4,3,5,2,5,4,3,4,4); d.p('v',9,13,9,14,8,14,10,12); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'mg-lokanga', 'Lokanga (đàn kéo)', 'Lokanga fiddle', 'loại đàn dây kéo bằng cung, thường dùng trong hira gasy và nhạc ven biển. Có nhiều kiểu tùy vùng.',
+  d => { d.e(6,11,3,3.4,'n'); d.e(7,8,2,2,'n'); d.p('k',5,11,7,12); d.l(8,7,12,3,'N'); d.r(11,1,3,3,'N'); d.l(5,12,11,4,'w'); d.l(2,3,12,12,'t'); d.l(2,4,12,13,'w'); d.p('k',2,3,12,12); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'mg-accordion', 'Kèn accordion', 'Accordion', 'kèn xếp rất quen thuộc trong âm nhạc Malagasy, nhất là salegy. Nó đến đảo qua các ảnh hưởng châu Âu và được địa phương hóa.',
+  d => { d.r(1,4,4,10,'r'); d.r(11,4,4,10,'r'); for(let x=5;x<11;x++) d.r(x,4+(x%2),1,10-(x%2)*2,x%2?'k':'e'); for(let y=5;y<13;y+=2){ d.p('w',2,y); d.p('k',3,y+1); d.p('y',13,y); } d.p('y',1,4,4,4,11,4,14,4); }, { use: 'hold' });
+add(4, 'Nhạc cụ', 'mg-drums', 'Trống và nhạc cụ gõ', 'Drums and percussion', 'dùng để giữ nhịp trong điệu múa và nghi lễ. Nhiều loại làm từ gỗ và da bò.',
+  d => { d.r(2,7,6,7,'r'); d.e(5,7,3,1.4,'e'); d.p('y',2,9,3,10,4,9,5,10,6,9,7,10); d.r(2,13,6,1,'N'); d.r(9,9,5,5,'n'); d.e(11.5,9,2.5,1.2,'e'); d.p('N',9,11,11,11,13,11); d.l(3,2,6,6,'t'); d.l(13,3,11,8,'t'); d.p('e',3,2,13,3); }, { use: 'hold' });
+
+// ----- Nghệ thuật biểu diễn -----
+add(4, 'Nghệ thuật biểu diễn', 'mg-hira-gasy', 'Hira gasy (ca vũ Malagasy)', 'Hira gasy performers', 'đoàn nghệ sĩ biểu diễn ở sân làng với hát, nhảy, nhạc và diễn thuyết. Các đoàn thường thi với nhau và gửi lời nhắn về đạo đức, gia đình và tổ tiên.',
+  d => { d.bg('c'); d.r(0,13,16,3,'O'); for(const [x,c] of [[2,'r'],[7,'b'],[12,'r']]){ d.tri(x-1,1,5,2,'t'); d.r(x,3,3,2,'N'); d.r(x,5,3,4,c); d.tri(x-1,8,5,5,x===7?'y':'w'); d.p('s',x-1,6,x+3,6); } d.p('k',1,1,6,3,11,1); d.p('y',8,6); }, SC);
+add(4, 'Nghệ thuật biểu diễn', 'mg-kabary', 'Kabary (nghệ thuật diễn thuyết)', 'Kabary speech', 'lối nói trang trọng, giàu hình ảnh, dùng trong đám cưới, lễ tang và cuộc họp. Người nói thường chêm các ohabolana, tức tục ngữ, để thêm sức thuyết phục.',
+  d => { d.bg('u'); d.r(0,13,16,3,'n'); d.e(5,5,2,2,'N'); d.tri(2,1,7,2,'t'); d.r(3,7,5,6,'w'); d.p('r',3,8,4,9,5,10,6,11); d.p('N',9,8,10,7); d.r(9,1,6,5,'w'); d.p('w',9,6,8,7); d.p('k',10,2,11,2,12,2,13,2,10,4,11,4,12,4); }, SC);
+add(4, 'Nghệ thuật biểu diễn', 'mg-hainteny', 'Hainteny (thơ truyền thống)', 'Hainteny poetry', 'thể thơ dùng ẩn dụ và ví von để nói chuyện tình cảm và đời sống. Nhiều bài được truyền miệng, rồi được sưu tầm và nghiên cứu.',
+  d => { d.r(3,2,10,12,'e'); d.r(2,1,12,2,'t'); d.r(2,13,12,2,'t'); for(let y=5;y<12;y+=2){ d.r(5,y,6-(y%4?2:0),1,'N'); } d.l(10,10,15,3,'b'); d.p('c',14,3,13,4,15,2); d.p('r',4,4); d.p('g',11,11,12,12,11,12); }, { use: 'hold' });
+add(4, 'Nghệ thuật biểu diễn', 'mg-salegy', 'Salegy', 'Salegy dance music', 'điệu nhạc nhảy nhanh của miền bắc và tây bắc, có guitar, trống và kèn accordion. Nhịp dồn dập khiến người nghe khó ngồi yên.',
+  d => { d.bg('r'); d.r(0,13,16,3,'k'); d.e(5,4,1.6,1.6,'N'); d.r(4,6,3,4,'y'); d.l(4,7,1,4,'N'); d.l(7,7,9,5,'N'); d.p('N',4,10,3,11,3,12,6,10,7,11,8,12); d.e(12,10,2.4,2.4,'o'); d.l(12,9,15,4,'n'); d.p('w',2,1,3,2,10,2,10,3,14,1); d.p('c',1,14,5,15,9,14,13,15); }, SC);
+add(4, 'Nghệ thuật biểu diễn', 'mg-tsapiky', 'Tsapiky', 'Tsapiky dance music', 'nhạc nhảy của miền tây nam, guitar điện và nhịp nhanh, thường chơi trong đám cưới và lễ hội. Vùng Toliara là cái nôi quen thuộc của thể loại này.',
+  d => { d.e(6,11,3.6,3,'r'); d.e(8,9,2.4,2,'r'); d.tri(9,10,4,4,'r'); d.p('w',5,11,6,11,7,10); d.l(8,8,13,3,'N'); d.r(12,1,3,3,'k'); d.p('a',12,1,13,1,14,1); d.p('y',3,3,2,5,4,5,13,9,14,12,3,2); d.p('c',5,2,5,3,5,4); }, { use: 'hold' });
+add(4, 'Nghệ thuật biểu diễn', 'mg-tromba-music', 'Tromba (nghi lễ nhập hồn)', 'Tromba ceremony music', 'nghi lễ có nhạc và nhảy, trong đó một người được cho là trở thành nơi trú của linh hồn tổ tiên. Phần giải thích kỹ hơn nằm ở Nhóm 5.',
+  d => { d.bg('i'); d.r(0,13,16,3,'N'); d.e(8,5,2,2,'N'); d.p('w',6,3,7,3,8,3,9,3,10,3); d.r(6,7,5,6,'w'); d.p('r',6,9,10,9,8,10); d.l(6,8,3,5,'N'); d.l(10,8,13,5,'N'); d.e(2.5,12,2,2,'o'); d.e(13.5,12,2,2,'o'); for(const [x,y] of [[2,2],[14,2],[1,8],[14,8]]) d.p('y',x,y); }, SC);
+add(4, 'Nghệ thuật biểu diễn', 'mg-bara-song', 'Ca hát của người Bara', 'Bara singing', 'lối hát nhiều giọng trong cộng đồng chăn nuôi ở miền nam. Thường đi kèm nghi lễ và các cuộc tụ họp gia đình.',
+  d => { d.bg('o'); d.r(0,12,16,4,'O'); for(const [x,c] of [[2,'r'],[7,'w'],[12,'b']]){ d.e(x+1,5,1.6,1.6,'N'); d.r(x,7,3,5,c); d.p('k',x+1,5); d.p('N',x,12,x+2,12); } d.p('k',5,2,5,3,4,3,10,1,10,2,9,2); d.p('e',1,14,14,14,13,13); }, SC);
+
+// ----- Hội họa và kiến trúc -----
+add(4, 'Hội họa và kiến trúc', 'mg-rova-complex', 'Rova Antananarivo (quần thể cung điện)', 'Rova of Antananarivo complex', 'cung điện gỗ và đá trên đỉnh đồi, gắn với triều đình Merina. Sau đám cháy năm 1995, công trình đang được phục dựng.',
+  d => { d.bg('l'); d.tri(0,10,16,6,'G'); d.r(3,6,10,5,'e'); d.tri(2,2,12,4,'N'); d.r(7,7,2,4,'k'); d.fan(5,9,1.6,'t'); d.fan(11,9,1.6,'t'); for(const x of [1,14]){ d.r(x,5,1,7,'a'); d.p('R',x,4); } d.p('y',8,1,8,0); d.p('n',4,11,11,11); }, SC);
+add(4, 'Hội họa và kiến trúc', 'mg-ambohimanga-gate', 'Ambohimanga', 'Ambohimanga gate', 'đồi thiêng với tường đá, cổng đá tròn và nhà hoàng gia. Đây là biểu tượng bản sắc quan trọng của người Merina.',
+  d => { d.bg('c'); d.r(0,13,16,3,'g'); d.r(1,5,14,8,'a'); d.tri(1,2,14,3,'N'); d.e(8,9,4,4,'A'); d.e(8,9,2.8,2.8,'k'); d.r(4,13,8,1,'A'); d.p('A',2,7,13,8,3,11,12,11); d.e(8,13,2,1.4,'a'); d.p('G',2,13,14,13); }, SC);
+add(4, 'Hội họa và kiến trúc', 'mg-aloalo', 'Aloalo (cột gỗ chạm trên mộ)', 'Aloalo grave posts', 'cột gỗ chạm hình người, bò zebu và hoa văn đặt trên mộ ở miền nam. Nhiều cột có cảnh sinh hoạt và là món quà của người sống cho người đã khuất.',
+  d => { d.r(7,6,2,9,'n'); d.r(5,14,6,1,'N'); d.r(5,4,6,2,'N'); d.p('t',6,4,8,5,10,4); d.e(8,2,2.4,1.6,'n'); d.p('N',5,1,4,0,11,1,12,0); d.p('k',7,2); d.p('N',7,8,8,9,7,10,8,11,7,12); d.p('t',4,8,5,9,11,9,10,8,4,10,12,10); d.r(4,7,8,1,'n'); }, { use: 'hold' });
+add(4, 'Hội họa và kiến trúc', 'mg-red-brick', 'Gạch đỏ ở cao nguyên', 'Highland red brick style', 'kiến trúc nhà gạch hai, ba tầng đặc trưng của Antananarivo và các thị trấn lân cận. Màu đỏ của đất tạo nên một diện mạo chung cho cả vùng.',
+  d => { d.bg('c'); d.r(0,14,16,2,'n'); for(const [x,y,w] of [[0,6,5],[5,3,6],[11,8,5]]){ d.r(x,y,w,14-y,'O'); d.tri(x-1,y-3,w+2,3,'k'); for(let yy=y+1;yy<13;yy+=3) for(let xx=x+1;xx<x+w-1;xx+=2) d.p('e',xx,yy); } d.p('R',2,8,7,6,13,10); }, SC);
+add(4, 'Hội họa và kiến trúc', 'mg-soarano', 'Ga Soarano (Antananarivo)', 'Soarano railway station', 'nhà ga có từ đầu thế kỷ 20, mang dấu ấn kiến trúc Pháp. Nhà ga vẫn có thể được nhìn thấy ở khu trung tâm.',
+  d => { d.bg('c'); d.r(0,13,16,3,'a'); d.r(1,6,14,7,'u'); d.tri(4,2,8,4,'t'); d.e(8,5,1.4,1.4,'w'); d.p('k',8,5,8,4); for(const x of [3,8,12]){ d.fan(x,10,1.6,'B'); d.r(x-1,10,3,3,'B'); } d.r(1,5,14,1,'n'); d.r(0,14,16,1,'k'); d.p('k',2,15,6,15,10,15,14,15); }, SC);
+add(4, 'Hội họa và kiến trúc', 'mg-marquetry', 'Khảm gỗ ở Ambositra', 'Ambositra marquetry', 'thợ làm đồ gỗ khảm hình học từ nhiều loại gỗ khác màu. Nhiều món được bán làm quà lưu niệm.',
+  d => { d.r(2,3,12,11,'t'); for(let y=0;y<4;y++) for(let x=0;x<4;x++){ const c=['N','n','t','O'][(x+y*2)%4]; d.r(3+x*3-0,4+y*2+0,2,2,c); } d.p('N',2,3,13,3,2,13,13,13); d.p('y',8,8); d.r(2,14,12,1,'N'); }, { use: 'hold' });
+add(4, 'Hội họa và kiến trúc', 'mg-dried-flower-art', 'Tranh hoa khô trên giấy Antaimoro', 'Dried flower pictures', 'hoa và lá ép khô được dán lên giấy thủ công để làm tranh. Nghề này gắn với đặc sản giấy Antaimoro đã nhắc ở Nhóm 2.',
+  d => { d.r(2,2,12,12,'N'); d.r(3,3,10,10,'e'); d.l(8,12,8,6,'G'); d.p('g',7,10,6,9,9,9,10,8); for(const [x,y,c] of [[8,5,'v'],[5,7,'r'],[11,6,'o']]){ d.p(c,x,y-1,x-1,y,x+1,y,x,y+1); d.p('y',x,y); } d.p('n',4,11,11,11,5,4); }, { use: 'hold' });
+
+// ----- Văn hóa hiện đại -----
+add(4, 'Văn hóa hiện đại', 'mg-modern-salegy', 'Salegy hiện đại và pop Malagasy', 'Modern salegy and pop', 'các nghệ sĩ như Jaojoby kết hợp nhịp salegy với guitar điện và phối khí hiện đại. Bài hát thường dùng tiếng Malagasy.',
+  d => { d.r(6,1,4,7,'a'); d.e(8,3,2.4,2.4,'a'); for(let y=2;y<7;y+=2) d.r(6,y,4,1,'A'); d.r(7,8,2,4,'k'); d.r(5,12,6,2,'k'); d.p('y',3,3,3,4,3,5,2,5,13,2,13,3,14,2,13,5,12,5); d.p('p',2,10,13,10); }, { use: 'hold' });
+add(4, 'Văn hóa hiện đại', 'mg-barea', 'Bóng đá và đội tuyển Barea', 'Barea national football team', 'đội tuyển quốc gia có biệt danh Barea, nghĩa là zebu. Năm 2019 đội lần đầu dự Cúp bóng đá châu Phi và vào đến tứ kết.',
+  d => { d.e(8,10,4.5,4.5,'w'); d.r(7,9,2,2,'k'); d.p('k',8,6,8,13,4,9,12,9,5,12,11,12); d.p('w',3,1,3,2,4,3,12,1,12,2,11,3); d.r(5,2,6,4,'N'); d.p('k',6,3,9,3); d.p('x',7,5,8,5); d.p('r',1,14,2,14); d.p('g',13,14,14,14); }, { use: 'hold' });
+add(4, 'Văn hóa hiện đại', 'mg-literature', 'Văn học tiếng Malagasy và tiếng Pháp', 'Literature in Malagasy and French', 'nhà thơ và nhà văn viết bằng cả hai thứ tiếng, nhiều tác phẩm mang dấu ấn của hainteny. Người đọc trẻ ngày nay còn tìm thấy văn học trên mạng.',
+  d => { d.r(2,3,6,11,'e'); d.r(8,3,6,11,'w'); d.r(7,2,2,13,'N'); for(let y=5;y<13;y+=2){ d.r(3,y,4,1,'n'); d.r(9,y,4,1,'B'); } d.p('r',3,3,4,3); d.p('b',11,3,12,3); d.r(1,14,14,1,'N'); }, { use: 'hold' });
+add(4, 'Văn hóa hiện đại', 'mg-film', 'Phim ảnh và hoạt hình', 'Film and animation', 'bộ phim hoạt hình Madagascar (2005) đã khiến nhiều khán giả nước ngoài biết đến tên đảo, dù nội dung hoàn toàn hư cấu. Người Malagasy cũng có các nhà làm phim và video ca nhạc địa phương.',
+  d => { d.r(2,6,12,9,'k'); d.r(2,3,12,3,'w'); for(let x=3;x<14;x+=3) d.p('k',x,3,x+1,4,x+2,5); d.p('w',4,8,5,8,6,8,7,8,8,8,4,11,5,11,6,11); d.tri(8,9,5,3,'y'); d.p('g',11,13,12,12,12,13); d.p('o',10,13); }, { use: 'hold' });
+add(4, 'Văn hóa hiện đại', 'mg-phones', 'Điện thoại và mạng xã hội', 'Phones and social media', 'điện thoại di động ngày càng phổ biến, giúp người dân liên lạc và bán hàng. Âm nhạc, tin tức và video ngắn lan nhanh qua các nền tảng trực tuyến.',
+  d => { d.r(4,1,8,14,'k'); d.r(5,3,6,10,'c'); d.p('w',7,2,8,2); d.p('w',7,14,8,14); d.r(6,4,4,2,'g'); d.r(5,7,4,2,'w'); d.r(7,10,4,2,'y'); d.p('r',13,3,14,2,14,4,15,3); d.p('b',1,9,2,10,1,11); }, { use: 'hold' });
+add(4, 'Văn hóa hiện đại', 'mg-street-market', 'Taxi-brousse và chợ đường phố', 'Street market and bush taxis', 'chợ và bến xe là nơi người dân gặp nhau, trao đổi tin tức và mua bán. Đây vẫn là nhịp sống của nhiều thành phố.',
+  d => { d.bg('c'); d.r(0,11,16,5,'t'); for(const [x,c] of [[0,'r'],[6,'g']]){ d.dtri(x,3,6,2,c); d.r(x,5,6,1,c); d.r(x,6,1,5,'N'); d.r(x+5,6,1,5,'N'); d.r(x+1,8,4,3,'n'); d.p('o',x+1,8,x+3,8); d.p('y',x+2,8,x+4,8); } d.r(11,9,5,4,'w'); d.r(11,11,5,1,'b'); d.p('k',12,13,15,13); d.p('c',12,10,14,10); }, SC);
