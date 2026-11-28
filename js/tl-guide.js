@@ -29,6 +29,7 @@ const HOWTO_VI = [
   ['Sao, huy hiệu và thưởng', 'Cột mốc (A–E) cho tối đa 3 sao mỗi cái. Sao đổi ra xu (cộng vào Passport) và IP. Ở 10, 30, 60, 90 sao mở khóa thử thách tuần, bộ trang trí Mùa Xuân, danh hiệu và huy hiệu Ngôi sao Xuân. Thưởng không bao giờ là tiền trong game, nên không làm lệch cân bằng. Sao chỉ tính khi bạn tự chơi ít nhất một nửa số buổi trong kỳ đo (buổi chạy bằng Đi ngủ không tính là tự chơi). Các cột mốc so sánh hoặc đo hụt hàng, hao hụt chỉ chấm khi quán mở bán ít nhất khoảng 80% số ngày của kỳ đo; thử thách tuần cần mở bán 6/7 ngày.'],
   ['Hồ sơ và lịch sử các lượt', 'Menu → <b>🏅 Hồ sơ và lịch sử các lượt</b> ghi lại từng lượt chơi: sao từng cột mốc, huy hiệu, Điểm Mùa, lãi. Có 3 mục: <b>Tổng quan</b> (kỷ lục mọi lượt), <b>Các lượt</b> (chi tiết từng lượt) và <b>So sánh</b> (đặt 2–4 lượt cạnh nhau để xem lượt nào đạt nhiều hơn). Thành tích đã đạt ở bất kỳ lượt nào vẫn được công nhận và giữ (thẻ “kỷ lục”). Khi chơi lại, lượt mới tính từ đầu: bạn phải đạt lại các thành tích đó (và thêm cái khác) trong lượt mới để so sánh.'],
   ['Công cụ phân tích', 'IP mua công cụ ở mục Thành tích: đếm khách, khảo sát nhanh, nhật ký nhà cung cấp, thí nghiệm giá, chẩn đoán đầy đủ (DQI, tách may rủi và kỹ năng), kiểm kê chi tiết lô. <b>Chạy lại giả định</b> chạy lại chính buổi vừa rồi với giá khác (cùng khách, cùng may rủi) để biết quyết định tốt hay chỉ gặp may.'],
+  ['Dòng tiền (lượt chơi mới)', 'Lãi trên sổ và tiền trong két là hai thứ khác nhau. <b>Lương</b> trả mỗi 7 ngày, <b>tiền thuê mặt bằng</b> 15 ngày, <b>điện nước</b> và <b>thuế</b> (4,5% doanh thu) 30 ngày; ngày 90 trả hết. Khoảng 35% khách trả qua ví hoặc QR (phí 1%), sáng hôm sau tiền mới về. Đến hạn mà thiếu tiền thì tự vay gia đình tới 5.000K; hết hạn mức thì bị khất, phạt 1% mỗi ngày, khất lương làm nhân viên chán, khất tiền nhà quá 3 ngày mất uy tín. Xem <b>Báo cáo → Dòng tiền</b> để biết khoản sắp phải trả và dự báo 14 ngày. Điều kiện nâng cấp tính trên tiền còn lại sau khi trừ các khoản phải trả.'],
 ];
 
 // [ký hiệu, tên đầy đủ, giải thích ngắn]
@@ -47,7 +48,7 @@ const GLOSSARY_VI = [
   ['DT', 'Doanh thu', 'Tổng tiền bán ra, chưa trừ chi phí.'],
   ['COGS', 'Giá vốn hàng bán', 'Tổng giá vốn nguyên liệu của những ly đã bán.'],
   ['Lãi gộp buổi', 'Doanh thu − giá vốn − lương', 'Lãi sau khi trừ nguyên liệu và lương của buổi. Chưa trừ thuê mặt bằng.'],
-  ['CPCD', 'Chi phí cố định mỗi ngày', 'Mặt bằng, điện nước… trả mỗi ngày dù có bán hay không. Tăng theo giai đoạn.'],
+  ['CPCD', 'Chi phí cố định mỗi ngày', 'Mặt bằng, điện nước… trả mỗi ngày dù có bán hay không. Tăng theo giai đoạn. Ở lượt chơi mới, phần tiền nhà và điện nước được dồn lại rồi trả theo kỳ.'],
   ['TB', 'Trung bình', 'Giá trị trung bình, ví dụ LY7 là số ly trung bình 7 ngày gần nhất.'],
   ['LY7, DT7, LAI7', 'Số liệu 7 ngày', 'Số ly, doanh thu, lãi trung bình mỗi ngày trong 7 ngày gần nhất (có trong ô Dữ liệu của máy tính).'],
   ['SDLY7', 'Độ lệch chuẩn số ly/buổi', 'Mức dao động của số ly mỗi buổi trong 7 ngày. Dùng để tính tồn kho an toàn.'],

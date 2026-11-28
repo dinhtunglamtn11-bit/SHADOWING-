@@ -28,6 +28,7 @@ function tokenize(src) {
   return t;
 }
 const FN = {
+  ROOT: a => { need(a, 2); const [n, x] = a; if (n === 0 || (x < 0 && Math.abs(n % 2) !== 1)) throw new CalcError('DOMAIN'); return x < 0 ? -((-x) ** (1 / n)) : x ** (1 / n); }, // căn bậc n: ROOT(n; x)
   SQRT: a => { need(a, 1); if (a[0] < 0) throw new CalcError('DOMAIN'); return Math.sqrt(a[0]); }, '√': a => FN.SQRT(a), ABS: a => Math.abs(need(a, 1)[0]), LN: a => { if (!(need(a, 1)[0] > 0)) throw new CalcError('DOMAIN'); return Math.log(a[0]); }, EXP: a => Math.exp(need(a, 1)[0]),
   ROUND: a => { const n = a[1] || 0, f = 10 ** n; return Math.round((a[0] + Number.EPSILON * Math.sign(a[0])) * f) / f; }, CEIL: a => Math.ceil(need(a, 1)[0] - 1e-12), FLOOR: a => Math.floor(need(a, 1)[0] + 1e-12),
   SUM: a => a.reduce((x, y) => x + y, 0), AVG: a => { if (!a.length) throw new CalcError('SYNTAX'); return a.reduce((x, y) => x + y, 0) / a.length; }, MIN: a => Math.min(...a), MAX: a => Math.max(...a), COUNT: a => a.length,
@@ -105,7 +106,8 @@ export function calcEval(expr, vars = {}) {
 }
 export function fmt(n) { // 12 chữ số có nghĩa, bỏ số 0 thừa, dấu phẩy thập phân, dấu chấm ngăn nghìn
   if (!isFinite(n)) return '—';
-  let s = String(+n.toPrecision(12)); if (/e/i.test(s)) s = (+n.toPrecision(12)).toFixed(0);
+  let s = String(+n.toPrecision(12));
+  if (/e/i.test(s)) { const x = +s; s = Math.abs(x) >= 1 ? x.toFixed(0) : x.toFixed(Math.min(100, 11 - Math.floor(Math.log10(Math.abs(x))))).replace(/\.?0+$/, ''); } // số rất nhỏ không được thành 0
   let [a, b] = s.split('.'); const neg = a.startsWith('-'); if (neg) a = a.slice(1);
   a = a.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return (neg ? '-' : '') + a + (b ? ',' + b : '');

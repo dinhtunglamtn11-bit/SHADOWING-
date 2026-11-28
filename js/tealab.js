@@ -11,6 +11,9 @@ import * as O from './tl-ops.js';
 import * as D from './tl-data.js';
 import * as A from './tl-art.js';
 import * as W from './tl-win.js';
+import { cashWarnHtml } from './tl-cash.js';
+import * as DEC from './tl-decor.js';
+import { tea } from './passport.js';
 import { SSTART, SNAME } from './tl-data.js';
 
 const KEY = 'tealab:v1';
@@ -143,9 +146,9 @@ const SLOTKEY = 'tealab:slots';
 export const slots = () => { try { return JSON.parse(localStorage.getItem(SLOTKEY) || '[]'); } catch { return []; } };
 const saveSlots = a => { try { localStorage.setItem(SLOTKEY, JSON.stringify(a.slice(0, 6))); } catch (e) { toast('Không lưu được số liệu: ' + (e.message || e), 3000); } };
 function saveData(name) { // lưu số liệu (không lưu bản chơi): sổ ngày hiện tại để xem lại, so sánh và xuất CSV
-  const s = G.st; const a = slots(); a.unshift({ id: Date.now() % 1e9, name: name || `Ngày ${s.day}`, t: Date.now(), day: s.day, stage: s.stage, hist: s.hist.map(h => ({ day: h.day, rev: h.rev, cogs: h.cogs, spoil: h.spoil, fixed: h.fixed, wage: h.wage, profit: h.profit, cups: h.cups, ls: h.ls, lw: h.lw, rep: Math.round(h.rep * 10) / 10, cash: h.cash, hold: h.hold || 0, other: h.other || 0, stage: h.stage })) }); saveSlots(a); return a[0];
+  const s = G.st; const a = slots(); a.unshift({ id: Date.now() % 1e9, name: name || `Ngày ${s.day}`, t: Date.now(), day: s.day, stage: s.stage, hist: s.hist.map(h => ({ day: h.day, rev: h.rev, cogs: h.cogs, spoil: h.spoil, fixed: h.fixed, wage: h.wage, profit: h.profit, cups: h.cups, ls: h.ls, lw: h.lw, rep: Math.round(h.rep * 10) / 10, cash: h.cash, hold: h.hold || 0, other: h.other || 0, tax: h.tax || 0, fee: h.fee || 0, late: h.late || 0, paid: h.paid || 0, stage: h.stage })) }); saveSlots(a); return a[0];
 }
-const ctx = { slots, saveData, delSlot: id => saveSlots(slots().filter(x => x.id !== id)), G, E, D, A, get st() { return G.st; }, kfmt, k1, openWin, closeWin, save, newGame, sleep, refresh: () => { hud(); panel(); renderWin(); }, toast, render: () => render(), openCalc: () => toggleCalc(true) };
+const ctx = { decorHtml: () => DEC.shopHtml({ balance: tea.balance, own: tea.own, on: tea.on, found: tea.found }, G.decTab || 'all'), decorTitle: () => DEC.TXT.title(), decorAct: el => decorAct(el), slots, saveData, delSlot: id => saveSlots(slots().filter(x => x.id !== id)), G, E, D, A, get st() { return G.st; }, kfmt, k1, openWin, closeWin, save, newGame, sleep, refresh: () => { hud(); panel(); renderWin(); }, toast, render: () => render(), openCalc: () => toggleCalc(true) };
 
 // ---------- máy tính (cửa sổ chồng) ----------
 function toggleCalc(on) { G.calc = on ?? !G.calc; const c = $('#tlCalc'); if (!c) return; c.hidden = !G.calc; if (G.calc) { c.innerHTML = W.calcHtml(ctx); W.calcBind(c, ctx); } applyPause(); $$('#tlTools button[data-w="calc"]').forEach(b => b.classList.toggle('on', G.calc)); }
@@ -156,10 +159,9 @@ export function mount(root) {
   root.innerHTML = `<div id="tlRoot" class="tl">
     <div class="tl-hud" id="tlHud"></div>
     <div class="tl-main">
-      <div class="tl-left"><div class="tl-scene"><canvas id="tlCv" width="${A.SCENE_W}" height="${A.SCENE_H}"></canvas><div class="tl-tags" id="tlTags"></div><button class="tl-viewbtn" id="tlView" title="Xem bên ngoài / bên trong tiệm">🏠 Vào trong</button></div></div>
+      <div class="tl-left"><div class="tl-scene"><canvas id="tlCv" width="${A.SCENE_W}" height="${A.SCENE_H}"></canvas><div class="tl-tags" id="tlTags" title="Chạm để xem rõ"></div><button class="tl-cash" id="tlCash" type="button" aria-label="Tiền mặt"></button><button class="tl-viewbtn" id="tlView" title="Xem bên ngoài / bên trong tiệm" aria-label="Xem bên ngoài / bên trong tiệm">🏠</button><button class="tl-decbtn tl-user" id="tlDecBtn" type="button" title="${DEC.TXT.button()}" aria-label="${DEC.TXT.button()}">🎨</button></div><div id="tlSetup" hidden></div></div>
       <div class="tl-right"><div class="tl-panel" id="tlPanel"></div></div>
     </div>
-    <button class="tl-cash" id="tlCash" type="button" aria-label="Tiền mặt"></button>
     <div class="tl-tools" id="tlTools">
       <button data-w="calendar">${A.ic('cal', 22)}<span>Lịch</span></button>
       <button data-w="mail">${A.ic('mail', 22)}<span>Thư</span><em id="tlMailBadge" hidden></em></button>
@@ -173,6 +175,13 @@ export function mount(root) {
     <div class="tl-fade" id="tlFade" hidden></div>
   </div>`;
   bindRoot(root); G.cv = $('#tlCv'); G.g = G.cv.getContext('2d'); G.g.imageSmoothingEnabled = false; render();
+  $('#tlDecBtn').onclick = () => openWin('decor');
+  G.cv.addEventListener('click', tapScene);
+  G.arrange = false; G.slot = null;
+  if (G.view === 'in') $('#tlView').textContent = '🚪';
+  let tagT = 0; // dải thời tiết để mờ cho đỡ che cảnh: chạm vào thì rõ, vài giây sau tự mờ lại
+  $('#tlTags').onclick = e => { const t = $('#tlTags'); t.classList.add('show'); clearTimeout(tagT); tagT = setTimeout(() => t.classList.remove('show'), 4000); tapScene(e); }; // món đồ nằm dưới dải này vẫn chạm được
+  $('#tlSetup').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setupAct(b.dataset); });
 }
 function newGameSilent() { G.st = E.newRun({ seed: 20261201, diff: 'chuan' }); G.st.silent = 1;G.st.runId = Date.now(); G.st.t0 = G.st.runId; G.st.dayReps = []; E.beginSession(G.st); }
 export function render() { hud(); panel(); renderWin(); fade(); drawNow(); }
@@ -180,20 +189,12 @@ function fade() { const f = $('#tlFade'); if (f) { f.hidden = !G.busy; f.innerHT
 const clockText = () => { const s = st(), S = G.S; const k = s.k, base = SSTART[k]; if (s.phase === 'LIVE' && S) { const m = S.tick; return `${pad(base + Math.floor(m / 60))}:${pad(m % 60)}`; } if (s.phase === 'REVIEW') return `${pad(base + (k === 4 ? 2 : 4))}:00`; return `${pad(base)}:00`; };
 // thanh tiền: gọn theo K (nghìn), M (triệu), B (tỷ)
 const hudMoney = v => { const a = Math.abs(v), d = (x, n) => x.toFixed(n).replace('.', ','); return a >= 1e9 ? d(v / 1e9, 2) + 'B' : a >= 1e6 ? d(v / 1e6, a >= 1e8 ? 0 : 1) + 'M' : kfmt(v); };
-// đặt thanh tiền ngay trên hàng công cụ, và trên cả hàng nút "Mở cửa / Buổi tiếp theo" khi hàng đó đang dính ở đáy
-function placeCash() {
-  const el = $('#tlCash'), tools = $('#tlTools'); if (!el || !tools || !G.onScreen) return;
-  const vh = window.innerHeight; let top = Math.min(vh, tools.getBoundingClientRect().top);
-  const go = $('#tlPanel .tl-go'); if (go) { const r = go.getBoundingClientRect(); if (r.bottom > top - 40 && r.top < top) top = r.top; }
-  const bottom = Math.max(6, Math.round(vh - top + 6)) + 'px'; if (el.style.bottom !== bottom) el.style.bottom = bottom;
-  const left = Math.max(8, Math.round(tools.getBoundingClientRect().left)) + 'px'; if (el.style.left !== left) el.style.left = left;
-}
 export function hud() {
   const h = $('#tlHud'), s = st(); if (!h || !s) return; const card = E.dayCard(s.day), dt = card.date;
   const dayTxt = s.day > 90 ? 'N' + s.day : 'N' + s.day, wk = (uiLang === 'vi' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])[card.dow];
   const chip = (id, icon, val, sub, cls = '') => `<div class="hc ${cls}" id="${id}">${A.ic(icon, 20)}<b>${val}</b><small>${sub}</small></div>`;
   h.innerHTML = chip('hD', 'day', dayTxt, `${wk} ${pad(dt.dd)}/${pad(dt.m)}`) + chip('hT', 'clock', clockText(), 'giờ game') + chip('hK', s.k >= 3 ? 'moon' : 'sun', 'S' + (s.k + 1), D.SNAME[s.k]) +  chip('hA', 'bolt', s.ap, 'AP', s.phase === 'LIVE' && s.ap < 2 ? 'low' : '') + chip('hR', 'rep', Math.round(s.rep), 'uy tín R');
-  const cash = $('#tlCash'); if (cash) { cash.innerHTML = `${A.ic('coin', 18)}<b>${hudMoney(s.cash)}</b>`; cash.classList.toggle('bad', s.cash < 0); requestAnimationFrame(placeCash); }
+  const cash = $('#tlCash'); if (cash) { cash.innerHTML = `${A.ic('coin', 18)}<b>${hudMoney(s.cash)}</b>`; cash.classList.toggle('bad', s.cash < 0); }
   const tb = $('#tlTools'); if (tb && tb.offsetHeight) tb.parentElement.style.setProperty('--tltools', tb.offsetHeight + 'px'); // thanh “Xong/Mở cửa” dính ngay trên hàng công cụ, không để hở
   const n = E.unreadCount(s), b = $('#tlMailBadge'); if (b) { b.hidden = !n; b.textContent = n > 9 ? '9+' : n; }
   tags();
@@ -215,7 +216,7 @@ function panel() {
   else if (s.phase === 'REVIEW') html = reviewHtml(s);
   else if (s.phase === 'DAYEND') html = dayEndHtml(s);
   else html = finalHtml(s);
-  p.innerHTML = html; bindPanel(p); requestAnimationFrame(placeCash);
+  p.innerHTML = html; bindPanel(p);
 }
 const sec = (id, title, body, badge = '') => `<section class="tl-sec ${G.sec === id ? 'open' : ''}" data-sec="${id}"><button class="tl-sech" data-a="sec" data-v="${id}"><span>${title}</span>${badge ? `<em>${badge}</em>` : ''}<i>${G.sec === id ? '▲' : '▼'}</i></button>${G.sec === id ? `<div class="tl-secb">${body}</div>` : ''}</section>`;
 const inShop = (s, i) => D.inSeason(i, s.day) || D.inSeason(i, s.day + 6); // món theo mùa: hiện từ 6 ngày trước mùa đến hết mùa
@@ -306,7 +307,8 @@ function staffHtml(s) {
 function upgradeHtml(s) {
   const u = E.upgradeStatus(s);
   const info = { 2: 'thêm 4 món, nhân viên, trạm thu ngân, nhà cung cấp C, thiết bị, đối thủ. Chi phí cố định 1.750K mỗi ngày.', 3: 'thêm 4 món, tối đa 6 nhân viên, máy POS và xe giao hàng (kênh giao hàng tận nơi, cần một nhân viên chuyên giao). Chi phí cố định 4.100K mỗi ngày.', 4: 'chi nhánh thứ hai (kho, nhân viên và khách riêng; chuyển hàng giữa hai chi nhánh tốn 40K), lưu lượng lớn hơn nhiều, tối đa 8 nhân viên. Chi phí cố định 6.700K mỗi ngày.' }[u.to] || '';
-  return `<div class="dim tl-note">Nâng lên <b>${esc(u.name)}</b>: ${info}</div>${u.need.map(([t, ok]) => `<div class="tl-chk ${ok ? 'ok' : ''}">${A.ic(ok ? 'check' : 'lock', 16)} ${esc(t)}</div>`).join('')}<div class="row"><span class="grow dim">Phí nâng cấp ${kfmt(u.cost)}</span><button class="btn primary" data-a="upgrade" ${u.ok ? '' : 'disabled'}>Nâng cấp</button></div>`;
+  const free = s.rules >= 4 ? `<div class="dim tl-note">Điều kiện tiền tính sau khi trừ khoản phải trả. Hiện còn: <b>${kfmt(s.cash - E.owed(s) - E.billsOwed(s))}</b></div>` : '';
+  return `${free}<div class="dim tl-note">Nâng lên <b>${esc(u.name)}</b>: ${info}</div>${u.need.map(([t, ok]) => `<div class="tl-chk ${ok ? 'ok' : ''}">${A.ic(ok ? 'check' : 'lock', 16)} ${esc(t)}</div>`).join('')}<div class="row"><span class="grow dim">Phí nâng cấp ${kfmt(u.cost)}</span><button class="btn primary" data-a="upgrade" ${u.ok ? '' : 'disabled'}>Nâng cấp</button></div>`;
 }
 function expHtml(s) { // thử nghiệm giá: xen kẽ hai mức giá theo buổi, kết luận có ý nghĩa 90%
   const x = s.exp, items = D.ITEM_ORDER.filter(i => s.menu[i] && !D.ITEMS[i].seasonal && D.ITEMS[i].stage <= s.stage);
@@ -321,6 +323,7 @@ function prepHtml(s) {
   const up = s.stage < 4 ? sec('up', '🏪 Nâng cấp tiệm', upgradeHtml(s), E.upgradeStatus(s).ok ? 'sẵn sàng' : '') : '';
   const tut = D.TUTORIAL[s.day] && s.day <= 7 ? `<div class="tl-tut"><b>${A.ic('arrow', 14, 'tl-bob')} ${esc(D.TUTORIAL[s.day][0])}</b><span>${esc(D.TUTORIAL[s.day][1])}</span></div>` : '';
   return `<div class="tl-ph"><b>Chuẩn bị · ${D.SNAME[s.k]} ${D.SHOURS[s.k]}</b>${decs ? `<button class="btn tl-warnb" data-a="win" data-v="mail">${A.ic('warn', 16)} ${decs} thư cần quyết định</button>` : ''}</div>${tut}
+    ${cashWarnHtml(s, ctx)}
     ${shortageHtml(s)}
     ${sec('prices', '💲 Giá & thực đơn', `<div class="dim tl-note">Giá có thể đổi bất cứ lúc nào (khi mở cửa tốn 1 AP). Khách vượt ngưỡng giá sẽ bỏ đi hẳn.</div>${priceRows(s, false)}`)}
     ${sec('order', '📦 Đặt hàng', orderHtml(s))}
@@ -471,6 +474,8 @@ function dayEndHtml(s) {
   return `<div class="tl-ph"><b>Hết ngày ${s.day} · ${E.dayLabel(s.day)}</b></div>
     ${A.illus(s.day % 7 === 0 ? 'weekend' : 'dayend')}
     <div class="tl-kpis"><div><b>${kfmt(rev)}</b><small>doanh thu</small></div><div><b>${cups}</b><small>ly bán</small></div><div><b>${kfmt(s.cash)}</b><small>tiền hiện có</small></div><div><b>${Math.round(s.rep)}</b><small>uy tín R</small></div></div>
+    ${cashWarnHtml(s, ctx)}
+    ${s.rules >= 4 ? '<div class="dim tl-note">Chốt ngày: tiền ví hôm nay về trong đêm, hóa đơn đến hạn được trả, lương và tiền nhà chưa đến kỳ thì ghi nợ.</div>' : ''}
     <div class="dim tl-note">Bấm “Đi ngủ” để chốt ngày: hàng hỏng, thuê mặt bằng, lương, ${E.isV2(s) ? 'phí giữ hàng, công nợ đến hạn, ' : ''}cập nhật danh tiếng, tin tức hôm sau và chấm cột mốc.</div>
     ${sec('order', '📦 Đặt hàng cho sáng mai', orderHtml(s))}
     <div class="row tl-go"><button class="btn primary big" data-a="sleepbtn">😴 Đi ngủ</button></div>`;
@@ -494,10 +499,7 @@ function bindRoot(root) {
     const a = e.target.closest('[data-a]'); if (a) onAct(a, e);
   });
   root.addEventListener('toggle', e => { if (e.target.id === 'tlGrow') G.growOpen = e.target.open; else if (e.target.id === 'tlStockBox') G.stkOpen = e.target.open; else if (e.target.classList?.contains('tl-stkall')) (G.stkAll ||= {})[e.target.id.slice(-1)] = e.target.open; }, true); // nhớ trạng thái mở/đóng khối theo dõi kho
-  let cashT = 0; const moveCash = () => { if (!cashT) cashT = requestAnimationFrame(() => { cashT = 0; placeCash(); }); };
-  addEventListener('scroll', moveCash, { passive: true, capture: true }); addEventListener('resize', moveCash);
-  root.addEventListener('click', moveCash);
-  root.addEventListener('click', e => { if (e.target.closest('#tlCash')) { toast(HUD_HELP.hM, 5200); return; } const hc = e.target.closest('#tlHud .hc'); if (hc && HUD_HELP[hc.id]) { toast(HUD_HELP[hc.id], 5200); return; } const b = e.target.closest('#tlView'); if (b) { G.view = G.view === 'in' ? 'out' : 'in'; b.textContent = G.view === 'in' ? '🚪 Ra ngoài' : '🏠 Vào trong'; drawNow(); } });
+  root.addEventListener('click', e => { if (e.target.closest('#tlCash')) { toast(HUD_HELP.hM, 5200); return; } const hc = e.target.closest('#tlHud .hc'); if (hc && HUD_HELP[hc.id]) { toast(HUD_HELP[hc.id], 5200); return; } const b = e.target.closest('#tlView'); if (b) { G.view = G.view === 'in' ? 'out' : 'in'; b.textContent = G.view === 'in' ? '🚪' : '🏠'; if (G.arrange) { G.slot = null; setupPaint(); } drawNow(); } });
   root.addEventListener('focusin', e => { if (e.target.matches?.('.tl-num')) G.lastInput = e.target; });
   root.addEventListener('change', e => {
     const t = e.target; if (t.dataset?.p3) { p3Change(t); return; } if (!t.matches?.('.tl-num')) return;
@@ -554,6 +556,7 @@ function onAct(a, ev) {
     case 'free': E.playOn(s); save(true); render(); break;
     case 'savefin': { const x = saveData(); toast(`Đã lưu số liệu “${x.name}” (${x.hist.length} ngày). Xem ở Báo cáo → Đã lưu.`, 2600); break; }
     case 'viewseason': G.rpTab = 'chart'; G.win = null; openWin('report'); break;
+    case 'cashflow': G.rpTab = 'cash'; G.win = null; openWin('report'); break;
     case 'again': if (confirm('Chơi lại từ 01/12/2026? Sao đã đạt vẫn được ghi nhận trong hồ sơ.')) newGame(s.diff); break;
     case 'wi': W.runWhatIf?.(ctx, d.v); panel(); break;
     default: break;
@@ -585,6 +588,82 @@ function consume(S) {
   const cm = S.st.comments; if (cm.length > (G.cmSeen || 0)) { for (let i = G.cmSeen || 0; i < cm.length; i++) feedPush(cm[i]); G.cmSeen = cm.length; }
   if (G.vis.length > 40) G.vis.splice(0, G.vis.length - 40);
 }
+// ----- đồ trang trí: vẽ, chạm để xem, tìm bí mật -----
+function decorEnv(s) {
+  const card = E.dayCard(s.day);
+  return { view: G.view === 'in' ? 'in' : 'out', stage: s.stage, t: G.t || 0, night: s.k >= 3, rain: E.rainAt(card.w, s.day, s.k), day: s.day, sk: s.k, season: !!s.season };
+}
+function foundSecret(it) { if (tea.find(it.id, DEC.SECRET_COINS)) toast(DEC.TXT.found(it), 7000); }
+let decorCheck = 0;
+function drawDecorLayer(g, s) {
+  const st = { on: tea.on, found: tea.found }, env = decorEnv(s);
+  if (!tea.hidden) DEC.drawDecor(g, st, env);
+  if (G.arrange) { DEC.drawSlots(g, tea.on, env, G.slot); return; }
+  if (tea.hidden) return;
+  if (performance.now() - decorCheck > 1500) { decorCheck = performance.now(); const hit = DEC.autoSecrets(st, env)[0]; if (hit) foundSecret(hit); } // mỗi lần một bí mật để kịp đọc
+}
+const taps = {};
+function tapScene(e) { // quy điểm chạm về khung 160×100 (màn hẹp cảnh bị cắt bớt phía trên: object-fit cover, neo đáy)
+  const s = st(); if (!s) return;
+  const r = G.cv.getBoundingClientRect(), k = Math.max(r.width / 160, r.height / 100), x = (e.clientX - r.left - (r.width - 160 * k) / 2) / k, y = (e.clientY - r.top - (r.height - 100 * k)) / k;
+  if (G.arrange) { const env = decorEnv(s), slot = DEC.slotAt(tea.on, env.view, env.stage, x, y); if (slot) { G.slot = slot; setupPaint(); draw(performance.now()); } return; }
+  if (tea.hidden) return;
+  const it = DEC.hitDecor({ on: tea.on, found: tea.found }, decorEnv(s), x, y);
+  if (!it) return;
+  DEC.startFx(it.id, G.t || 0);
+  taps[it.id] = (taps[it.id] || 0) + 1;
+  if (it.s.how === 'tap' && !tea.found[it.id] && taps[it.id] >= it.s.need) foundSecret(it);
+  else toast(`${DEC.nameOf(it)}: ${tea.found[it.id] ? DEC.secretOf(it) : DEC.storyOf(it)}`, 4500);
+  draw(performance.now());
+}
+export function decorAct(el) { // nút trong cửa sổ trang trí
+  const d = el.dataset;
+  if (d.dtab) { G.decTab = d.dtab; return true; }
+  if (d.dsetup) { setArrange(true); return 'closed'; }
+  if (d.dbuy) {
+    const it = DEC.byId[d.dbuy];
+    if (tea.balance() < it.price) { toast(DEC.TXT.poor()); return true; }
+    if (!confirm(DEC.TXT.confirm(it))) return true;
+    if (tea.buy(it.id, it.price)) { placeDecor(it, true); toast(DEC.TXT.bought(it), 3000); }
+    return true;
+  }
+  if (d.dput) { const it = DEC.byId[d.dput]; placeDecor(it, !tea.on[it.id]); return true; }
+  return false;
+}
+function placeDecor(it, on) {
+  if (on) {
+    const r = DEC.arrange(tea.on, it, st().stage);
+    tea.place(r.on);
+    if (tea.hidden) tea.hide(false);
+    const other = r.removed.filter(o => o.slot !== it.slot);
+    if (other.length) toast(DEC.removedText(other), 4000);
+    if (DEC.viewOf(it) !== (G.view === 'in' ? 'in' : 'out')) $('#tlView')?.click(); // đặt món trong nhà thì chuyển cảnh vào trong để thấy ngay
+  } else { const next = { ...tea.on }; delete next[it.id]; tea.place(next); }
+}
+// ----- chế độ sắp đặt -----
+function setArrange(on) {
+  G.arrange = on; G.slot = null;
+  if (on) { closeWin(); if (G.calc) toggleCalc(false); }
+  setupPaint(); draw(performance.now());
+  if (on) $('#tlCv')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+function setupPaint() {
+  const box = $('#tlSetup'); if (!box) return;
+  box.hidden = !G.arrange;
+  box.innerHTML = G.arrange ? DEC.setupHtml({ own: tea.own, on: tea.on, hidden: tea.hidden }, G.view === 'in' ? 'in' : 'out', G.slot) : '';
+}
+function setupAct(d) {
+  if (d.sdone) return setArrange(false);
+  if (d.sshop) { setArrange(false); openWin('decor'); return; }
+  if (d.sslot) G.slot = d.sslot;
+  else if (d.sput) placeDecor(DEC.byId[d.sput], true);
+  else if (d.sclear) { const next = { ...tea.on }; for (const id in next) if (DEC.byId[id]?.slot === d.sclear) delete next[id]; tea.place(next); }
+  else if (d.sempty) { if (confirm(DEC.TXT.emptyAll())) tea.place({}); }
+  else if (d.shide) tea.hide(!tea.hidden);
+  else if (d.sview) { G.slot = null; $('#tlView')?.click(); }
+  setupPaint(); draw(performance.now());
+}
+
 function drawNow(fdt = 0) {
   const s = st(), g = G.g; if (!s || !g) return; const card = E.dayCard(s.day), w = card.w, S = G.S;
   const open = S ? S.open : !(card.defaultClosed.includes(s.k) && !s.flags['open' + s.day + s.k]);
@@ -593,6 +672,7 @@ function drawNow(fdt = 0) {
   if (G.view === 'in') { A.drawInterior(g, { hour, decor: A.decorOf(s.day).concat(s.unl && s.unl[30] ? ['spring'] : []), tired, stage: s.stage, k: s.k, staffN: s.staff.length, guests: Math.min(6, G.vis.filter(c => c.st === 'in').length + (s.phase === 'LIVE' ? 1 : 0)), t: G.t, open }); }
   else
   A.drawScene(g, { hour, tired, stage: s.stage, k: s.k, sky: w.sky, rain: E.rainAt(w, s.day, s.k), open, t: G.t, decor: A.decorOf(s.day).concat(s.unl && s.unl[30] ? ['spring'] : []), staffN: s.stage >= 2 ? s.staff.length : 0, day: s.day, promo: !!(S && S.promo), dusk: false });
+  drawDecorLayer(g, s);
   // khách
   const live = s.phase === 'LIVE' && S, tick = live ? S.tick : 0, geo = A.shopGeo(s.stage), counterX = geo.counterX, dt = Math.min(0.1, fdt) * (live ? Math.max(1, G.speed) : 1);
   let q = 0; for (const c of G.vis) {

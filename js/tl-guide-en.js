@@ -25,6 +25,7 @@ export const HOWTO = [
   ['Stars, badges and rewards', 'Milestones (A–E) give up to 3 stars each. Stars earn coins (added to the Passport) and IP. At 10, 30, 60 and 90 stars you unlock weekly challenges, the Spring decor, a title and the Spring Star badge. Rewards are never in-game cash, so balance is unaffected. Stars only count if you played at least half of the sessions in the period yourself (sessions run by Go to bed do not count). Comparison, stock-out and spoilage milestones only count if the shop was open on about 80% of the measured days; weekly challenges need 6 of 7 days.'],
   ['Profile and past runs', 'Menu → <b>🏅 Profile and past runs</b> records each run: stars per milestone, badges, Season Score, profit. Three tabs: <b>Overview</b> (records across runs), <b>Runs</b> (details) and <b>Compare</b> (2–4 runs side by side). Awards earned in any run are kept (“record” tag). A new run starts from zero, so earn them again to compare.'],
   ['Analysis tools', 'Spend IP on tools under Awards: customer counter, quick survey, supplier log, price experiment, full diagnosis (DQI, luck vs skill), detailed lot count. <b>What-if replay</b> reruns the session you just played with other prices (same customers, same luck) to tell good decisions from good luck.'],
+  ['Cash flow (new runs)', 'Profit on paper and cash in the drawer are different things. <b>Wages</b> are paid every 7 days, <b>rent</b> every 15, <b>utilities</b> and <b>tax</b> (4.5% of revenue) every 30; everything is settled on day 90. About 35% of customers pay by e-wallet or QR (1% fee) and that money arrives the next morning. If you are short on a due date, family lends up to 5,000K; beyond that the bill stays unpaid with a 1% daily penalty, unpaid wages sour your staff and rent more than 3 days late hurts your reputation. See <b>Report → Cash flow</b> for upcoming bills and a 14-day forecast. Upgrade requirements use the money left after what you owe.'],
 ];
 
 export const GLOSSARY = [
@@ -42,7 +43,7 @@ export const GLOSSARY = [
   ['Rev', 'Revenue', 'Total sales before any cost.'],
   ['COGS', 'Cost of goods sold', 'Ingredient cost of the cups sold.'],
   ['Session gross', 'Revenue − goods − wages', 'Profit after ingredients and the session’s wages, before rent.'],
-  ['CPCD', 'Daily fixed cost', 'Rent, power… paid every day whether you sell or not. Rises with stage.'],
+  ['CPCD', 'Daily fixed cost', 'Rent, power… paid every day whether you sell or not. Rises with stage. In new runs the rent and power part is accrued and paid on a cycle.'],
   ['TB / avg', 'Average', 'For example LY7 is the average cups over the last 7 days.'],
   ['LY7, DT7, LAI7', '7-day figures', 'Average daily cups, revenue and profit over 7 days (in the calculator’s Data box).'],
   ['SDLY7', 'Std dev of cups/session', 'How much cups per session vary over 7 days. Used for safety stock.'],

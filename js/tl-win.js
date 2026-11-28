@@ -1,6 +1,8 @@
 // TeaLab: các cửa sổ nổi (lịch, thư, thành tích, báo cáo, menu) và máy tính. Mỗi lúc chỉ một cửa sổ; máy tính mở chồng lên ô đang nhập.
 import { esc } from './util.js';
 import { calcEval, fmt, roundFor, FUNCS } from './tl-calc.js';
+import * as MI from './tl-mathin.js';
+import { cashHtml } from './tl-cash.js';
 import { HOWTO, GLOSSARY, FORMULAS, TIPS } from './tl-guide.js';
 import { histHtml, histClick } from './tl-hist.js';
 import { polHtml, kpiHtml, fcHtml, abcHtml, lossHtml, opsClick, opsChange } from './tl-ops.js';
@@ -72,7 +74,7 @@ function mailHtml(c) {
 function achHtml(c) {
   const { st, D, E, A, G } = c, rows = E.milestoneRows(st), tot = E.totalStars(st); _A = A;
   const fmtV = (R, v) => (v == null ? '—' : R.M.k ? fmt(Math.round(v / R.M.k)) + 'K' : R.M.unit === '×' ? v.toFixed(2).replace('.', ',') : Math.round(v * 10) / 10 + (R.M.unit && R.M.unit !== '×' && R.M.unit !== 'ngày' ? R.M.unit : ''));
-  const thTxt = M => M.th.map(x => (M.dir > 0 ? '≥ ' : '≤ ') + (M.k ? fmt(x) + 'K' : M.unit === '×' ? String(x).replace('.', ',') : x + (M.unit && M.unit !== 'ngày' ? M.unit : ''))).join(' · ');
+  const thTxt = M => E.thOf(st, M).map(x => (M.dir > 0 ? '≥ ' : '≤ ') + (M.k ? fmt(x) + 'K' : M.unit === '×' ? String(x).replace('.', ',') : x + (M.unit && M.unit !== 'ngày' ? M.unit : ''))).join(' · ');
   const groups = Object.entries(D.MG_NAME).map(([g, name]) => {
     const rs = rows.filter(r => r.M.g === g), s = rs.reduce((a, r) => a + r.stars, 0);
     return `<details class="tl-mg" ${G.mgOpen === g ? 'open' : ''} data-mg="${g}"><summary>${A.ic('grp' + g, 18)}<b>${g}. ${name}</b><span class="stars">${star(Math.min(3, Math.round(s / rs.length)))}</span><small class="dim">${s}/${rs.length * 3}</small></summary>${rs.map(r => `<div class="tl-ms ${r.open ? '' : 'lockd'}"><span class="msn"><b>${r.M.id}</b> ${esc(r.M.name)}</span><span class="stars">${star(r.stars)}</span>${(G.profile?.best?.[r.M.id] || 0) > r.stars ? `<span class="tl-rec" title="Kỷ lục trong hồ sơ: đã đạt ở lượt trước, vẫn được giữ">🏅 kỷ lục ${G.profile.best[r.M.id]}★</span>` : ''}<small class="dim">${r.open ? `Hạn ngày ${r.M.dl} · hiện ${fmtV(r, r.v)} · ${thTxt(r.M)}` : `Mở từ ngày ${r.M.open}`}${r.closed && !r.stars ? ' · chưa đạt' : ''}</small></div>`).join('')}</details>`;
@@ -92,7 +94,7 @@ function achHtml(c) {
 // ---------- báo cáo ----------
 function reportHtml(c) {
   const { st, E, D, A, kfmt, G } = c, tab = G.rpTab || 'day';
-  const tabs = [['day', 'Ngày'], ['chart', 'Biểu đồ'], ['loss', 'Tốn tiền'], ...(st.rules >= 2 ? [['kpi', 'Chỉ số'], ['fc', 'Dự báo'], ['abc', 'ABC–XYZ']] : []), ['led', 'Sổ cái'], ['sup', 'Nhà cung cấp'], ['kho', 'Kho'], ['note', 'Sổ giả thuyết'], ['sv', 'Đã lưu']];
+  const tabs = [['day', 'Ngày'], ...(st.rules >= 4 ? [['cash', '💧 Dòng tiền']] : []), ['chart', 'Biểu đồ'], ['loss', 'Tốn tiền'], ...(st.rules >= 2 ? [['kpi', 'Chỉ số'], ['fc', 'Dự báo'], ['abc', 'ABC–XYZ']] : []), ['led', 'Sổ cái'], ['sup', 'Nhà cung cấp'], ['kho', 'Kho'], ['note', 'Sổ giả thuyết'], ['sv', 'Đã lưu']];
   let body = '';
   if (tab === 'day') {
     const rows = st.hist.slice(-7).reverse();
@@ -103,7 +105,8 @@ function reportHtml(c) {
     if (h.length < 2) body = '<div class="dim">Cần ít nhất 2 ngày số liệu.</div>';
     else { const W = 300, H = 120, mx = Math.max(...h.map(x => x.cash), 1), mn = Math.min(...h.map(x => x.cash), 0), px = i => 8 + i * (W - 16) / (h.length - 1), py = v => H - 8 - (v - mn) / (mx - mn || 1) * (H - 16); const pm = Math.max(...h.map(x => Math.abs(x.profit)), 1);
       body = `<svg viewBox="0 0 ${W} ${H}" class="tl-svg"><polyline fill="none" stroke="#2f7ad1" stroke-width="2" points="${h.map((x, i) => px(i) + ',' + py(x.cash)).join(' ')}"/>${h.map((x, i) => `<rect x="${px(i) - 3}" y="${x.profit >= 0 ? H - 8 - x.profit / pm * 30 : H - 8}" width="6" height="${Math.abs(x.profit) / pm * 30}" fill="${x.profit >= 0 ? '#5fd068' : '#ff5a5f'}" opacity=".75"/>`).join('')}</svg><div class="dim tl-note">Đường xanh dương: tiền mặt (${h.length} ngày gần nhất). Cột: lãi mỗi ngày.</div>`; }
-  } else if (tab === 'kpi') { body = kpiHtml(c); }
+  } else if (tab === 'cash' && st.rules >= 4) { body = cashHtml(c); }
+  else if (tab === 'kpi') { body = kpiHtml(c); }
   else if (tab === 'fc') { body = fcHtml(c); }
   else if (tab === 'abc') { body = abcHtml(c); }
   else if (tab === 'loss') { body = lossHtml(c); }
@@ -141,6 +144,7 @@ function menuHtml(c) {
   const { st, D, G } = c, s = st;
   return `<div class="tl-mn">
     <div class="tl-row"><div class="tl-nm"><b>Đi ngủ</b><small class="dim">Chạy các buổi còn lại theo kế hoạch đứng rồi sang ngày mới (phí 5%).</small></div><button class="btn primary" data-m="sleep" ${s.phase === 'LIVE' ? 'disabled' : ''}>😴 Đi ngủ</button></div>
+    <div class="row"><button class="btn primary" data-m="decor">🎨 Trang trí quán</button></div>
     <div class="row"><button class="btn primary" data-m="guide">📖 Hướng dẫn: cách chơi, ký hiệu, công thức</button><button class="btn primary" data-m="hist">🏅 Hồ sơ và lịch sử các lượt</button></div>
     ${s.rules >= 2 ? '<div class="row"><button class="btn primary" data-m="pol">🤖 Đặt hàng tự động theo luật của bạn</button></div>' : ''}
     <h4>Kế hoạch đứng (khi đi ngủ sớm)</h4>
@@ -235,6 +239,7 @@ export function render(name, c) {
     case 'pol': return wrap('🤖 Đặt hàng tự động', polHtml(c));
     case 'guide': return wrap('📖 Hướng dẫn', guideHtml(c));
     case 'hist': return wrap('🏅 Hồ sơ', histHtml(c));
+    case 'decor': return wrap(c.decorTitle(), c.decorHtml());
     default: return wrap('', '');
   }
 }
@@ -257,11 +262,12 @@ export function bind(name, box, c) {
     if ((b = x.closest('[data-mg]'))) { /* mở / đóng nhóm */ }
     if ((b = x.closest('[data-tool]'))) { const t = c.D.IP_TOOLS.find(q => q.id === b.dataset.tool); const r = E.cmd(st, G.S, { t: 'TOOL', tool: t }); if (!r.ok) c.toast(r.reason, 2200); else c.toast('Đã mở: ' + t.name, 1600); c.save(false); c.refresh(); return; }
     if ((b = x.closest('[data-rp]'))) { G.rpTab = b.dataset.rp; c.refresh(); return; }
+    if ((b = x.closest('[data-dtab], [data-dbuy], [data-dput], [data-dsetup]'))) { if (c.decorAct(b) !== 'closed') c.refresh(); return; }
     if (histClick(x, c)) return;
     if (opsClick(x, c)) return;
     if ((b = x.closest('[data-gd]'))) { G.gdTab = b.dataset.gd; G.gdQ = ''; c.refresh(); return; }
-    if ((b = x.closest('[data-ins]'))) { G.calcExpr = (G.calcExpr || '') + b.dataset.ins; c.openCalc(); c.toast('Đã đưa vào máy tính: ' + b.dataset.ins, 1600); return; }
-    if ((b = x.closest('[data-svx]'))) { const hist = b.dataset.svx === 'cur' ? st.hist : (c.slots().find(q => q.id === +b.dataset.svx) || {}).hist || []; const csv = 'ngay,doanh_thu,gia_von,hang_hong,co_dinh,luong,lai,ly,het_hang,cho_lau,uy_tin,tien,phi_giu,chi_khac\n' + hist.map(h => [h.day, h.rev, h.cogs, h.spoil, h.fixed, h.wage, h.profit, h.cups, h.ls, h.lw, h.rep, h.cash, h.hold || 0, h.other || 0].join(',')).join('\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = 'tealab-so-lieu.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return; }
+    if ((b = x.closest('[data-ins]'))) { G.calcPend = (G.calcPend || '') + b.dataset.ins; c.openCalc(); c.toast('Đã đưa vào máy tính: ' + b.dataset.ins, 1600); return; }
+    if ((b = x.closest('[data-svx]'))) { const hist = b.dataset.svx === 'cur' ? st.hist : (c.slots().find(q => q.id === +b.dataset.svx) || {}).hist || []; const csv = 'ngay,doanh_thu,gia_von,hang_hong,co_dinh,luong,lai,ly,het_hang,cho_lau,uy_tin,tien,phi_giu,chi_khac,thue,phi_vi,phat_tre,hoa_don_da_tra\n' + hist.map(h => [h.day, h.rev, h.cogs, h.spoil, h.fixed, h.wage, h.profit, h.cups, h.ls, h.lw, h.rep, h.cash, h.hold || 0, h.other || 0, h.tax || 0, h.fee || 0, h.late || 0, h.paid || 0].join(',')).join('\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = 'tealab-so-lieu.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return; }
     if ((b = x.closest('[data-svd]'))) { c.delSlot(+b.dataset.svd); c.refresh(); return; }
     if (x.closest('[data-nadd]')) { const t = box.querySelector('#tlNote').value.trim(); if (t) { (st.notes ||= []).push({ id: Date.now() % 1e9, day: st.day, text: t, st: 'open' }); c.save(false); c.refresh(); } return; }
     if ((b = x.closest('[data-ns]'))) { const [id, v] = b.dataset.ns.split(':'), n = st.notes.find(q => q.id === +id); if (n) { n.st = v; c.save(false); c.refresh(); } return; }
@@ -276,6 +282,7 @@ function menuAct(b, c) {
   else if (m === 'plan') { st.autoPlan.open[+b.dataset.k] = st.autoPlan.open[+b.dataset.k] ? 0 : 1; c.save(false); c.refresh(); }
   else if (m === 'auto') { G.noAutoMail = !G.noAutoMail; c.refresh(); }
   else if (m === 'pol') { c.openWin('pol'); }
+  else if (m === 'decor') { c.openWin('decor'); }
   else if (m === 'hist') { c.G.hsTab = c.G.hsTab || 'ov'; c.openWin('hist'); }
   else if (m === 'guide') { G.gdTab = G.gdTab || 'play'; c.openWin('guide'); }
   else if (m === 'zh') { G.profile.zh = !G.profile.zh; c.save(false); c.refresh(); }
@@ -289,60 +296,157 @@ function importSave(inp, c) {
 }
 
 // ---------- máy tính ----------
-const KEYS = [['MC', 'MR', 'M+', 'M−', 'ANS'], ['C', 'CE', '⌫', '±', '%'], ['7', '8', '9', '÷', '('], ['4', '5', '6', '×', ')'], ['1', '2', '3', '−', '^'], ['0', ',', '=', '+', '√']];
-const FA = [['x²', '^2'], ['1/x', '1÷('], ['|x|', 'ABS('], ['ln', 'LN('], ['eˣ', 'EXP('], ['ROUND', 'ROUND('], ['CEIL', 'CEIL('], ['FLOOR', 'FLOOR('], ['SUM', 'SUM('], ['AVG', 'AVG('], ['MIN', 'MIN('], ['MAX', 'MAX('], ['SD', 'SD('], ['COUNT', 'COUNT('], ['Δ%', 'Δ%('], ['MG', 'MG('], ['MGP', 'MGP(']];
+// Hiển thị tự nhiên kiểu Casio fx-580VN X: phân số xếp tầng, căn có thanh trên, con trỏ đi giữa các ô (js/tl-mathin.js).
+const KEYS = [['MC', 'MR', 'M+', 'M−', 'ANS'], ['C', 'CE', '⌫', '(−)', '%'], ['7', '8', '9', '÷', '('], ['4', '5', '6', '×', ')'], ['1', '2', '3', '−', ';'], ['0', ',', 'S⇔D', '+', '=']];
+const NAV = [['left', '◄', 'Sang trái'], ['up', '▲', 'Lên'], ['down', '▼', 'Xuống'], ['right', '►', 'Sang phải'], ['exit', '⤴ Thoát ô', 'Ra khỏi ô căn, phân số, mũ']];
+const TPL = [['frac', '<span class="mfrac"><span class="mnum">▯</span><span class="mden">▯</span></span>', 'Phân số'], ['sqrt', '√▯', 'Căn bậc hai'], ['root', '<sup>▯</sup>√▯', 'Căn bậc n'], ['sq', 'x²', 'Bình phương'], ['pow', 'x<sup>▯</sup>', 'Lũy thừa'], ['inv', 'x⁻¹', 'Nghịch đảo'], ['abs', '|▯|', 'Giá trị tuyệt đối'], ['pi', 'π', 'Số pi']];
+const FA = [['ln', 'LN('], ['eˣ', 'EXP('], ['ROUND', 'ROUND('], ['CEIL', 'CEIL('], ['FLOOR', 'FLOOR('], ['SUM', 'SUM('], ['AVG', 'AVG('], ['MIN', 'MIN('], ['MAX', 'MAX('], ['SD', 'SD('], ['COUNT', 'COUNT('], ['Δ%', 'Δ%('], ['MG', 'MG('], ['MGP', 'MGP(']];
 const FB = [['NORM', 'NORM('], ['NORMINV', 'NORMINV('], ['CR', 'CR('], ['NV', 'NV('], ['BE', 'BE('], ['ROP', 'ROP('], ['CI', 'CI(']];
 const FC = [['EOQ', 'EOQ('], ['TC', 'TC('], ['SS', 'SS('], ['MK', 'MK('], ['ELA', 'ELA('], ['Z', 'Z('], ['TURN', 'TURN('], ['DOH', 'DOH('], ['ROI', 'ROI('], ['LITTLE', 'LITTLE('], ['UTIL', 'UTIL(']];
 function dataVars(c) { // biến công khai (mục 17.4), chốt giá trị lúc chèn
-  const { st, D, E } = c, v = [['TIEN', st.cash / 1000, 'Tiền mặt (K)'], ['R', st.rep, 'Danh tiếng R'], ['L', st.loyal, 'Khách quen L'], ['CPCD', D.PARAMS.fixedDay[st.stage] / 1000, 'Chi phí cố định/ngày (K)']];
+  const { st, D, E } = c, v = [['TIEN', st.cash / 1000, 'Tiền mặt (K)'], ...(st.rules >= 4 ? [['NO', (E.billsOwed(st) + E.owed(st)) / 1000, 'Khoản phải trả (K)'], ['CHOVE', E.pendingIn(st) / 1000, 'Tiền ví đang chờ về (K)']] : []), ['R', st.rep, 'Danh tiếng R'], ['L', st.loyal, 'Khách quen L'], ['CPCD', D.PARAMS.fixedDay[st.stage] / 1000, 'Chi phí cố định/ngày (K)']];
   for (const i of D.ITEM_ORDER.filter(i => D.ITEMS[i].stage <= st.stage)) { v.push(['GIA ' + D.ITEMS[i].name, st.prices[i], 'Giá bán (K)']); v.push(['VON ' + D.ITEMS[i].name, Math.round(E.unitCost(st, i) / 100) / 10, 'Giá vốn một ly (K)']); }
   const h = st.hist.slice(-7); if (h.length) { v.push(['LY7', h.reduce((a, x) => a + x.cups, 0) / h.length, 'Số ly TB/ngày (7 ngày)']); v.push(['DT7', h.reduce((a, x) => a + x.rev, 0) / h.length / 1000, 'Doanh thu TB/ngày (K)']); v.push(['LAI7', h.reduce((a, x) => a + x.profit, 0) / h.length / 1000, 'Lãi TB/ngày (K)']); }
   if (h.length >= 7) { const per = st.hist.slice(-7).map(x => x.cups / Math.max(1, x.n || 4)), m = per.reduce((a, b) => a + b, 0) / per.length; v.push(['SDLY7', Math.sqrt(per.reduce((a, b) => a + (b - m) ** 2, 0) / 6), 'Độ lệch chuẩn số ly/buổi (7 ngày)']); }
   for (const g of D.ING_ORDER.filter(g => st.lots[g].length)) v.push(['TON ' + D.ING[g].name, E.stockOf(st, g), 'Số phần trong kho']);
   return v;
 }
+const plain = v => MI.numStr(+v.toPrecision(12)).replace('.', ','); // số để gõ lại vào biểu thức (không dấu ngăn nghìn, không dạng e+)
+const resultHtml = (v, asFrac) => {
+  const f = asFrac && MI.toFraction(v);
+  return f ? `<span>= ${f.neg ? '−' : ''}</span><span class="mfrac"><span class="mnum">${f.n}</span><span class="mden">${f.d}</span></span>` : `<span>= ${fmt(v)}</span>`;
+};
+const tapeExpr = t => (t[2] ? t[2] : (() => { const e = MI.editor(); MI.type(e, t[0]); return e.root; })()); // băng giấy cũ chỉ có chuỗi
+const tapeHtml = G => `<b>Băng giấy</b> <button class="btn" data-tc="clr">Xóa</button>${(G.calcTape || []).slice(-50).map((t, i) => `<button class="tc-t" data-tape="${i}"><span class="tc-mini tl-user">${MI.render(tapeExpr(t))}</span><b>= ${esc(t[1])}</b></button>`).reverse().join('') || '<div class="dim">Chưa có phép tính.</div>'}`;
 export function calcHtml(c) {
-  const G = c.G, mem = G.calcMem || 0, tape = (G.calcTape || []).slice(-50).reverse(), vars = dataVars(c), B = c.st.day >= 5;
+  const G = c.G, mem = G.calcMem || 0, vars = dataVars(c), B = c.st.day >= 5;
   return `<div class="tl-calcb"><div class="tl-wh"><button class="btn" data-cc>← Đóng</button><b>🧮 Máy tính</b><span class="dim">${mem ? 'M=' + fmt(mem) : ''}</span></div>
-    <input id="tcIn" type="text" inputmode="none" spellcheck="false" autocomplete="off" value="${esc(G.calcExpr || '')}" placeholder="Nhập biểu thức, ví dụ 28 − 11,5"><div id="tcOut" class="tc-out"></div>
-    <div class="tc-keys">${KEYS.map(r => r.map(k => `<button class="btn tc-k ${'÷×−+^='.includes(k) ? 'op' : ''} ${k === '=' ? 'eq' : ''}" data-k="${k}">${k}</button>`).join('')).join('')}</div>
+    <div class="tc-screen"><div id="tcIn" class="tc-nd" tabindex="0" role="textbox" aria-label="Biểu thức"></div><div id="tcOut" class="tc-out"></div></div>
+    <div class="tc-nav">${NAV.map(([k, n, t]) => `<button class="btn" data-nav="${k}" title="${t}" aria-label="${t}">${n}</button>`).join('')}</div>
+    <div class="tc-tpl">${TPL.map(([k, n, t]) => `<button class="btn" data-tpl="${k}" title="${t}" aria-label="${t}">${n}</button>`).join('')}</div>
+    <div class="tc-keys">${KEYS.map(r => r.map(k => `<button class="btn tc-k ${'÷×−+='.includes(k) ? 'op' : ''} ${k === '=' ? 'eq' : ''}" data-k="${k}">${k}</button>`).join('')).join('')}</div>
     <div class="tc-fn">${FA.map(([n, t]) => `<button class="btn" data-ins="${esc(t)}">${n}</button>`).join('')}</div>
     <div class="tc-fn ${B ? '' : 'lock'}">${B ? FB.map(([n, t]) => `<button class="btn" data-ins="${esc(t)}">${n}</button>`).join('') : '<span class="dim">Hàm phân tích (NORM, NV, CI…) mở từ ngày 5.</span>'}</div>
     ${B ? `<div class="tc-fn">${FC.map(([n, t]) => `<button class="btn" data-ins="${esc(t)}">${n}</button>`).join('')}</div>
     <details class="tl-more tc-lib"><summary>📐 Công thức có sẵn: EOQ, ROP, NV, BE… (${FORMULAS.length})</summary>${FORMULAS.map(f => fmCard(f, false)).join('')}<div class="dim tl-note">Giải thích từng công thức: Menu → Hướng dẫn → Công thức.</div></details>` : ''}
     <div class="tc-row"><select id="tcData"><option value="">Dữ liệu ▾ (chèn giá trị công khai)</option>${vars.map(([n, val, d], i) => `<option value="${i}">${esc(n)} = ${fmt(+val.toFixed(2))} · ${esc(d)}</option>`).join('')}</select></div>
     <div class="tc-row"><button class="btn primary" data-use="any">↳ Dùng kết quả</button><button class="btn" data-use="price">→ Giá</button><button class="btn" data-use="qty">→ Đặt hàng</button><button class="btn" data-use="fc">→ Dự đoán</button></div>
-    <div class="tc-tape"><b>Băng giấy</b> <button class="btn" data-tc="clr">Xóa</button>${tape.map((t, i) => `<button class="tc-t" data-tape="${esc(t[0])}"><span>${esc(t[0])}</span><b>= ${esc(t[1])}</b></button>`).join('') || '<div class="dim">Chưa có phép tính.</div>'}</div></div>`;
+    <div class="tc-tape">${tapeHtml(G)}</div></div>`;
 }
 export function calcBind(box, c) {
-  const G = c.G, inp = box.querySelector('#tcIn'), out = box.querySelector('#tcOut'); let vars = dataVars(c);
-  const val = () => { const r = calcEval(inp.value); return r; };
-  const show = () => { if (!inp.value.trim()) { out.textContent = ''; out.className = 'tc-out'; return; } const r = val(); if (r.ok) { out.textContent = '= ' + fmt(r.value); out.className = 'tc-out ok'; G.calcRes = r.value; } else { out.textContent = r.msg; out.className = 'tc-out err'; if (r.pos != null) { try { inp.setSelectionRange(r.pos, r.pos + 1); } catch { /* bỏ qua */ } } } G.calcExpr = inp.value; };
-  const ins = t => { const a = inp.selectionStart ?? inp.value.length, b = inp.selectionEnd ?? a; inp.value = inp.value.slice(0, a) + t + inp.value.slice(b); const p = a + t.length; inp.focus({ preventScroll: true }); inp.setSelectionRange(p, p); show(); };
-  const tape = () => { const r = val(); if (!r.ok) { show(); return; } (G.calcTape ||= []).push([inp.value, fmt(r.value)]); if (G.calcTape.length > 50) G.calcTape.shift(); G.calcAns = r.value; G.calcExpr = ''; inp.value = fmt(r.value).replace(/\./g, ''); show(); box.innerHTML = calcHtml(c); calcBind(box, c); box.querySelector('#tcIn').value = fmt(r.value).replace(/\./g, ''); box.querySelector('#tcIn').dispatchEvent(new Event('input')); };
-  inp.addEventListener('input', show); inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tape(); } }); show();
-  box._h = e => { // xử lý nhấn nút: gán lại mỗi lần vẽ (đóng kín đúng ô nhập hiện tại), nhưng chỉ đăng ký MỘT lần
-    const x = e.target; let b;
-    if (x.closest('[data-cc]')) { c.G.calc = false; box.hidden = true; document.getElementById('tlRoot')?.classList.remove('tl-paused'); document.querySelector('#tlTools button[data-w="calc"]')?.classList.remove('on'); return; }
-    if ((b = x.closest('[data-k]'))) {
-      const k = b.dataset.k;
-      if (k === '=') tape(); else if (k === 'C') { inp.value = ''; show(); } else if (k === 'CE') { const m = /[0-9,.]+$/.exec(inp.value); inp.value = m ? inp.value.slice(0, m.index) : inp.value; show(); } else if (k === '⌫') { inp.value = inp.value.slice(0, -1); show(); }
-      else if (k === '±') { const r = val(); if (r.ok) { inp.value = fmt(-r.value).replace(/\./g, ''); show(); } else ins('-'); }
-      else if (k === 'MC') G.calcMem = 0; else if (k === 'MR') ins(fmt(G.calcMem || 0).replace(/\./g, '')); else if (k === 'M+') { const r = val(); if (r.ok) G.calcMem = (G.calcMem || 0) + r.value; } else if (k === 'M−') { const r = val(); if (r.ok) G.calcMem = (G.calcMem || 0) - r.value; }
-      else if (k === 'ANS') ins(fmt(G.calcAns || 0).replace(/\./g, '')); else if (k === '√') ins('√('); else ins(k);
-      if (['MC', 'M+', 'M−'].includes(k)) { box.querySelector('.tl-wh .dim').textContent = G.calcMem ? 'M=' + fmt(G.calcMem) : ''; }
-      return;
+  const G = c.G, disp = box.querySelector('#tcIn'), out = box.querySelector('#tcOut'), vars = dataVars(c);
+  const ed = G.calcEd ||= MI.editor();
+  let rows = [];
+  const evaluate = () => calcEval(MI.toExpr(ed.root, G.calcAns || 0));
+  const current = () => (G.calcDone ? { ok: true, value: G.calcRes } : evaluate()); // sau "=" giữ nguyên kết quả đã chốt (biểu thức có Ans không bị tính lại)
+  const asFrac = () => G.calcFrac ?? MI.hasFrac(ed.root);
+  const draw = (err = null) => {
+    rows = [];
+    disp.innerHTML = MI.render(ed.root, ed, rows) + (MI.isEmpty(ed) ? '<span class="mph">Nhập biểu thức</span>' : '');
+    const cur = disp.querySelector('.mc');
+    if (cur) { // cuộn màn hình cho con trỏ luôn nằm trong tầm nhìn (cả ngang lẫn dọc)
+      const a = cur.getBoundingClientRect(), b = disp.getBoundingClientRect();
+      if (a.right > b.right - 12) disp.scrollLeft += a.right - b.right + 24; else if (a.left < b.left + 12) disp.scrollLeft -= b.left - a.left + 24;
+      if (a.bottom > b.bottom - 4) disp.scrollTop += a.bottom - b.bottom + 8; else if (a.top < b.top + 4) disp.scrollTop -= b.top - a.top + 8;
     }
+    if (err) { out.className = 'tc-out err'; out.textContent = err; return; }
+    const r = MI.isEmpty(ed) ? null : current();
+    out.className = 'tc-out' + (r?.ok ? (G.calcDone ? ' ok done' : ' ok') : '');
+    out.innerHTML = r?.ok ? resultHtml(r.value, asFrac()) : r && r.error !== 'SYNTAX' ? esc(r.msg) : ''; // đang gõ dở thì chưa báo lỗi cú pháp
+    if (r?.ok) G.calcRes = r.value; else if (r && r.error !== 'SYNTAX') out.className = 'tc-out err';
+  };
+  const equals = () => {
+    if (G.calcDone || MI.isEmpty(ed)) return;
+    const r = evaluate();
+    if (!r.ok) { MI.gotoEmpty(ed); draw(r.msg); return; }
+    (G.calcTape ||= []).push([MI.toExpr(ed.root, G.calcAns || 0), fmt(r.value), MI.clone(ed.root)]);
+    if (G.calcTape.length > 50) G.calcTape.shift();
+    G.calcAns = G.calcRes = r.value; G.calcDone = true; G.calcHist = null;
+    box.querySelector('.tc-tape').innerHTML = tapeHtml(G); draw(); // chỉ vẽ lại băng giấy và màn hình: không làm máy tính nhảy cuộn
+  };
+  // Sau "=": gõ số / hàm thì bắt đầu phép tính mới; gõ dấu thì nối tiếp từ Ans (đúng như máy Casio)
+  const begin = (opLike = false) => {
+    if (!G.calcDone) return;
+    G.calcDone = false; G.calcFrac = null; G.calcHist = null;
+    MI.load(ed, []);
+    if (opLike) MI.put(ed, { c: 'Ans' });
+  };
+  const edit = (opLike, fn) => { begin(opLike); G.calcHist = null; fn(); draw(); };
+  const ins = t => edit(false, () => MI.type(ed, t));
+  const resume = () => { const was = G.calcDone; G.calcDone = false; return was; }; // bấm mũi tên / DEL sau "=": sửa lại biểu thức vừa tính
+  const recall = i => { const t = G.calcTape?.[i]; if (!t) return; MI.load(ed, MI.clone(tapeExpr(t))); G.calcDone = false; G.calcFrac = null; draw(); };
+  const history = dir => { const n = G.calcTape?.length || 0; if (!n) return; const at = Math.max(0, Math.min(n - 1, (G.calcHist ?? (G.calcDone ? n - 1 : n)) + dir)); G.calcHist = at; recall(at); };
+  const nav = k => {
+    if (k !== 'up' && k !== 'down') G.calcHist = null;
+    if (k === 'left' || k === 'right') { if (resume()) { k === 'left' ? MI.end(ed) : MI.home(ed); } else MI.move(ed, k === 'left' ? -1 : 1); }
+    else if (k === 'up' || k === 'down') { // trong phân số / căn bậc n: đổi tầng; còn lại (vừa tính xong, ô trống): lật băng giấy
+      const dir = k === 'up' ? -1 : 1;
+      if ((G.calcDone || !MI.vertical(ed, dir)) && (G.calcDone || ((MI.isEmpty(ed) || G.calcHist != null) && !MI.depth(ed)))) { history(dir); return; }
+    }
+    else if (k === 'exit') { resume(); if (!MI.exit(ed)) c.toast('Con trỏ đang ở ngoài cùng', 1200); }
+    else if (k === 'home') { resume(); MI.home(ed); } else if (k === 'end') { resume(); MI.end(ed); }
+    draw();
+  };
+  const press = k => {
+    if (k === '=') { equals(); return; }
+    if (k === 'C') { G.calcDone = false; G.calcFrac = null; G.calcHist = null; MI.load(ed, []); draw(); }
+    else if (k === 'CE') { resume(); MI.delNumber(ed); draw(); }
+    else if (k === '⌫') { resume(); MI.del(ed); draw(); }
+    else if (k === 'S⇔D') { G.calcFrac = !asFrac(); const r = current(); if (r.ok && G.calcFrac && !MI.toFraction(r.value)) { G.calcFrac = null; c.toast('Kết quả này không đổi được sang phân số', 1600); } draw(); }
+    else if (k === '(−)') edit(false, () => MI.put(ed, { c: '−' }));
+    else if (k === 'MC' || k === 'M+' || k === 'M−') { if (k === 'MC') G.calcMem = 0; else { const r = current(); if (r.ok) G.calcMem = (G.calcMem || 0) + (k === 'M+' ? r.value : -r.value); } box.querySelector('.tl-wh .dim').textContent = G.calcMem ? 'M=' + fmt(G.calcMem) : ''; }
+    else if (k === 'MR') ins(plain(G.calcMem || 0));
+    else if (k === 'ANS') edit(false, () => MI.put(ed, { c: 'Ans' }));
+    else edit('+−×÷%'.includes(k), () => MI.put(ed, { c: k }));
+  };
+  const tpl = k => {
+    if (k === 'sq') edit(true, () => MI.power(ed, '2'));
+    else if (k === 'inv') edit(true, () => MI.power(ed, '−1'));
+    else if (k === 'pow') edit(true, () => MI.template(ed, 'pow'));
+    else if (k === 'pi') edit(false, () => MI.put(ed, { c: 'π' }));
+    else edit(false, () => MI.template(ed, k));
+  };
+  disp.addEventListener('click', e => { const kept = resume(); MI.tap(ed, disp, rows, e.target, e.clientX); if (kept) G.calcHist = null; draw(); disp.focus({ preventScroll: true }); });
+  box._key = e => { // bàn phím thật
+    if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+    const k = e.key;
+    if ((k === 'Enter' || k === ' ') && e.target.closest('button, summary')) return;
+    const arrows = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Home: 'home', End: 'end' };
+    if (arrows[k]) nav(arrows[k]);
+    else if (k === 'Enter' || k === '=') equals();
+    else if (k === 'Backspace') press('⌫');
+    else if (k === 'Delete') { resume(); MI.delForward(ed); draw(); }
+    else if (k === '/') tpl('frac');
+    else if (k === '^') tpl('pow');
+    else if (k === '*') press('×');
+    else if (k === ':') press('÷');
+    else if (k === '-') press('−');
+    else if (k === '.') press(',');
+    else if (/^[0-9,+()%;]$/.test(k)) press(k);
+    else if (/^[A-Za-z]$/.test(k)) edit(false, () => MI.put(ed, { c: k.toUpperCase() }));
+    else return;
+    e.preventDefault(); e.stopPropagation();
+  };
+  box._h = e => { // xử lý nhấn nút: gán lại mỗi lần vẽ, nhưng chỉ đăng ký MỘT lần
+    const x = e.target; let b;
+    // bấm bằng chuột / ngón tay xong thì trả tiêu điểm về màn hình để gõ tiếp bằng bàn phím (Enter không bấm lại nút vừa chọn)
+    if (e.detail > 0 && x.closest('[data-k], [data-nav], [data-tpl], [data-ins], [data-tape]')) queueMicrotask(() => box.querySelector('#tcIn')?.focus({ preventScroll: true }));
+    if (x.closest('[data-cc]')) { c.G.calc = false; box.hidden = true; document.getElementById('tlRoot')?.classList.remove('tl-paused'); document.querySelector('#tlTools button[data-w="calc"]')?.classList.remove('on'); return; }
+    if ((b = x.closest('[data-nav]'))) { nav(b.dataset.nav); return; }
+    if ((b = x.closest('[data-tpl]'))) { tpl(b.dataset.tpl); return; }
+    if ((b = x.closest('[data-k]'))) { press(b.dataset.k); return; }
     if ((b = x.closest('[data-ins]'))) { ins(b.dataset.ins); return; }
-    if ((b = x.closest('[data-tape]'))) { inp.value = b.dataset.tape; show(); return; }
-    if (x.closest('[data-tc="clr"]')) { G.calcTape = []; box.innerHTML = calcHtml(c); calcBind(box, c); return; }
+    if ((b = x.closest('[data-tape]'))) { recall(+b.dataset.tape); return; }
+    if (x.closest('[data-tc="clr"]')) { G.calcTape = []; G.calcHist = null; box.querySelector('.tc-tape').innerHTML = tapeHtml(G); return; }
     if ((b = x.closest('[data-use]'))) {
-      const r = val(); if (!r.ok) { c.toast('Chưa có kết quả hợp lệ', 1500); return; }
+      const r = MI.isEmpty(ed) ? { ok: false } : current(); if (!r.ok) { c.toast('Chưa có kết quả hợp lệ', 1500); return; }
       let t = G.lastInput; if (!t || !t.isConnected) { c.toast('Hãy chạm vào một ô nhập (giá, số lượng, dự đoán) rồi mở máy tính', 2400); return; }
       const want = b.dataset.use; if (want !== 'any' && t.dataset.calc !== want) { c.toast('Ô đang chọn là ô “' + ({ price: 'giá', qty: 'số lượng đặt', fc: 'dự đoán' }[t.dataset.calc] || '?') + '”', 2200); return; }
       t.value = String(roundFor(t.dataset.calc, r.value)); t.dispatchEvent(new Event('change', { bubbles: true })); c.toast('Đã điền ' + t.value, 1200); return;
     }
   };
-  if (!box._hb) { box._hb = 1; box.addEventListener('click', e => box._h(e)); }
+  if (!box._hb) { box._hb = 1; box.addEventListener('click', e => box._h(e)); box.addEventListener('keydown', e => box._key(e)); }
   box.querySelector('#tcData').addEventListener('change', e => { const i = e.target.value; if (i === '') return; const [, v] = vars[+i]; ins(String(Math.round(v * 100) / 100).replace('.', ',')); e.target.value = ''; });
+  if (G.calcPend) { const t = G.calcPend; G.calcPend = ''; ins(t); } else draw(); // chữ do Hướng dẫn "Chèn" gửi sang
+  requestAnimationFrame(() => disp.isConnected && !box.hidden && disp.focus({ preventScroll: true }));
 }

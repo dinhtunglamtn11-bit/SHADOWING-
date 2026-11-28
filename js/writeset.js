@@ -31,25 +31,32 @@ function shapeGrade(strokes, ch, lang, size) {
 }
 
 // ---------- khung viết nhiều ô ----------
-// o: { answer, lang, meaning, pron, showPron, showModel, nextLabel, onNext, onGraded }
+// o: { answer, lang, meaning, pron, showPron, showModel, nextLabel, onNext, onGraded, exam }
+// exam = true (bài kiểm tra): không có “Tiết lộ đáp án”; nộp xong chấm ngầm rồi sang từ sau ngay, đáp án chỉ hiện ở cuối bài.
+// cỡ ô viết vừa bề ngang hàng: không đủ chỗ cho tất cả trên một hàng (ô tối thiểu 96px) thì chia đều thành nhiều hàng, ô to hơn
+export function boxSize(width, n, max, gap = 8, min = 96) {
+  const W = Math.max(2 * min + gap, width || 320) - 1; // chừa 1px cho sai số làm tròn của trình duyệt
+  const fit = Math.floor((W + gap) / (min + gap)), per = n > fit ? Math.ceil(n / Math.ceil(n / fit)) : n;
+  return Math.max(min, Math.min(max, Math.floor(innerHeight * 0.55), Math.floor((W - gap * (per - 1)) / per))); // xoay ngang điện thoại: ô không cao quá màn hình
+}
+
 export function mountSubmitWriter(host, o) {
   const { answer, lang } = o, pieces = piecesOf(answer, lang), N = pieces.length, bcp = langInfo(lang).bcp;
   if (!N) { host.innerHTML = '<div class="empty">Không có chữ nào để viết.</div>'; return; }
   let graded = false, pronShown = !!o.showPron;
   host.innerHTML = `
     ${o.meaning ? `<div class="wmeaning">${esc(o.meaning)}</div>` : ''}
-    ${o.pron ? `<div class="dim wpron">${pronShown ? esc(o.pron) : '<button class="btn" data-w="pron">💡 Hiện phiên âm</button>'}</div>` : ''}
+    ${o.pron ? `<div class="dim wpron">${pronShown ? `<span class="hww-u">${esc(o.pron)}</span>` : '<button class="btn" data-w="pron">💡 Hiện phiên âm</button>'}</div>` : ''}
     <div class="wrow"></div>
     <div class="dim wnote">Viết ${N} chữ vào ${N} ô (mỗi ô một chữ), viết xong bấm “Nộp”. App chỉ chấm khi bạn nộp.</div>
     <div class="row c wbtns">
       <button class="btn" data-w="undo">↶ Xóa nét cuối</button>
       <button class="btn" data-w="clear">🧹 Xóa hết</button>
-      <button class="btn" data-w="reveal">👁 Tiết lộ đáp án</button>
+      ${o.exam ? '<button class="btn" data-w="skip">Bỏ qua ⏭</button>' : '<button class="btn" data-w="reveal">👁 Tiết lộ đáp án</button>'}
       <button class="btn primary" data-w="submit">✔ Nộp</button>
     </div>
     <div class="wres"></div>`;
-  const row = $('.wrow', host), W = Math.max(240, host.clientWidth || 320), gap = 8;
-  const size = Math.max(96, Math.min(170, Math.floor((W - gap * (N - 1)) / N))), dpr = Math.min(2, devicePixelRatio || 1);
+  const row = $('.wrow', host), size = boxSize(row.clientWidth, N, 170), dpr = Math.min(2, devicePixelRatio || 1);
   const boxes = [], history = [];
 
   pieces.forEach((ch, i) => {
@@ -126,14 +133,16 @@ export function mountSubmitWriter(host, o) {
     $('.wnote', host).textContent = 'Đang chấm…';
     const results = [];
     for (const b of boxes) results.push(await gradeBox(b));
-    boxes.forEach((b, i) => { b.result = results[i]; redraw(b); });
+    if (!row.isConnected) return; // đã thoát hoặc chuyển sang từ khác trong lúc chấm
+    if (!o.exam) boxes.forEach((b, i) => { b.result = results[i]; redraw(b); });
     results.forEach((r, i) => {
       const ch = pieces[i], id = hwId(lang, ch), old = store.get('hw', id) || {};
       store.put('hw', id, { lang, char: ch, best: Math.max(old.best ?? 0, r.score), last: r.score, tries: (old.tries || 0) + 1, at: Date.now(), deleted: false });
       tracker.hw();
     });
-    finishUI('', results);
+    if (!o.exam) finishUI('', results);
     o.onGraded?.({ answer, score: Math.round(results.reduce((s, r) => s + r.score, 0) / N), results });
+    if (o.exam) o.onNext?.();
   }
 
   async function reveal() {
@@ -148,7 +157,8 @@ export function mountSubmitWriter(host, o) {
     o.onGraded?.({ answer, score: 0, revealed: true });
   }
 
-  host.addEventListener('click', e => {
+  // gán onclick (không addEventListener): khung được dựng lại trên cùng một thẻ, nếu cộng dồn thì “Câu sau” nhảy 2 câu sau khi “Viết lại”
+  host.onclick = e => {
     const b = e.target.closest('[data-w]'); if (!b) return;
     const a = b.dataset.w;
     if (a === 'undo' && !graded) { const i = history.pop(); if (i != null) { boxes[i].strokes.pop(); redraw(boxes[i]); } }
@@ -158,7 +168,8 @@ export function mountSubmitWriter(host, o) {
     else if (a === 'pron') { $('.wpron', host).textContent = o.pron; }
     else if (a === 'retry') mountSubmitWriter(host, o);
     else if (a === 'next') o.onNext?.();
-  });
+    else if (a === 'skip' && !graded) { graded = true; o.onGraded?.({ answer, score: 0, skipped: true }); o.onNext?.(); }
+  };
 }
 
 // ---------- Bộ viết: cú pháp  nghĩa | chữ cần viết | phiên âm (không bắt buộc) ----------

@@ -200,11 +200,12 @@ const mastery = (lang, unit) => {
 let box = null, state = { units: [], u: 0, p: 0, mode: 'free', view: 'list', hide: false, w: null, pad: null, done: null, mist: 0, log: new Map() };
 
 export function render(el) {
-  // hai màn: luyện từng chữ trong danh sách, hoặc “Bộ viết” (nhập nghĩa + chữ, ẩn chữ khi làm bài)
-  el.innerHTML = '<div class="seg" id="hwView"><button data-v="list">📚 Luyện chữ</button><button data-v="sets">📝 Bộ viết (nghĩa → chữ)</button></div><div id="hwBody"></div>';
+  // ba màn: luyện từng chữ trong danh sách, “Bộ viết” (nhập nghĩa + chữ, ẩn chữ khi làm bài), “Từ mới” (từ vựng theo cấp / chương)
+  el.innerHTML = '<div class="seg" id="hwView"><button data-v="list">📚 Luyện chữ</button><button data-v="sets">📝 Bộ viết (nghĩa → chữ)</button><button data-v="words">🔠 Từ mới (cấp · chương)</button></div><div id="hwBody"></div>';
   $$('#hwView button', el).forEach(b => { b.classList.toggle('on', b.dataset.v === state.view); b.onclick = () => { state.view = b.dataset.v; render(el); }; });
   box = $('#hwBody', el);
   if (state.view === 'sets') { cleanup(); import('./writeset.js').then(m => m.renderSets(box)); return; }
+  if (state.view === 'words') { cleanup(); import('./hwwords.js').then(m => m.renderWords(box)); return; }
   const lang = getLang();
   if (lang === 'zh') loadSimplifier().then(() => { const t = $('#hwList', box); if (t && zhText(t.value, 'zh') !== t.value) { t.value = zhText(t.value, 'zh'); saveList('zh', t.value); state.units = unitsOf(t.value); chips(); } });
   state.units = unitsOf(loadList(lang));

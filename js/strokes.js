@@ -259,6 +259,7 @@ export function createCoach(host, opts) {
     const per = 650, gap = 350, t0 = performance.now();
     const total = n * (per + gap) + 900;
     const tick = now => {
+      if (!c.isConnected) return; // ô viết đã bị gỡ khỏi trang (chuyển màn): dừng, không chạy ngầm mãi
       const t = (now - t0) % total, i = Math.min(n - 1, Math.floor(t / (per + gap))), within = t - i * (per + gap);
       anim = { i: t >= n * (per + gap) ? n : i, f: Math.min(1, within / per) };
       redraw();
