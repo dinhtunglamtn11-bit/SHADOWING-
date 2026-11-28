@@ -2,6 +2,7 @@
 import { $, $$, esc, toast, bus, getLang, langInfo } from './util.js';
 import * as store from './store.js';
 import * as cards from './cards.js';
+import * as decks from './decks.js';
 import { playClip, canPlay, say, stopClip } from './clip.js';
 import { prefs, savePrefs } from './prefs.js';
 import * as quiz from './quiz.js';
@@ -38,22 +39,30 @@ function render() {
 }
 
 // ---------- ôn thẻ ----------
+// bộ lọc mục thẻ (nhớ theo ngôn ngữ, chỉ trong máy): dùng cho cả Ôn thẻ và Sổ thẻ
+const filterKey = () => 'deckF:' + getLang();
+function deckFilter() { let f = '*'; try { f = localStorage.getItem(filterKey()) ?? '*'; } catch { /* bỏ qua */ } return decks.fixFilter(f); }
+function setDeckFilter(v) { try { localStorage.setItem(filterKey(), v); } catch { /* bỏ qua */ } }
+const inFilter = () => { const f = deckFilter(); return f === '*' ? null : c => decks.matches(c, f); };
+
 function renderHome() {
-  const lang = getLang(), n = dueCount(), all = cards.allCards(lang);
+  const lang = getLang(), only = inFilter(), n = cards.dueList(lang, prefs.newPerDay || 10, only).length, all = only ? cards.allCards(lang).filter(only) : cards.allCards(lang);
+  const picker = decks.list(lang).length ? `<label class="dim deckpick">Ôn mục<select id="rvDeck">${decks.options(lang, deckFilter(), { all: true })}</select></label>` : '';
   const fresh = all.filter(c => !c.last).length, weak = all.filter(c => c.weak).length;
-  body().innerHTML = `<div class="qcard">
+  body().innerHTML = `<div class="qcard">${picker}
     <div class="rvbig">${n ? `📒 ${n} thẻ cần ôn hôm nay` : '🎉 Hôm nay không còn thẻ nào cần ôn'}</div>
     <div class="dim">${all.length} thẻ ${esc(langInfo().name)} trong sổ · ${fresh} thẻ mới · ${weak} câu yếu</div>
     ${n ? `<label class="dim"><input type="checkbox" id="rvListen" ${prefs.cardListen ? 'checked' : ''}> Chế độ nghe: ẩn chữ ở mặt trước, nghe câu rồi nhớ lại (cần video có file trong máy)</label>
     <div class="row"><button class="btn primary big" id="rvStart">▶ Bắt đầu ôn</button></div>` :
     `<div class="dim">Muốn thêm thẻ: ở màn 🎧 Học bấm <b>📒 Lưu câu</b>, hoặc thêm tay ở mục <b>Sổ thẻ</b>. Câu bạn chép hoặc nói sai nhiều cũng tự vào đây.</div>`}
   </div>`;
+  $('#rvDeck')?.addEventListener('change', e => { setDeckFilter(e.target.value); renderHome(); });
   $('#rvStart')?.addEventListener('click', start);
   $('#rvListen')?.addEventListener('change', e => { prefs.cardListen = e.target.checked; savePrefs(); });
 }
 
 function start() {
-  const q = cards.dueList(getLang(), prefs.newPerDay || 10).map(c => c.id);
+  const q = cards.dueList(getLang(), prefs.newPerDay || 10, inFilter()).map(c => c.id);
   if (!q.length) return renderHome();
   session = { queue: q, total: q.length, done: 0, flipped: false, listen: !!prefs.cardListen };
   renderSession();
@@ -119,25 +128,38 @@ document.addEventListener('keydown', e => {
 // ---------- sổ thẻ ----------
 let deckN = 60; // sổ thẻ hàng trăm thẻ: chỉ dựng 60 thẻ đầu, bấm “Hiện thêm” mới dựng tiếp (900 thẻ từng gây đứng máy ~2 giây)
 function renderDeck() {
-  const lang = getLang(), all = cards.allCards(lang).sort((a, b) => a.due - b.due), list = all.slice(0, deckN), now = Date.now();
+  const lang = getLang(), f = deckFilter(), all = cards.allCards(lang).filter(c => decks.matches(c, f)).sort((a, b) => a.due - b.due), list = all.slice(0, deckN), now = Date.now();
+  const chosen = f !== '*' && f !== '';
   const when = c => (!c.last ? 'thẻ mới' : c.due <= now ? 'đến hạn' : 'ôn sau ' + Math.max(1, Math.ceil((c.due - now) / 864e5)) + ' ngày');
-  body().innerHTML = `<div class="row"><button class="btn primary" id="dkAdd">＋ Thêm thẻ</button><span class="grow"></span><span class="dim">${all.length} thẻ ${esc(langInfo().name)}</span></div>
+  body().innerHTML = `<div class="qcard deckbar">
+      <label class="dim deckpick">Mục thẻ<select id="dkFilter">${decks.options(lang, f, { all: true })}</select></label>
+      <div class="row"><button class="btn" id="dkNew">＋ Mục mới</button>${chosen && decks.isTop(f) ? '<button class="btn" id="dkSub">＋ Nhóm con</button>' : ''}${chosen ? '<button class="btn" id="dkRen">✎ Đổi tên</button><button class="btn" id="dkDrop">🗑 Xóa mục</button>' : ''}</div>
+    </div>
+    <div class="row"><button class="btn primary" id="dkAdd">＋ Thêm thẻ</button><span class="grow"></span><span class="dim">${all.length} thẻ ${esc(langInfo().name)}</span></div>
     <div id="dkForm" class="qcard" hidden>
+      <label class="dim">Cho vào mục<select id="dkDeck">${decks.options(lang, chosen ? f : '')}</select></label>
       <label class="dim">Mặt trước (từ/câu)<input id="dkFront" type="text" lang="${langInfo().bcp}"></label>
       <label class="dim">Phiên âm (không bắt buộc)<input id="dkPron" type="text"></label>
       <label class="dim">Nghĩa<input id="dkMean" type="text"></label>
       <div class="row"><button class="btn primary" id="dkSave">Lưu thẻ</button><button class="btn" id="dkCancel">Hủy</button></div>
     </div>
-    <div class="cards">${list.length ? list.map(c => `<div class="card" style="cursor:default"><div class="ci"><b lang="${langInfo(c.lang).bcp}" style="white-space:normal">${sayable(c.front, c.lang)}</b><span class="dim">${esc((c.back || []).join(' · '))}</span><span class="dim">${c.weak ? '<span class="bad">câu yếu</span> · ' : ''}${when(c)}${c.title ? ' · ' + esc(c.title) : ''}</span></div><button class="btn" data-del="${c.id}" title="Xóa thẻ">🗑</button></div>`).join('')
-      : '<div class="empty">Chưa có thẻ nào. Bấm “＋ Thêm thẻ”, hoặc ở màn 🎧 Học bấm “📒 Lưu câu”.</div>'}</div>
+    <div class="cards">${list.length ? list.map(c => `<div class="card" style="cursor:default"><div class="ci"><b lang="${langInfo(c.lang).bcp}" style="white-space:normal">${sayable(c.front, c.lang)}</b><span class="dim">${esc((c.back || []).join(' · '))}</span><span class="dim">${c.weak ? '<span class="bad">câu yếu</span> · ' : ''}${when(c)}${c.title ? ' · ' + esc(c.title) : ''}</span>${decks.list(lang).length ? `<select class="dkmove" data-move="${c.id}" title="Chuyển sang mục khác">${decks.options(lang, decks.exists(c.deck) ? c.deck : '')}</select>` : ''}</div><button class="btn" data-del="${c.id}" title="Xóa thẻ">🗑</button></div>`).join('')
+      : `<div class="empty">${f === '*' ? 'Chưa có thẻ nào. Bấm “＋ Thêm thẻ”, hoặc ở màn 🎧 Học bấm “📒 Lưu câu”.' : 'Mục này chưa có thẻ nào.'}</div>`}</div>
     ${all.length > list.length ? `<div class="row c"><button class="btn" id="dkMore">▼ Hiện thêm ${Math.min(60, all.length - list.length)} thẻ (còn ${all.length - list.length})</button></div>` : ''}`;
   $('#dkMore')?.addEventListener('click', () => { deckN += 60; const y = scrollY; renderDeck(); scrollTo(0, y); });
+  const choose = v => { setDeckFilter(v); deckN = 60; renderDeck(); };
+  $('#dkFilter').onchange = e => choose(e.target.value);
+  $('#dkNew').onclick = () => { const id = decks.add(lang, prompt('Tên mục thẻ mới (ví dụ: Truyện, Bài 1):') || ''); if (id) choose(id); };
+  $('#dkSub')?.addEventListener('click', () => { const id = decks.add(lang, prompt('Tên nhóm con trong mục này:') || '', f); if (id) choose(id); });
+  $('#dkRen')?.addEventListener('click', () => { const n = prompt('Tên mới:', decks.list(lang).find(d => d.id === f)?.n || ''); if (n) { decks.rename(f, n); renderDeck(); } });
+  $('#dkDrop')?.addEventListener('click', () => { if (confirm('Xóa mục này? Thẻ bên trong không bị xóa, chỉ trở về “Chưa phân mục”.')) { decks.remove(f); choose('*'); } });
+  $$('[data-move]', body()).forEach(s => s.onchange = () => { store.put('cards', s.dataset.move, { deck: s.value }); renderDeck(); toast('Đã chuyển mục'); });
   $('#dkAdd').onclick = () => { $('#dkForm').hidden = false; $('#dkFront').focus(); };
   $('#dkCancel').onclick = () => { $('#dkForm').hidden = true; };
   $('#dkSave').onclick = () => {
     const front = $('#dkFront').value.trim();
     if (!front) { toast('Hãy nhập mặt trước của thẻ'); return; }
-    cards.addManual({ lang, front, back: [$('#dkPron').value.trim(), $('#dkMean').value.trim()] });
+    cards.addManual({ lang, front, back: [$('#dkPron').value.trim(), $('#dkMean').value.trim()], deck: $('#dkDeck').value });
     toast('Đã thêm thẻ'); renderDeck(); updateBadge();
   };
   $$('[data-del]', body()).forEach(b => b.onclick = () => { if (confirm('Xóa thẻ này?')) { cards.remove(b.dataset.del); renderDeck(); updateBadge(); } });

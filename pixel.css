@@ -551,4 +551,12 @@ body.lookup #now .l1, body.lookup #cueList .cue .m, body.lookup .qtext, body.loo
 [data-readall].on, [data-tapread].on { --c: #4fd9c0; --cl: #a6f0e3; --cd: #209c88; --ct: #05302a; }
 body.tapread #nPreview, body.tapread #docBody .txt { cursor: pointer; }
 .voicebox { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-.voicebox select { max-width: 220px; }
+.voicebox select { max-width: 220px; }/* mục thẻ và nghĩa tiếng Việt trong khung tra từ */
+.lkdeck, .deckpick { display: flex; flex-direction: column; gap: 3px; } .lkdeck[hidden] { display: none; }
+.lkdeck select, .deckpick select { width: 100%; min-height: 40px; }
+#lkPop .lkdeck { margin: 8px 0 0; }
+.lkvi ol { margin: 2px 0 6px; padding-left: 22px; }
+.deckbar .row { margin: 8px 0 0; } .deckbar .btn { min-height: 40px; }
+.dkmove { margin-top: 4px; max-width: 100%; min-height: 34px; align-self: flex-start; }
+.lkmt { margin: 2px 0 4px; font-size: 16px; }
+#dkForm[hidden] { display: none; }

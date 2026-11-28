@@ -29,10 +29,10 @@ export function addCueCard(itemId, i, { weak = false } = {}) {
   return true;
 }
 
-export function addManual({ lang, front, back, title = 'Thẻ tự thêm', type = 'manual' }) {
+export function addManual({ lang, front, back, title = 'Thẻ tự thêm', type = 'manual', deck = '' }) {
   const id = 'm' + uid();
   store.put('cards', id, {
-    type, lang, front: zhText(front, lang), back: back.filter(Boolean).map(b => zhText(b, lang)), title,
+    type, lang, deck, front: zhText(front, lang), back: back.filter(Boolean).map(b => zhText(b, lang)), title,
     due: Date.now(), interval: 0, ease: 2.5, reps: 0, lapses: 0, last: 0, weak: false, created: Date.now(), deleted: false,
   });
   return id;
@@ -41,8 +41,8 @@ export function addManual({ lang, front, back, title = 'Thẻ tự thêm', type 
 export const allCards = lang => store.list('cards').filter(c => (c.lang || 'zh') === lang);
 
 // Thẻ cần ôn: thẻ đến hạn, thẻ đang học lại, rồi thẻ mới (ưu tiên câu yếu), tối đa newLimit thẻ mới
-export function dueList(lang, newLimit = 10) {
-  const now = Date.now(), all = allCards(lang);
+export function dueList(lang, newLimit = 10, only = null) {
+  const now = Date.now(), all = only ? allCards(lang).filter(only) : allCards(lang);
   const reviews = all.filter(c => c.reps > 0 && c.due <= now).sort((a, b) => a.due - b.due);
   const learning = all.filter(c => c.reps === 0 && c.last && c.due <= now).sort((a, b) => a.due - b.due);
   const fresh = all.filter(c => !c.last).sort((a, b) => (b.weak ? 1 : 0) - (a.weak ? 1 : 0) || a.created - b.created).slice(0, newLimit);

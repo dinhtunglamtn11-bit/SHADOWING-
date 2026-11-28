@@ -9,6 +9,8 @@ import { say } from './tts.js';
 import * as cards from './cards.js';
 import * as store from './store.js';
 import * as wvocab from './wvocab.js';
+import * as decks from './decks.js';
+import * as vi from './wiktvi.js';
 
 const BLOCK = '#now .l1, #cueList .cue .m, #nPreview, #docBody, .qtext, .qback, .qexp, #rvBody .rvbig, .nw-text, .nw-ttl, .sp-text';
 // ký tự nào của từng ngôn ngữ thì chạm vào mới tra
@@ -126,7 +128,51 @@ function renderWk() {
   $('#lkMean').value = w.meaning;
 }
 
-const renderPop = () => (cur.wk ? renderWk() : renderZh());
+const renderPop = () => { if (cur.wk) renderWk(); else renderZh(); paintDeck(); showVi(); };
+
+// ---------- nghĩa tiếng Việt (hiện dưới nghĩa tiếng Anh) ----------
+async function showVi() {
+  const box = $('#lkVi'), w = curWord();
+  box.innerHTML = '';
+  if (!w) return;
+  const my = cur, key = w.word;
+  const english = my.wk ? my.ent?.[my.words?.[my.sel]]?.sections?.[0]?.defs?.[0] : '';
+  box.innerHTML = '<div class="dim">Đang tìm nghĩa tiếng Việt…</div>';
+  let r = null, mt = '', fail = false;
+  const trad = w.lang === 'zh' ? my.cands?.[my.sel]?.entries?.[0]?.[1] : ''; // Wiktionary tiếng Việt thường ghi chữ phồn thể
+  try { r = await vi.lookupVi(w.lang, [key, trad, w.lang === 'en' ? key.toLowerCase() : '', w.lang === 'en' ? vi.baseForm(english) : '']); } catch { fail = true; }
+  if (!r) try { mt = await vi.machineVi(w.lang, key); } catch { fail = true; }
+  if (cur !== my || curWord()?.word !== key) return; // đã chuyển sang từ khác
+  const input = $('#lkMean'); // ô nghĩa của thẻ: dùng tiếng Việt, trừ khi bạn đã tự sửa
+  const fill = text => { if (text && (input.value === w.meaning || !input.value)) input.value = text; };
+  if (!r) {
+    const link = `https://translate.google.com/?sl=${w.lang === 'zh' ? 'zh-CN' : w.lang}&tl=vi&text=${encodeURIComponent(key)}&op=translate`;
+    box.innerHTML = `<div class="lkent"><b>Nghĩa tiếng Việt</b>${mt ? ` <small class="dim">Dịch máy, nên kiểm tra lại</small><div class="lkmt cal-u">${esc(mt)}</div>` : `<div class="dim">${fail ? 'Không tải được: kiểm tra mạng.' : 'Chưa tìm được nghĩa tiếng Việt.'}</div>`} <a href="${link}" target="_blank" rel="noopener">Mở Google Dịch ↗</a></div>`;
+    fill(mt);
+    return;
+  }
+  box.innerHTML = `<div class="lkent"><b>Nghĩa tiếng Việt</b>${r.word.toLowerCase() !== key.toLowerCase() ? ` <span class="dim cal-u">(${esc(r.word)})</span>` : ''}${r.sections.map(s => `<div class="lkvi"><small class="dim cal-u">${esc(s.pos)}</small><ol class="cal-u">${s.defs.map(d => `<li>${esc(d)}</li>`).join('')}</ol></div>`).join('')}</div>`;
+  fill(vi.shortVi(r));
+}
+
+// ---------- chọn mục thẻ ----------
+const deckKey = lang => 'lkDeck:' + lang;
+function paintDeck() {
+  const w = curWord(), sel = $('#lkDeck');
+  sel.closest('label').hidden = !w;
+  if (!w) return;
+  let last = ''; try { last = localStorage.getItem(deckKey(w.lang)) || ''; } catch { /* bỏ qua */ }
+  sel.innerHTML = decks.options(w.lang, decks.exists(last) ? last : '', { create: true });
+}
+function pickDeck() {
+  const w = curWord(), sel = $('#lkDeck');
+  if (!w) return;
+  if (sel.value === '__new') {
+    const id = decks.add(w.lang, prompt('Tên mục thẻ mới (ví dụ: Truyện, Bài 1):') || '');
+    sel.innerHTML = decks.options(w.lang, id || '', { create: true });
+  }
+  try { localStorage.setItem(deckKey(w.lang), sel.value === '__new' ? '' : sel.value); } catch { /* bỏ qua */ }
+}
 
 function open(init, x, y) {
   cur = { sel: 0, ...init };
@@ -208,10 +254,17 @@ export function init() {
   $('#lkAdd').onclick = () => {
     const w = curWord();
     if (!w) return;
-    if (cards.allCards(w.lang).some(x => x.front === w.word)) { toast('Từ này đã có trong sổ thẻ'); return; }
-    cards.addManual({ lang: w.lang, front: w.word, back: [w.pron, $('#lkMean').value.trim() || w.meaning, cur.sentence].filter(Boolean), title: 'Từ điển', type: 'word' });
-    toast(`Đã thêm “${w.word}” vào sổ thẻ 📒`);
+    const deck = $('#lkDeck').value === '__new' ? '' : $('#lkDeck').value;
+    const old = cards.allCards(w.lang).find(x => x.front === w.word);
+    if (old) { // đã có thẻ: chỉ chuyển mục nếu bạn chọn mục khác
+      if (deck && old.deck !== deck) { store.put('cards', old.id, { deck }); toast(`Đã chuyển thẻ sang mục “${decks.nameOf(deck)}”`); }
+      else toast('Từ này đã có trong sổ thẻ');
+      return;
+    }
+    cards.addManual({ lang: w.lang, front: w.word, back: [w.pron, $('#lkMean').value.trim() || w.meaning, cur.sentence].filter(Boolean), title: 'Từ điển', type: 'word', deck });
+    toast(deck ? `Đã thêm “${w.word}” vào mục “${decks.nameOf(deck)}”` : `Đã thêm “${w.word}” vào sổ thẻ 📒`);
   };
+  $('#lkDeck').onchange = pickDeck;
   $('#lkWorld').onclick = () => {
     const w = curWord();
     if (!w) return;
