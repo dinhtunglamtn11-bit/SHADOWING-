@@ -6,6 +6,7 @@ import { HUD_HELP } from './tl-guide.js';
 import { uiLang, tr } from './i18n.js';
 import { archive, mergeLife, mergeProfile, ensureProfile } from './tl-hist.js';
 import * as store from './store.js';
+import * as tracker from './tracker.js';
 import * as E from './tl-engine.js';
 import * as O from './tl-ops.js';
 import * as D from './tl-data.js';
@@ -107,7 +108,7 @@ function goLive() {
 function skipSession() { const s = st(); if (s.phase !== 'PREP') return; s.flags['closed' + s.day + s.k] = 1; G.S = E.startLive(s); G.S.open = false; G.S.tick = G.S.len; finish(); }
 function openAnyway() { const s = st(); s.flags['open' + s.day + s.k] = 1; goLive(); }
 function finish() {
-  const s = st(), S = G.S; E.finishSession(s, S, false); G.lastS = S; G.wi = {}; G.cmSeen = 0; G.S = null; G.vis = []; G.paused = false; save(true); render();
+  const s = st(), S = G.S; if (S.open) tracker.tea(); E.finishSession(s, S, false); G.lastS = S; G.wi = {}; G.cmSeen = 0; G.S = null; G.vis = []; G.paused = false; save(true); render();
   const r = s.lastReport; if (r && r.fc && r.fc.hit) toast('🔮 Dự đoán trúng: +1 IP', 2200);
 }
 function nextSession() { const s = st(), res = E.nextSession(s); G.sec = 'prices'; save(true); render(); checkUrgent(); return res; }

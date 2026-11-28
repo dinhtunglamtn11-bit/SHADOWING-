@@ -4,6 +4,7 @@ import * as tracker from './tracker.js';
 import { prefs, savePrefs } from './prefs.js';
 import { pix, badge } from './pixicons.js';
 import * as A from './achieve.js';
+import * as bonus from './bonusq.js';
 import { habitHtml } from './passport.js';
 import { tr } from './i18n.js';
 import * as store from './store.js';
@@ -12,6 +13,8 @@ import * as calendar from './calendar.js';
 import { getLang, uid } from './util.js';
 
 let range = 14, tab = 'today';
+const openG = new Set(); // nhóm nhiệm vụ đang mở (mặc định thu gọn hết)
+const xu = () => tr('xu'); // chữ không dấu nên bộ dịch tự động bỏ qua: dịch tại chỗ
 let active = false;
 export const levelOf = A.levelOf;
 
@@ -24,8 +27,17 @@ function streak(m) {
   return n;
 }
 
+// ghi nhận nhiệm vụ thêm vừa xong và báo số xu
+function claimBonus(m) {
+  const fresh = bonus.claim(m);
+  if (!fresh.length) return;
+  const sum = fresh.reduce((n, x) => n + x.coins, 0);
+  toast(fresh.length === 1 && fresh[0].name ? `🪙 +${sum} xu nhiệm vụ thêm: ${tr(fresh[0].name)}` : `🪙 +${sum} xu từ ${fresh.length} phần thưởng nhiệm vụ thêm`, 4200);
+}
+
 export function updateBadge() {
   const m = tracker.byDate(), today = vnDate(), t = m.get(today) || A.blankDay(today);
+  claimBonus(m);
   const ds = A.dailyFor(today), done = ds.filter(q => A.isDone(q, t)).length;
   $('#qBadge').textContent = `${done}/${ds.length}`;
   $('#qBadge').classList.toggle('full', done === ds.length);
@@ -73,11 +85,30 @@ function heatmap(m, today, goalMin, WEEKS = 20) {
     <div class="hml dim"><span>Ít</span><i class="hm l0"></i><i class="hm l1"></i><i class="hm l2"></i><i class="hm l3"></i><i class="hm l4"></i><span>Nhiều</span><span class="grow"></span><span>${total} ngày có học trong ${WEEKS} tuần</span></div></div>`;
 }
 
-const questCard = (q, agg, extra = '') => {
-  const v = q.val(agg), p = Math.min(100, Math.round(100 * v / q.goal)), ok = v >= q.goal;
+// một thẻ nhiệm vụ; claimed: đã ghi nhận trong sổ xu (giữ trạng thái xong dù dữ liệu gốc bị xóa sau đó)
+const questCard = (q, agg, reward, claimed = false) => {
+  const v = claimed ? q.goal : q.val(agg), p = Math.min(100, Math.round(100 * v / q.goal)), ok = v >= q.goal;
   return `<div class="quest ${ok ? 'done' : ''}"><span class="qi">${ok ? '✅' : q.icon}</span>
-    <div class="qb"><b>${esc(q.name)}</b><div class="prog"><i style="width:${p}%"></i></div></div><span class="dim">${q.show(v)}</span>${extra}</div>`;
+    <div class="qb"><b>${esc(q.name)}</b> <span class="rew">${reward}</span><div class="prog"><i style="width:${p}%"></i></div></div><span class="dim qv">${q.show(v)}</span></div>`;
 };
+
+// nhóm thu gọn: dòng đầu cho biết đã xong mấy việc, đã được bao nhiêu xu; bấm mới hiện từng thẻ
+function group(id, title, done, total, got, max, inner) {
+  return `<details class="qgroup" data-qg="${id}" ${openG.has(id) ? 'open' : ''}><summary>
+      <span class="qg-t"><b>${title}</b><span class="qg-n">${done}/${total} đã xong</span><span class="rew">🪙 ${got}/${max} ${xu()}</span></span>
+      <span class="prog"><i style="width:${total ? Math.round(100 * done / total) : 0}%"></i></span></summary>
+    <div class="quests">${inner}</div></details>`;
+}
+const allRow = (ok, coins) => `<div class="qall ${ok ? 'done' : ''}"><span>🎁 Xong cả nhóm</span><span class="rew">+${coins} ${xu()}</span></div>`;
+
+function extraGroup(m, kind, date) {
+  const { start } = bonus.periodOf(kind, date), log = bonus.ledger(), defs = bonus.questsFor(kind, start), ctx = bonus.context(m, kind, start);
+  const has = id => !!log[bonus.keyOf(kind, start, id)], isOk = d => has(d.id) || d.val(ctx) >= d.goal;
+  const done = defs.filter(isOk).length, all = bonus.allBonus(kind);
+  const max = defs.reduce((n, d) => n + d.coins, 0) + all, got = defs.filter(isOk).reduce((n, d) => n + d.coins, 0) + (done === defs.length ? all : 0);
+  return group(`${kind}-more`, '✨ Nhiệm vụ thêm', done, defs.length, got, max,
+    defs.map(d => questCard(d, ctx, `+${d.coins} ${xu()}`, has(d.id))).join('') + allRow(done === defs.length, all));
+}
 
 // ---------- từng tab ----------
 function todayTab(m, today) {
@@ -87,9 +118,10 @@ function todayTab(m, today) {
       <div><div class="dim">Giờ Việt Nam (UTC+7)</div><h2>Hôm nay ${today.slice(8)}/${today.slice(5, 7)} · ${String(vnHour()).padStart(2, '0')}h</h2></div>
       <div class="streak">🔥 <b>${streak(m)}</b><span class="sl">ngày liên tiếp<br><span class="dim">đạt mục tiêu thời gian</span></span></div>
     </div>
-    <div class="dim" style="margin:2px">Mỗi ngày có bộ nhiệm vụ khác nhau (nhiệm vụ thời gian luôn có).</div>
+    <div class="dim" style="margin:2px">Mỗi ngày có bộ nhiệm vụ khác nhau (nhiệm vụ thời gian luôn có). Bấm vào từng nhóm để xem.</div>
     ${calendar.todayHtml()}
-    <div class="quests">${ds.map(q => questCard(q, t)).join('')}</div>
+    ${group('day-main', '📋 Nhiệm vụ chính', done, ds.length, done * 8 + (done === ds.length ? 20 : 0), ds.length * 8 + 20, ds.map(q => questCard(q, t, `+8 ${xu()}`)).join('') + allRow(done === ds.length, 20))}
+    ${extraGroup(m, 'day', today)}
     ${habitHtml()}
     ${done === ds.length ? '<div class="allDone">🎉 Hoàn thành hết nhiệm vụ hôm nay!</div>' : `<div class="dim" style="margin:6px 2px">Còn ${ds.length - done} nhiệm vụ nữa.</div>`}
     <div class="row" style="margin:10px 0"><span class="dim">Hôm nay theo ngôn ngữ:</span>${langs}</div>
@@ -102,12 +134,13 @@ function periodTab(m, today, kind) {
   const done = defs.filter(q => A.isDone(q, agg)).length, left = Math.max(0, Math.round((new Date(end + 'T00:00:00Z') - new Date(today + 'T00:00:00Z')) / 864e5));
   const prevStart = week ? addDays(start, -7) : A.monthStart(addDays(start, -1)), prevEnd = week ? addDays(prevStart, 6) : A.monthEnd(prevStart);
   const prevDefs = week ? A.weeklyFor(prevStart) : A.monthlyFor(prevStart), prevAgg = A.aggregate(m, prevStart, prevEnd);
-  const prevDone = prevDefs.filter(q => A.isDone(q, prevAgg)).length, reward = week ? A.WEEK_XP : A.MONTH_XP;
+  const prevDone = prevDefs.filter(q => A.isDone(q, prevAgg)).length, reward = week ? A.WEEK_XP : A.MONTH_XP, coin = week ? 30 : 100;
   const fmt = d => d.slice(8) + '/' + d.slice(5, 7);
   return `<div class="qhead"><div><div class="dim">${week ? 'Nhiệm vụ tuần' : 'Nhiệm vụ tháng'} · ${fmt(start)} – ${fmt(end)}</div><h2>${week ? 'Tuần này' : 'Tháng này'}</h2></div>
       <div class="streak"><b>${left}</b><span class="sl">ngày còn lại<br><span class="dim">${done}/${defs.length} đã xong</span></span></div></div>
-    <div class="dim" style="margin:2px">${week ? `Mỗi nhiệm vụ tuần xong thưởng <b>+${reward} XP</b> vào cấp độ. Bộ nhiệm vụ đổi vào thứ Hai đầu tuần.` : `Mỗi nhiệm vụ tháng xong thưởng <b>+${reward} XP</b> vào cấp độ. Bộ nhiệm vụ đổi vào đầu tháng.`}</div>
-    <div class="quests">${defs.map(q => questCard(q, agg, `<span class="rew">+${reward} XP</span>`)).join('')}</div>
+    <div class="dim" style="margin:2px">${week ? `Mỗi nhiệm vụ chính của tuần xong thưởng +30 xu và +${reward} XP. Bộ nhiệm vụ đổi vào thứ Hai đầu tuần.` : `Mỗi nhiệm vụ chính của tháng xong thưởng +100 xu và +${reward} XP. Bộ nhiệm vụ đổi vào đầu tháng.`}</div>
+    ${group(`${kind}-main`, '📋 Nhiệm vụ chính', done, defs.length, done * coin, defs.length * coin, defs.map(q => questCard(q, agg, `+${coin} ${xu()} · +${reward} XP`)).join(''))}
+    ${extraGroup(m, kind, today)}
     ${done === defs.length ? `<div class="allDone">${week ? '🎉 Hoàn thành hết nhiệm vụ tuần này!' : '🎉 Hoàn thành hết nhiệm vụ tháng này!'}</div>` : ''}
     <div class="dim" style="margin:10px 2px">${week ? 'Tuần trước' : 'Tháng trước'}: hoàn thành ${prevDone}/${prevDefs.length} nhiệm vụ.</div>`;
 }
@@ -281,7 +314,10 @@ export function init() {
       if (d.jqadd) setTimeout(() => $('#questBody .jq:last-of-type')?.focus(), 0);
     }
   });
-  $('#questBody').addEventListener('toggle', e => { if (e.target.matches?.('.jqs')) jqOpen = e.target.open; }, true);
+  $('#questBody').addEventListener('toggle', e => {
+    if (e.target.matches?.('.jqs')) jqOpen = e.target.open;
+    if (e.target.matches?.('.qgroup')) openG[e.target.open ? 'add' : 'delete'](e.target.dataset.qg);
+  }, true);
   $('#questBody').addEventListener('change', e => {
     if (e.target.matches('.jq')) { const qs = [...jqs()]; qs[+e.target.dataset.jq] = e.target.value.trim(); prefs.journalQs = qs.filter(Boolean).length ? qs.filter(Boolean) : [...DEFAULT_JQ]; savePrefs(); render(); return; }
     if (e.target.id === 'goalMin') { prefs.goalMin = Math.max(1, Math.min(600, +e.target.value || 15)); savePrefs(); render(); }
@@ -290,6 +326,10 @@ export function init() {
   bus.on('calendar', () => { if (active && tab === 'cal') render(); });
   bus.on('quest-tab', t => { tab = t; if (active) render(); });
   bus.on('habits', () => { if (active) render(); }); // tick / thêm / sửa thói quen
+  let claimT = 0; // việc đo cho nhiệm vụ thêm nằm ở nhiều nơi (thẻ, Topics, từ mới…): đợi một nhịp rồi xét
+  const claimSoon = () => { clearTimeout(claimT); claimT = setTimeout(() => claimBonus(tracker.byDate()), 1200); };
+  bus.on('store', c => { if (['topiclogs', 'cards', 'hwwords', 'posts', 'items', 'events', 'days', 'prefs', '*'].includes(c)) claimSoon(); });
+  bus.on('habits', claimSoon);
   bus.on('store', c => { if (c === 'days' || c === 'prefs' || c === 'events' || c === '*') { updateBadge(); if (active) render(); } });
   setInterval(() => { if (document.hidden) return; updateBadge(); if (active && !document.activeElement?.matches('input')) render(); }, 15000);
   updateBadge();

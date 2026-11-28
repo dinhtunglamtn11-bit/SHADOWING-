@@ -74,7 +74,7 @@ const LOCAL_KEYS = ['ui', 'lang', 'studyNew', 'voices', 'muteAll', 'lookup', 'hw
 const LIGHT = ['days', 'prefs', 'cards', 'mistakes'];
 // Ba tài liệu tiến độ này tự gộp theo từng phần (thẻ đã mua lấy hợp, xu và mức hoàn thành lấy số lớn hơn…), nên khi khôi phục luôn nhận bản trong file.
 // Nếu không, máy mới (đã tự tạo sẵn tài liệu rỗng với giờ mới hơn file) sẽ bỏ qua bản sao lưu và mất hết tiến độ.
-const MERGED = { prefs: ['passport', 'habits', 'pylab', 'kolab', 'jalab', 'scm', 'decks'] };
+const MERGED = { prefs: ['passport', 'habits', 'pylab', 'kolab', 'jalab', 'scm', 'decks', 'questlog'] };
 function snapshot(light) {
   bus.emit('flush'); // các tính năng ghi dở (Passport, thói quen, Luyện âm) đẩy nốt dữ liệu vào kho trước khi chụp
   const all = store.dump(), data = light ? Object.fromEntries(LIGHT.map(c => [c, all[c]])) : all, local = {};

@@ -15,6 +15,7 @@ import { pix } from './pixicons.js';
 import * as wvocab from './wvocab.js';
 import * as social from './social.js';
 import * as story from './story.js';
+import * as topics from './topics.js';
 import { inline, plain, TEXT_COLORS, HL_COLORS, lineInfo, lineCls, lineBu, indentLines, bulletLines, tabKey } from './richtext.js';
 
 const DAY = 864e5;
@@ -197,11 +198,11 @@ const dateLine = () => { const d = new Date(); return `${WD[d.getDay()]}, ${d.ge
 // Thế giới có 2 mục: Article (bài đọc + câu hỏi) và Social (lướt bài đăng ngắn, không câu hỏi)
 const store0 = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const save0 = (k, v) => { try { localStorage.setItem(k, v); } catch { /* bỏ qua */ } };
-let sec = (s => (s === 'social' ? 'flash' : ['flash', 'focus', 'keyword', 'story'].includes(s) ? s : 'article'))(store0('worldSec')); // “social” cũ nay là Flash
-const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="flash" class="${sec === 'flash' ? 'on' : ''}" title="Lướt các mẩu thông tin ngắn, đơn giản mà hay">⚡ Flash</button><button data-s="focus" class="${sec === 'focus' ? 'on' : ''}" title="Đọc các bài dài, thông tin sâu">🔭 Focus</button><button data-s="keyword" class="${sec === 'keyword' ? 'on' : ''}" title="Giải thích thuật ngữ, kèm tên tác giả của thuật ngữ nếu có">🔑 Keyword</button><button data-s="story" class="${sec === 'story' ? 'on' : ''}">📜 Story</button></div>`;
+let sec = (s => (s === 'social' ? 'flash' : ['flash', 'focus', 'keyword', 'story', 'topics'].includes(s) ? s : 'article'))(store0('worldSec')); // “social” cũ nay là Flash
+const secBar = () => `<div class="seg" id="wSec"><button data-s="article" class="${sec === 'article' ? 'on' : ''}">📰 Article</button><button data-s="flash" class="${sec === 'flash' ? 'on' : ''}" title="Lướt các mẩu thông tin ngắn, đơn giản mà hay">⚡ Flash</button><button data-s="focus" class="${sec === 'focus' ? 'on' : ''}" title="Đọc các bài dài, thông tin sâu">🔭 Focus</button><button data-s="keyword" class="${sec === 'keyword' ? 'on' : ''}" title="Giải thích thuật ngữ, kèm tên tác giả của thuật ngữ nếu có">🔑 Keyword</button><button data-s="story" class="${sec === 'story' ? 'on' : ''}">📜 Story</button><button data-s="topics" class="${sec === 'topics' ? 'on' : ''}" title="Mỗi ngày quay ra một chủ đề để tự tìm hiểu">🎯 Topics</button></div>`;
 function bindSec() {
   $$('#wSec button', root).forEach(b => {
-    b.onclick = () => { if (b.dataset.s === sec) return; social.leave(); story.leave(); sec = b.dataset.s; save0('worldSec', sec); mode = 'feed'; render(); scrollTo(0, 0); };
+    b.onclick = () => { if (b.dataset.s === sec) return; social.leave(); story.leave(); topics.leave(); sec = b.dataset.s; save0('worldSec', sec); mode = 'feed'; render(); scrollTo(0, 0); };
   });
 }
 
@@ -223,6 +224,7 @@ export function render() {
   mode = 'feed';
   if (sec === 'flash' || sec === 'focus' || sec === 'keyword') { tools(true, true); social.setKind(sec); social.render(root, { bar: secBar, bindBar: bindSec }); return; }
   if (sec === 'story') { tools(true); story.render(root, { bar: secBar, bindBar: bindSec }); return; }
+  if (sec === 'topics') { leaveFull(); tools(true, true); topics.render(root, { bar: secBar, bindBar: bindSec }); return; }
   drawFeed();
 }
 
@@ -705,7 +707,7 @@ export function init() {
   root = $('#worldRoot');
   bus.on('show', v => { if (v === 'world') render(); });
   social.init();
-  document.body.dataset.wsec = sec; story.init();
+  document.body.dataset.wsec = sec; story.init(); topics.init();
   bus.on('lang', () => { wvocab.reset(); social.reset(); story.reset(); mode = 'feed'; curId = null; filter.folder = ''; filter.unread = false; if (document.body.dataset.view === 'world') render(); });
   bus.on('store', c => { if ((c === 'articles' || c === 'wfolders' || c === '*') && document.body.dataset.view === 'world' && mode === 'feed' && sec === 'article') drawFeed(); });
 }

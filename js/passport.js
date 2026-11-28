@@ -5,6 +5,7 @@ import { $, $$, esc, toast, bus, vnDate, addDays } from './util.js';
 import * as store from './store.js';
 import * as tracker from './tracker.js';
 import * as A from './achieve.js';
+import * as bonus from './bonusq.js';
 import { prefs } from './prefs.js';
 import * as sfx from './sfx.js';
 import { uiLang } from './i18n.js';
@@ -28,7 +29,7 @@ const mine = () => K.items.filter(i => i.cc === S.cc);
 const t = (vi, en) => (uiLang === 'vi' ? vi : en);
 const SUBEN = { 'Quốc kỳ': 'National flag', 'Địa danh': 'Landmarks', 'Mùa và thiên nhiên': 'Seasons and nature', 'Vùng miền': 'Regions', 'Hiện tượng đặc biệt': 'Natural phenomena', 'Trang phục': 'Clothing', 'Phụ kiện': 'Accessories', 'Nhà ở và đồ dùng': 'Home and household', 'Thói quen và phép tắc': 'Habits and etiquette', 'Món ăn': 'Dishes', 'Đồ uống và trà đạo': 'Drinks and tea ceremony', 'Món theo mùa và dịp lễ': 'Seasonal and festive food', 'Quy tắc bàn ăn': 'Table manners', 'Lễ hội và ngày lễ': 'Festivals and holidays', 'Nhạc cụ': 'Instruments', 'Nghệ thuật biểu diễn': 'Performing arts', 'Nghệ thuật truyền thống khác': 'Other traditional arts', 'Văn hóa hiện đại': 'Modern culture', 'Động vật': 'Animals', 'Linh vật': 'Mascots and spirits', 'Tín ngưỡng': 'Beliefs', 'Nhân vật và lịch sử': 'History and figures', 'Người nổi tiếng': 'Famous people' };
 const subName = s => t(s, SUBEN[s] || s);
-const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', 'Trả lời đúng': 'Correct answers', 'Đọc, viết, nghe, nói': 'Reading, writing, listening, speaking', 'Nhiệm vụ ngày': 'Daily quests', 'Đạt mục tiêu ngày': 'Daily goal reached', 'Thói quen': 'Habits', 'Thưởng chuỗi ngày': 'Streak bonus', 'Bài đọc Thế giới': 'World articles' };
+const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', 'Trả lời đúng': 'Correct answers', 'Đọc, viết, nghe, nói': 'Reading, writing, listening, speaking', 'Nhiệm vụ ngày': 'Daily quests', 'Đạt mục tiêu ngày': 'Daily goal reached', 'Thói quen': 'Habits', 'Thưởng chuỗi ngày': 'Streak bonus', 'Bài đọc Thế giới': 'World articles', 'Nhiệm vụ thêm': 'Bonus quests' };
 
 // ---------- lưu / đồng bộ ----------
 function load() {
@@ -76,7 +77,7 @@ function dayParts(date, d) {
 function earned() {
   if (!P.since) return 0;
   const m = tracker.byDate(), today = vnDate();
-  let sum = WELCOME + START_BONUS + (P.extra || 0) + rankCoins() + scmCoins() + tlCoins(); // extra: xu từ rương, đố vui, thử thách tuần, tem; rankCoins: thưởng dấu hạng (tính từ hạng đã đạt)
+  let sum = WELCOME + START_BONUS + (P.extra || 0) + rankCoins() + scmCoins() + tlCoins() + bonus.total(); // bonus: sổ xu nhiệm vụ thêm; extra: xu từ rương, đố vui, thử thách tuần, tem; rankCoins: thưởng dấu hạng (tính từ hạng đã đạt)
   for (const d of Object.keys(HB.days)) if (d <= today) sum += habitCoins(d);
   for (const [d, x] of m) if (d >= P.since && d <= today) { const b = dayParts(d, x).reduce((n, [, v]) => n + v, 0); sum += b + streakBonus(m, d, b); }
   for (let s = A.weekStart(P.since); s <= today; s = addDays(s, 7)) { const e = addDays(s, 6); sum += A.weeklyFor(s).filter(q => A.isDone(q, A.aggregate(m, s, e < today ? e : today))).length * 30; }
@@ -122,7 +123,7 @@ function balance() {
 } // xu kiếm được không bao giờ giảm lại (đổi mục tiêu ngày không làm mất xu)
 function todayParts() {
   const m = tracker.byDate(), d = m.get(vnDate()) || A.blankDay(vnDate()), parts = dayParts(vnDate(), d), base = parts.reduce((n, [, v]) => n + v, 0);
-  return [...parts, ['Thưởng chuỗi ngày', streakBonus(m, vnDate(), base)], ['Thói quen', habitCoins(vnDate())]];
+  return [...parts, ['Thưởng chuỗi ngày', streakBonus(m, vnDate(), base)], ['Thói quen', habitCoins(vnDate())], ['Nhiệm vụ thêm', bonus.coinsOn(vnDate())]];
 }
 
 // ---------- thói quen hằng ngày (daily habit): tự thêm, tự đặt xu thưởng, tick mỗi ngày ----------
@@ -414,7 +415,7 @@ function draw() {
   h.push(`<div class="pp-top"><div class="pp-coins">🪙 <b>${bal}</b></div>${titleChip()}${streakPct(tracker.byDate(), vnDate()) ? `<span class="pp-new">🔥 ${t('Chuỗi', 'Streak')} +${streakPct(tracker.byDate(), vnDate())}%</span>` : ''}${fresh > 0 && P.last ? `<span class="pp-new">+${fresh} ${t('xu mới', 'new coins')}</span>` : ''}
     <span class="grow"></span><button class="btn" id="ppHow">❓ ${t('Cách kiếm xu', 'How to earn coins')}</button></div>`);
   h.push(`<div class="pp-how" id="ppHowBox" ${openHow ? '' : 'hidden'}><b>${t(`Hôm nay đã kiếm được ${todayTot} xu`, `Earned today: ${todayTot} coins`)}</b>${today.map(([k, n]) => `<div class="ppr"><span>${esc(t(k, EARN[k] || k))}</span><b>+${n}</b></div>`).join('')}
-    <div class="dim">${t('Xu tính từ việc học thật: phút học, thẻ ôn, câu trả lời đúng, nhiệm vụ ngày (+8 mỗi nhiệm vụ, +20 khi xong hết), đạt mục tiêu ngày (+15), nhiệm vụ tuần (+30), nhiệm vụ tháng (+100) và thói quen do bạn tự đặt. Không có mức tối đa. Học liên tiếp nhiều ngày được thưởng thêm 10% xu mỗi ngày liên tiếp (tối đa +50%), và thẻ cuối còn lại của một mục nhỏ được giảm nửa giá. Đọc bài ở Thế giới: +15 xu mỗi bài đọc xong lần đầu, +10 xu khi làm bài đạt từ 80% lần đầu, và thời gian đọc được tính như thời gian học. Thêm xu từ rương mỗi ngày, đố vui văn hóa, thử thách tuần, tem hộ chiếu và dấu hạng của từng nước (Đồng 25% +15, Bạc 50% +30, Vàng 75% +50, Kim cương 100% +100).', 'Coins come from real study: study minutes, card reviews, correct answers, daily quests (+8 each, +20 when all are done), reaching the daily goal (+15), weekly quests (+30), monthly quests (+100) and your own habits. There is no cap. Studying on consecutive days adds 10% per day in a row (up to +50%), and the last remaining card of a sub-section is half price. Reading in World: +15 coins per article finished for the first time, +10 when you score 80%+ for the first time, and reading time counts as study time. More coins come from the daily chest, culture quiz, weekly challenge, passport stamps and the rank stamps of each country (Bronze 25% +15, Silver 50% +30, Gold 75% +50, Diamond 100% +100).')}</div></div>`);
+    <div class="dim">${t('Xu tính từ việc học thật: phút học, thẻ ôn, câu trả lời đúng, nhiệm vụ ngày (+8 mỗi nhiệm vụ, +20 khi xong hết), đạt mục tiêu ngày (+15), nhiệm vụ tuần (+30), nhiệm vụ tháng (+100), nhiệm vụ thêm ở mục Nhiệm vụ (mỗi thẻ ghi rõ số xu) và thói quen do bạn tự đặt. Không có mức tối đa. Học liên tiếp nhiều ngày được thưởng thêm 10% xu mỗi ngày liên tiếp (tối đa +50%), và thẻ cuối còn lại của một mục nhỏ được giảm nửa giá. Đọc bài ở Thế giới: +15 xu mỗi bài đọc xong lần đầu, +10 xu khi làm bài đạt từ 80% lần đầu, và thời gian đọc được tính như thời gian học. Thêm xu từ rương mỗi ngày, đố vui văn hóa, thử thách tuần, tem hộ chiếu và dấu hạng của từng nước (Đồng 25% +15, Bạc 50% +30, Vàng 75% +50, Kim cương 100% +100).', 'Coins come from real study: study minutes, card reviews, correct answers, daily quests (+8 each, +20 when all are done), reaching the daily goal (+15), weekly quests (+30), monthly quests (+100), the bonus quests in Quests (each card shows its coins) and your own habits. There is no cap. Studying on consecutive days adds 10% per day in a row (up to +50%), and the last remaining card of a sub-section is half price. Reading in World: +15 coins per article finished for the first time, +10 when you score 80%+ for the first time, and reading time counts as study time. More coins come from the daily chest, culture quiz, weekly challenge, passport stamps and the rank stamps of each country (Bronze 25% +15, Silver 50% +30, Gold 75% +50, Diamond 100% +100).')}</div></div>`);
   const ctryBtn = c => { const a = { n: cown(c), t: ctot(c) }; return `<button class="pp-ctry${c === S.cc ? ' on' : ''}" data-cc="${c}"><canvas class="ppFlag" data-cc="${c}" width="64" height="48"></canvas><span><b>${CC[c][uiLang === 'vi' ? 0 : 1]}</b><span class="dim">${a.n}/${a.t}${a.n === a.t ? ' ⭐' : ''}</span></span>${stampHtml(c, true)}</button>`; };
   const contStat = k => { let n = 0, tt = 0; for (const c of Object.keys(CC)) if (CC_CONT[c] === k) { n += cown(c); tt += ctot(c); } return { n, t: tt }; };
   const regStat = rg => { let n = 0, tt = 0; for (const e of rg.c) { const code = e.split('|')[2]; if (code) { n += cown(code); tt += ctot(code); } } return { n, t: tt }; };

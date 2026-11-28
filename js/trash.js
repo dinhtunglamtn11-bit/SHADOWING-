@@ -3,7 +3,7 @@ import { $, esc, toast, fmtMB } from './util.js';
 import * as store from './store.js';
 
 const KEEP_DAYS = 30, DAY = 864e5;
-const KIND = { items: 'Video / tài liệu / ghi chú', cards: 'Thẻ', sets: 'Bộ bài tập', wsets: 'Bộ viết', folders: 'Mục', articles: 'Bài đọc', wfolders: 'Thư mục chủ đề', tests: 'Bài kiểm tra', mistakes: 'Sổ lỗi', wwords: 'Từ vựng Thế giới', posts: 'Bài Flash / Focus / Keyword', events: 'Lịch', hwwords: 'Từ luyện viết' };
+const KIND = { items: 'Video / tài liệu / ghi chú', cards: 'Thẻ', sets: 'Bộ bài tập', wsets: 'Bộ viết', folders: 'Mục', articles: 'Bài đọc', wfolders: 'Thư mục chủ đề', tests: 'Bài kiểm tra', mistakes: 'Sổ lỗi', wwords: 'Từ vựng Thế giới', posts: 'Bài Flash / Focus / Keyword', events: 'Lịch', hwwords: 'Từ luyện viết', topics: 'Chủ đề (Topics)', topiclogs: 'Bài Topics' };
 
 function label(c, d) {
   if (c === 'cards') return [d.front, (d.back || [])[0]].filter(Boolean).join(' · ');
@@ -11,11 +11,12 @@ function label(c, d) {
   if (c === 'mistakes') return d.label;
   if (c === 'wwords' || c === 'hwwords') return [d.word, d.meaning].filter(Boolean).join(' · ');
   if (c === 'posts') return (d.body || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  if (c === 'topiclogs') return [d.date, d.name].filter(Boolean).join(' · ');
   return d.title || d.name || '';
 }
 function icon(c, d) {
   if (c === 'items') return d.type === 'video' ? '🎬' : d.type === 'note' ? '📝' : '📄';
-  return { cards: '📒', sets: '🧩', wsets: '🖊', folders: '📂', articles: '📰', wfolders: '📂', tests: '📋', mistakes: '📕', wwords: '🌍', posts: '📱', events: '📆', hwwords: '🔠' }[c] || '📄';
+  return { cards: '📒', sets: '🧩', wsets: '🖊', folders: '📂', articles: '📰', wfolders: '📂', tests: '📋', mistakes: '📕', wwords: '🌍', posts: '📱', events: '📆', hwwords: '🔠', topics: '🎯', topiclogs: '🎯' }[c] || '📄';
 }
 const deletedAt = d => d.deletedAt || d.u || 0;
 

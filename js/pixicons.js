@@ -437,7 +437,7 @@ const MAP = {
 Object.assign(MAP, { '🛂': 'passport', '📝': 'memo', '📋': 'clipboard', '📑': 'sections', '🖊': 'brush', '✍': 'writing', '📚': 'books', '📕': 'redbook', '🗂': 'box', '⚡': 'bolt', '📓': 'journal', '🔭': 'scope', '📜': 'scroll', '🔖': 'bookmark', '🔤': 'abc', '💬': 'subtitle', '⛶': 'expand', '📅': 'cal', '🗓': 'cal2', '🏅': 'medal', '🌅': 'sun', '🎓': 'book', '📦': 'crate', '🔑': 'key', '🔠': 'vocab' });
 const RE = new RegExp('(' + Object.keys(MAP).join('|') + ')\\uFE0F?', 'gu');
 // vùng chứa nội dung của người dùng hoặc ô nhập: không đổi emoji ở đó
-const DENY = 'script,style,textarea,input,select,option,.pxe,#now,.cue:not(.ed),.qtext,.qexp,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.wvw,.wvm,.wvs,.mbq,.nw-emoji,.stc-cover,.nw-h,.nw-lead,.nw-ttl,.nw-text,.sp-text,.sp-ct,.sp-av,.sp-tags,.wchip,.slot,[contenteditable]';
+const DENY = 'script,style,textarea,input,select,option,.pxe,#now,.cue:not(.ed),.qtext,.qexp,.preview,.txt,.wans,.wmeaning,.pvrow,.srow,.wvw,.wvm,.wvs,.mbq,.nw-emoji,.stc-cover,.nw-h,.nw-lead,.nw-ttl,.nw-text,.sp-text,.sp-ct,.sp-av,.sp-tags,.wchip,.slot,.tp-u,[contenteditable]';
 
 function convert(tn) {
   const s = tn.nodeValue;

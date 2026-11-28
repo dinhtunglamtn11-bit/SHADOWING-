@@ -528,7 +528,7 @@ function drawRead(startPos = 0) {
     clearTimeout(saveT);
     saveT = setTimeout(() => { const cur = store.get('stories', sid); if (cur && Math.abs((cur.pos || 0) - f) > 0.01) store.put('stories', sid, { pos: +f.toFixed(3), last: Date.now() }); }, 1500);
     if (f > 0.96 && (store.get('stories', sid)?.maxN || 0) < c.n) store.put('stories', sid, { maxN: c.n });
-    if (f > 0.96 && !readOnce.has(c.id + vnDate())) { readOnce.add(c.id + vnDate()); tracker.read(); }
+    if (f > 0.96 && !readOnce.has(c.id + vnDate())) { readOnce.add(c.id + vnDate()); tracker.read(); tracker.chapter(); }
   };
   addEventListener('scroll', onScroll, { passive: true });
   $('#stScroll', root).addEventListener('scroll', onScroll, { passive: true });

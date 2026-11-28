@@ -7,6 +7,7 @@ import { HOWTO, GLOSSARY, FORMULAS, TIPS } from './tl-guide.js';
 import { histHtml, histClick } from './tl-hist.js';
 import { polHtml, kpiHtml, fcHtml, abcHtml, lossHtml, opsClick, opsChange } from './tl-ops.js';
 import { uiLang } from './i18n.js';
+import * as tracker from './tracker.js';
 const fold = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase(); // bỏ dấu để tìm kiếm tiếng Việt
 const hitQ = (text, q) => !q || new RegExp('(^|[^a-z0-9])' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(fold(text)); // khớp đầu từ: “ap” ra AP chứ không ra “hạp”
 
@@ -362,6 +363,7 @@ export function calcBind(box, c) {
     (G.calcTape ||= []).push([MI.toExpr(ed.root, G.calcAns || 0), fmt(r.value), MI.clone(ed.root)]);
     if (G.calcTape.length > 50) G.calcTape.shift();
     G.calcAns = G.calcRes = r.value; G.calcDone = true; G.calcHist = null;
+    tracker.calc();
     box.querySelector('.tc-tape').innerHTML = tapeHtml(G); draw(); // chỉ vẽ lại băng giấy và màn hình: không làm máy tính nhảy cuộn
   };
   // Sau "=": gõ số / hàm thì bắt đầu phép tính mới; gõ dấu thì nối tiếp từ Ans (đúng như máy Casio)

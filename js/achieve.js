@@ -4,8 +4,8 @@ import { addDays, vnDate } from './util.js';
 import { rngOf, shuffle } from './quiz.js';
 import { prefs } from './prefs.js';
 
-export const blankDay = date => ({ date, sec: 0, s: 0, r: 0, w: 0, d: 0, k: 0, c: 0, q: 0, qc: 0, x: 0, n: 0, t: 0, tp: 0, h: {}, l: {} });
-const KEYS = ['sec', 's', 'r', 'w', 'd', 'k', 'c', 'q', 'qc', 'x', 'n', 't', 'tp'];
+export const blankDay = date => ({ date, sec: 0, s: 0, r: 0, w: 0, d: 0, k: 0, c: 0, q: 0, qc: 0, x: 0, n: 0, t: 0, tp: 0, tl: 0, cm: 0, st: 0, h: {}, l: {} });
+const KEYS = ['sec', 's', 'r', 'w', 'd', 'k', 'c', 'q', 'qc', 'x', 'n', 't', 'tp', 'tl', 'cm', 'st'];
 
 // ---------- cấp độ ----------
 export const xpOf = d => Math.floor((d.sec || 0) / 60 * 3 + (d.s || 0) + 2 * (d.c || 0) + 2 * (d.q || 0) + 3 * (d.d || 0) + 3 * (d.k || 0) + 2 * (d.x || 0) + 5 * (d.r || 0) + 5 * (d.w || 0) + 6 * (d.n || 0) + 8 * (d.t || 0));
