@@ -7,6 +7,7 @@ import * as notes from './notes.js';
 import * as quests from './quests.js';
 import * as calendar from './calendar.js';
 import * as scenes from './scenes.js';
+import * as readtheme from './readtheme.js';
 import * as side from './side.js';
 import * as alignui from './alignui.js';
 import * as dictation from './dictation.js';
@@ -259,7 +260,7 @@ syncSfx();
 bus.on('store', c => { if (c === 'prefs' || c === '*') { loadPrefs(); bus.emit('prefs'); } });
 renderLangs();
 // Mỗi mục tự khởi động trong khối try riêng: một mục lỗi (ví dụ thiếu file sau khi tải bản mới lên) không làm các mục còn lại ngừng chạy; lỗi được ghi lại để thanh báo lỗi hiển thị
-for (const [name, mod] of Object.entries({ player, side, library, notes, quests, calendar, scenes, alignui, dictation, speak, shadowrec, review, backup, subedit, subpaste, segments, trash, lookup, vocab, find, shortcuts, offline, readaloud, cueedit, music, focusmode, videx, passport, lame, skin, lbl, prompts })) {
+for (const [name, mod] of Object.entries({ player, side, library, notes, quests, calendar, scenes, readtheme, alignui, dictation, speak, shadowrec, review, backup, subedit, subpaste, segments, trash, lookup, vocab, find, shortcuts, offline, readaloud, cueedit, music, focusmode, videx, passport, lame, skin, lbl, prompts })) {
   try { mod.init(); } catch (e) { console.error('Lỗi khởi động mục ' + name, e); (window.__bootErrors ||= []).push('init ' + name + ': ' + (e && e.message || e)); }
 }
 // ---------- nạp muộn các mục lớn không cần ngay lúc mở app (SCM, Thế giới): app mở nhanh hơn, vào mục đó lần đầu vẫn tức thì vì được nạp ngầm sau vài giây ----------

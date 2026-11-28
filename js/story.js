@@ -504,7 +504,7 @@ function drawRead(startPos = 0) {
   const paras = String(c.body || '').split('\n').filter(l => l.trim()).map(l => `<p>${esc(l.trim())}</p>`).join('');
   const navRow = pos => `<div class="row st-nav"><button class="btn" data-go="${prev?.id || ''}" ${prev ? '' : 'disabled'}>‹ Chương trước</button><span class="grow"></span>
     <button class="btn ${pos === 'bottom' ? 'primary' : ''}" data-go="${next?.id || ''}" ${next ? '' : 'disabled'}>${next ? 'Chương sau ›' : 'Hết (hiện có)'}</button></div>`;
-  const ctrl = `<span class="seg st-fs"><button data-act="dn" title="Chữ nhỏ lại">A−</button><button data-act="up" title="Chữ to lên">A+</button></span>
+  const ctrl = `<span class="seg st-fs"><button data-act="dn" title="Chữ nhỏ lại">A−</button><button data-act="up" title="Chữ to lên">A+</button></span><button class="btn" data-rdpick title="Màu trang">🎨</button>
     <button class="btn" data-act="edit" title="Sửa tên và nội dung chương này">✎ Sửa</button><button class="btn st-save ${mk ? 'on' : ''}" data-act="save" title="${mk ? 'Bấm để bỏ điểm đã lưu' : 'Lưu tiến trình đọc ngay tại đây (chương và vị trí). Mở lại truyện có thể quay về đúng điểm đã lưu'}">${mk ? '🔖 Đã lưu' : '💾 Lưu'}</button>`;
   root.innerHTML = `<div class="st-bar"><button class="btn st-title" id="stBack">← ${esc(s.title)}</button>${ctrl}<button class="btn" data-act="full" title="Chỉ hiện chữ truyện, không có thanh và thư mục xung quanh (bấm Esc hoặc nút ← Thoát để quay lại)">📺</button></div>
     <div class="nw-stage st-stage ${full ? 'full' : ''}" id="stStage"><div class="nwf-bar"><button class="btn" data-act="exit">← Thoát</button><span class="grow"></span>${ctrl}

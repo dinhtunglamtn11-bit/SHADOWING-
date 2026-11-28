@@ -359,14 +359,44 @@ button, .btn, .chip, a, summary, select, input, label, [role=button], [role=tab]
 /* ===== Nền trang đọc bài (Cài đặt → Nền trang đọc bài) và định dạng chữ trong bài ===== */
 :root { --rc-red: #c62828; --rc-orange: #d35400; --rc-green: #1b7a35; --rc-blue: #1c58c4; --rc-purple: #7b2fc4; --rc-pink: #c2186b;
   --rh-yellow: #fff176; --rh-green: #a5e8a0; --rh-blue: #a9d4ff; --rh-pink: #ffb8d6; --rh-orange: #ffc98a; --rh-purple: #d9c2ff; }
-:root[data-rd=dark], :root[data-rd=default][data-theme=night] { --rc-red: #ff8a80; --rc-orange: #ffb066; --rc-green: #7ee08f; --rc-blue: #8ec1ff; --rc-purple: #c9a6ff; --rc-pink: #ff9ccb; }
-:root[data-rd=white] { --rd-bg: #ffffff; --rd-fg: #111111; --rd-dim: #555555; }
-:root[data-rd=paper] { --rd-bg: #f6ecd2; --rd-fg: #3a2a14; --rd-dim: #6d5a3a; }
-:root[data-rd=green] { --rd-bg: #d8ecd3; --rd-fg: #12301a; --rd-dim: #3d5e45; }
-:root[data-rd=dark] { --rd-bg: #15141f; --rd-fg: #f3eed9; --rd-dim: #b5afc9; }
-:root[data-rd=white] .nw-read, :root[data-rd=paper] .nw-read, :root[data-rd=green] .nw-read, :root[data-rd=dark] .nw-read { background: var(--rd-bg); color: var(--rd-fg); padding: 16px 20px 20px; border: var(--px) solid var(--ink); }
-:root[data-rd=white] .nw-read :is(.nw-ttl, .nw-text, p), :root[data-rd=paper] .nw-read :is(.nw-ttl, .nw-text, p), :root[data-rd=green] .nw-read :is(.nw-ttl, .nw-text, p), :root[data-rd=dark] .nw-read :is(.nw-ttl, .nw-text, p) { color: var(--rd-fg); }
-:root[data-rd=white] .nw-read :is(.dim, .nw-by, .nw-src), :root[data-rd=paper] .nw-read :is(.dim, .nw-by, .nw-src), :root[data-rd=green] .nw-read :is(.dim, .nw-by, .nw-src), :root[data-rd=dark] .nw-read :is(.dim, .nw-by, .nw-src) { color: var(--rd-dim); }
+:root[data-rd=ink], :root[data-rd=dark], :root[data-rd=gray], :root[data-rd=slate], :root[data-rd=navy], :root[data-rd=forest], :root[data-rd=cocoa], :root[data-rd=plum], :root[data-rd=default][data-theme=night] { --rc-red: #ff8a80; --rc-orange: #ffb066; --rc-green: #7ee08f; --rc-blue: #8ec1ff; --rc-purple: #c9a6ff; --rc-pink: #ff9ccb; }
+:root[data-rd=ink], .rdsw[data-v=ink] { --rd-bg: #111111; --rd-fg: #ffffff; --rd-dim: #b9b9b9; }
+:root[data-rd=dark], .rdsw[data-v=dark] { --rd-bg: #15141f; --rd-fg: #f3eed9; --rd-dim: #b5afc9; }
+:root[data-rd=gray], .rdsw[data-v=gray] { --rd-bg: #34353a; --rd-fg: #f5f5f5; --rd-dim: #bcbec6; }
+:root[data-rd=slate], .rdsw[data-v=slate] { --rd-bg: #24323a; --rd-fg: #eceff1; --rd-dim: #a8bcc6; }
+:root[data-rd=navy], .rdsw[data-v=navy] { --rd-bg: #0f1c33; --rd-fg: #e8effd; --rd-dim: #9fb2d6; }
+:root[data-rd=forest], .rdsw[data-v=forest] { --rd-bg: #14281d; --rd-fg: #e6f4e9; --rd-dim: #9fc2aa; }
+:root[data-rd=cocoa], .rdsw[data-v=cocoa] { --rd-bg: #2b211c; --rd-fg: #f6ebdd; --rd-dim: #c4ac96; }
+:root[data-rd=plum], .rdsw[data-v=plum] { --rd-bg: #291a33; --rd-fg: #f3e9f9; --rd-dim: #c0a6d0; }
+:root[data-rd=white], .rdsw[data-v=white] { --rd-bg: #ffffff; --rd-fg: #111111; --rd-dim: #555555; }
+:root[data-rd=silver], .rdsw[data-v=silver] { --rd-bg: #e7e7e4; --rd-fg: #222222; --rd-dim: #565656; }
+:root[data-rd=paper], .rdsw[data-v=paper] { --rd-bg: #f6ecd2; --rd-fg: #3a2a14; --rd-dim: #6d5a3a; }
+:root[data-rd=sepia], .rdsw[data-v=sepia] { --rd-bg: #e8d8b8; --rd-fg: #43301c; --rd-dim: #6f573a; }
+:root[data-rd=green], .rdsw[data-v=green] { --rd-bg: #d8ecd3; --rd-fg: #12301a; --rd-dim: #3d5e45; }
+:root[data-rd=sky], .rdsw[data-v=sky] { --rd-bg: #dcebf7; --rd-fg: #10283f; --rd-dim: #43607a; }
+:root[data-rd=rose], .rdsw[data-v=rose] { --rd-bg: #fae3e7; --rd-fg: #3f1a27; --rd-dim: #7a4a59; }
+:root[data-rd=lavender], .rdsw[data-v=lavender] { --rd-bg: #e9e3f8; --rd-fg: #2a1f49; --rd-dim: #5c5080; }
+/* đã chọn một tông: tờ đọc là màu trơn, chữ một màu rõ; toàn màn hình thì cả màn một màu */
+:root[data-rd]:not([data-rd=default]) .nw-read { background: var(--rd-bg); color: var(--rd-fg); padding: 16px 20px 20px; border: var(--px) solid var(--ink); }
+:root[data-rd]:not([data-rd=default]) .nw-read :is(.nw-ttl, .nw-text, .nw-text p, .nw-text li, h1, h2, h3) { color: var(--rd-fg); text-shadow: none; }
+:root[data-rd]:not([data-rd=default]) .nw-read :is(.dim, .nw-by, .nw-src) { color: var(--rd-dim); }
+:root[data-rd]:not([data-rd=default]) .nw-text:lang(en) p:first-of-type::first-letter { float: none; font: inherit; line-height: inherit; padding: 0; color: inherit; }
+:root[data-rd]:not([data-rd=default]) .nw-stage.full { background: var(--rd-bg); }
+:root[data-rd]:not([data-rd=default]) .nw-stage.full .nw-read { border-color: transparent; }
+:root[data-rd]:not([data-rd=default]) .nw-stage.full .st-nav { color: var(--rd-fg); }
+:root[data-rd]:not([data-rd=default]) :is(.sp-feed, .sp-in, .sp-wrap.full) { background: var(--rd-bg); color: var(--rd-fg); }
+:root[data-rd]:not([data-rd=default]) .sp-in :is(.sp-title, .sp-text, .sp-who b, .sp-ct, .sp-c) { color: var(--rd-fg); text-shadow: none; }
+:root[data-rd]:not([data-rd=default]) .sp-in :is(.dim, .sp-who small, .sp-tags) { color: var(--rd-dim); }
+:root[data-rd]:not([data-rd=default]) .sp-c { background: transparent; border: 1px solid var(--rd-dim); }
+:root[data-rd]:not([data-rd=default]) .nw-stage.full .nw-sec { color: var(--rd-fg); text-shadow: none; }
+.rdsw[data-v=default] { --rd-bg: var(--field); --rd-fg: inherit; }
+/* bảng chọn màu */
+.rdpick { position: fixed; z-index: 60; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(560px, calc(100% - 16px)); max-height: 60%; overflow-y: auto; padding: 10px; background: var(--panel); border: 3px solid var(--ink); box-shadow: 0 6px 0 rgba(0,0,0,.3); }
+.rdpick b { display: block; margin-bottom: 8px; }
+.rdgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.rdsw { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 6px 4px; font: inherit; font-size: 13px; line-height: 1.25; cursor: pointer; background: var(--rd-bg, var(--field)); color: var(--rd-fg, inherit); border: 2px solid var(--ink); }
+.rdsw i { font-style: normal; font-size: 18px; }
+.rdsw.on { outline: 3px solid var(--accent); outline-offset: 1px; }
 .rc-red { color: var(--rc-red); } .rc-orange { color: var(--rc-orange); } .rc-green { color: var(--rc-green); } .rc-blue { color: var(--rc-blue); } .rc-purple { color: var(--rc-purple); } .rc-pink { color: var(--rc-pink); }
 .rh { color: #111 !important; padding: 0 3px; }
 .rh-yellow { background: var(--rh-yellow); } .rh-green { background: var(--rh-green); } .rh-blue { background: var(--rh-blue); } .rh-pink { background: var(--rh-pink); } .rh-orange { background: var(--rh-orange); } .rh-purple { background: var(--rh-purple); }
@@ -1105,3 +1135,8 @@ body.vx-on #cueList { display: none; }
 .japit { display: inline-flex; gap: 2px; font-size: 18px; }
 .japit > span { padding: 2px 7px; border: 2px solid var(--line); }
 .japit > .h { background: var(--hl, #ffd84d); color: #3a2a00; transform: translateY(-5px); }
+
+/* danh hiệu chưa đạt: tiến độ chữ rõ trên cả nền sáng và tối */
+.pp-card .pr.tt { color:inherit; opacity:.85; text-align:center; }
+
+@media (max-width: 600px) { .st-bar { flex-wrap: wrap; } .st-bar .st-title { flex: 1 0 100%; } }

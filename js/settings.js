@@ -12,6 +12,7 @@ export function getUi() {
   try { return { ...UI_DEFAULTS, ...JSON.parse(localStorage.getItem('ui') || '{}') }; } catch { return { ...UI_DEFAULTS }; }
 }
 function saveUi(u) { try { localStorage.setItem('ui', JSON.stringify(u)); } catch {} }
+export function setUi(k, v) { const u = getUi(); u[k] = v; saveUi(u); applyUi(u); bus.emit('ui'); }
 const resolveTheme = t => (t === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day') : t);
 
 // Đặt các thuộc tính data-* và biến CSS lên <html>
