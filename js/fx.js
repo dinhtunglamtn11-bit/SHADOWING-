@@ -1,4 +1,4 @@
-// Hiệu ứng khi bấm nút: vòng vuông sáng lan ra + vài tia pixel bay ra rồi tan.
+// Hiệu ứng khi bấm nút: vài tia pixel bay ra rồi tan (không còn khung vuông lan ra, theo ý người dùng).
 // Chỉ dùng transform / opacity qua Web Animations API (chạy trên GPU) nên mượt; tự tắt khi chọn “Hiệu ứng chuyển động: Tắt”
 // hoặc hệ điều hành bật “giảm chuyển động”. Thanh phát video và khung luyện nói không có hiệu ứng.
 const HIT = 'button, .btn, .chip, [role=button], [role=tab], summary';
@@ -27,12 +27,7 @@ function burst(x, y, accent) {
   const L = mount();
   if (POP && (!L.matches(':popover-open') || document.querySelector('dialog[open]'))) raise(L);
   const done = el => () => { el.remove(); live--; };
-  const ring = document.createElement('i');
-  ring.className = 'fxr';
-  ring.style.cssText = `left:${x}px;top:${y}px;border-color:${accent}`;
-  L.appendChild(ring); live++;
-  ring.animate([{ transform: 'translate(-50%,-50%) scale(.25)', opacity: 0.9 }, { transform: 'translate(-50%,-50%) scale(1.9)', opacity: 0 }], { duration: 380, easing: 'ease-out' }).onfinish = done(ring);
-  const n = 7;
+  const n = 5;
   for (let k = 0; k < n; k++) {
     const p = document.createElement('i');
     const a = (Math.PI * 2 * k) / n + Math.random() * 0.7, d = 24 + Math.random() * 26, s = 4 + 2 * Math.round(Math.random());

@@ -95,10 +95,11 @@ function banner(view) {
   return o;
 }
 const paintHidden = () => { for (const o of banners.values()) o.box.classList.toggle('min', hidden()); };
-let t0 = performance.now();
+let t0 = performance.now(), io = null;
 export function draw() { // vẽ dải của mục đang mở
   const view = document.body.dataset.view, o = banners.get(view);
-  if (!o || hidden()) return;
+  if (!o || o.box.dataset.out === '1' || hidden()) return;
+  if (io && !o.watched) { o.watched = true; io.observe(o.box); }
   const t = off() ? 3 : (performance.now() - t0) / 1000;
   SCENES[view](pen(o.g), t, o.g);
 }
@@ -162,24 +163,39 @@ function maybeCheer(el) {
 }
 
 export function init() {
+  // phần tử mới được gom lại, xử lý ở khung hình sau: không làm chậm lệnh bấm đang vẽ trang
+  const queue = new Set();
+  let waiting = false;
+  const handle = el => { if (el.matches('.empty')) decorateEmpty(el); else maybeCheer(el); };
+  const flush = () => {
+    waiting = false;
+    for (const node of queue) {
+      if (!node.isConnected) continue;
+      if (node.matches('.empty, ' + CHEER)) handle(node);
+      node.querySelectorAll('.empty, ' + CHEER).forEach(handle);
+    }
+    queue.clear();
+  };
   const scan = node => {
-    if (node.nodeType !== 1) return;
-    if (node.matches('.empty')) decorateEmpty(node);
-    node.querySelectorAll?.('.empty').forEach(decorateEmpty);
-    if (node.matches(CHEER)) maybeCheer(node);
-    node.querySelectorAll?.(CHEER).forEach(maybeCheer);
+    if (node.nodeType !== 1 || node.tagName === 'I') return;
+    queue.add(node);
+    if (!waiting) { waiting = true; setTimeout(flush, 60); }
   };
   new MutationObserver(list => { for (const m of list) m.addedNodes.forEach(scan); }).observe(document.body, { childList: true, subtree: true });
   scan(document.body);
-  let timer = 0;
-  const open = view => {
+  const open = view => requestAnimationFrame(() => { // sau khi trang mới đã hiện: không chặn lệnh chuyển mục
     const o = banner(view);
     paintHidden();
     if (o) draw();
-    if (!off()) { const b = document.body; b.classList.remove('scn-enter'); void b.offsetWidth; b.classList.add('scn-enter'); clearTimeout(timer); timer = setTimeout(() => b.classList.remove('scn-enter'), 600); }
-  };
+    if (!off()) { // chỉ mờ dần vào, một lớp duy nhất (card đồ họa lo, không dàn lại trang)
+      document.querySelector('.view.active')?.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
+      document.querySelector('#nav button.on i')?.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-5px)' }, { transform: 'translateY(0)' }], { duration: 260, easing: 'ease-out' });
+    }
+  });
   bus.on('show', open);
   open(document.body.dataset.view);
+  // dải tranh cuộn khỏi màn hình thì thôi vẽ
+  if ('IntersectionObserver' in window) io = new IntersectionObserver(list => { for (const e of list) e.target.dataset.out = e.isIntersecting ? '' : '1'; });
   // 12 khung/giây là đủ cho tranh pixel; ẩn tab hoặc tắt chuyển động thì không vẽ lại
   setInterval(() => { if (!document.hidden && !off()) draw(); }, 83);
 }

@@ -331,6 +331,14 @@ export function init() {
   bus.on('store', c => { if (['topiclogs', 'cards', 'hwwords', 'posts', 'items', 'events', 'days', 'prefs', '*'].includes(c)) claimSoon(); });
   bus.on('habits', claimSoon);
   bus.on('store', c => { if (c === 'days' || c === 'prefs' || c === 'events' || c === '*') { updateBadge(); if (active) render(); } });
-  setInterval(() => { if (document.hidden) return; updateBadge(); if (active && !document.activeElement?.matches('input')) render(); }, 15000);
+  let seen = ''; // chỉ vẽ lại khi số liệu hoặc phút hiện tại thật sự đổi: vẽ lại vô ích làm giật khi đang cuộn / bấm
+  setInterval(() => {
+    if (document.hidden) return;
+    const now = Math.floor(Date.now() / 60000) + '|' + vnDate() + '|' + tab + '|' + JSON.stringify(tracker.byDate().get(vnDate()) || 0);
+    if (now === seen) return;
+    seen = now;
+    updateBadge();
+    if (active && !document.activeElement?.matches('input')) render();
+  }, 15000);
   updateBadge();
 }

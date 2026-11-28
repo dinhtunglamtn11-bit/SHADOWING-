@@ -557,8 +557,6 @@ dialog .bd { padding:8px; overflow-y:auto; max-height:64vh; }
 .scn-confetti i { position:absolute; display:block; }
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-motion=off]) .scn-empty { animation:scnFloat 2.4s ease-in-out infinite; }
-  :root:not([data-motion=off]) body.scn-enter .view.active > * { animation:scnIn .35s ease-out backwards; }
-  :root:not([data-motion=off]) body.scn-enter #nav button.on i { animation:scnHop .5s ease-out; }
   :root:not([data-motion=off]) .qback, :root:not([data-motion=off]) .grades { animation:scnIn .3s ease-out; }
   :root:not([data-motion=off]) .allDone { animation:scnPop .5s ease-out; }
   :root:not([data-motion=off]) .streak b { display:inline-block; animation:scnBeat 1.8s ease-in-out infinite; }
@@ -571,3 +569,5 @@ dialog .bd { padding:8px; overflow-y:auto; max-height:64vh; }
 @keyframes scnHop { 40% { transform:translateY(-7px) scale(1.15); } 70% { transform:translateY(1px); } }
 @keyframes scnPop { 0% { transform:scale(.7); } 60% { transform:scale(1.06); } }
 @keyframes scnBeat { 12% { transform:scale(1.18); } 24% { transform:scale(1); } }
+/* danh sách dài: chỉ dàn trang phần đang nhìn thấy, cuộn tới đâu vẽ tới đó (mở mục nhanh hơn trên điện thoại) */
+.cards > .card { content-visibility:auto; contain-intrinsic-size:auto 80px; }
