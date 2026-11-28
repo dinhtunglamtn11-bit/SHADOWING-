@@ -108,7 +108,8 @@ document.addEventListener('exercises-for', e => {
   runner?.stop(); runner = null; mode = 'list';
   document.dispatchEvent(new CustomEvent('review-tab', { detail: 'mine' }));
   if (!box) return;
-  if (setsOf(getLang()).some(s => s.itemId === id)) { drawList(); box.querySelector('[data-g="' + id + '"]')?.scrollIntoView(); }
+  const hit = setsOf(getLang()).filter(s => s.itemId === id);
+  if (hit.length) { for (const s of hit) { const xf = s.xf && !xfAll()[s.xf]?.del && xfAll()[s.xf] ? s.xf : ''; if (xf) openG.add('X:' + xf); openG.add('G:' + xf + ':' + (s.folder && tree.allFolders(getLang()).some(f => f.id === s.folder) ? 'F:' + s.folder : 'I:' + id)); } drawList(); box.querySelector('[data-g="' + id + '"]')?.scrollIntoView(); }
   else { editId = null; draft = { itemId: id, title: store.get('items', id)?.title || '' }; mode = 'edit'; drawEditor(); }
 });
 
@@ -126,45 +127,114 @@ document.addEventListener('sets-open', e => {
 
 // ---------- danh sách, chia mục theo thư mục bài học / video / tài liệu ----------
 function setCard(s) {
-  const p = parseSet(s.text || ''), kc = countKinds(p);
+  const p = parseOf(s), kc = countKinds(p);
   const chips = Object.keys(kc).map(k => `<span class="kb">${esc(SHORT[k])} ${kc[k]}</span>`).join('');
   return `<div class="card" style="cursor:default"><div class="thumb">${pix('a_exercise')}</div><div class="ci"><b>${esc(s.title || 'Bộ bài tập')}</b><span class="dim">${countOf(p)} câu hỏi${p.errors.length ? ` · <span class="bad">${p.errors.length} dòng lỗi</span>` : ''}</span><span class="kbs">${chips}</span></div>
-    <button class="btn primary" data-run="${s.id}">▶ Làm</button><button class="btn" data-edit="${s.id}">✎</button><button class="btn" data-del="${s.id}">🗑</button></div>`;
+    <button class="btn primary" data-run="${s.id}">▶ Làm</button><button class="btn" data-move="${s.id}" title="Cho vào thư mục">📁</button><button class="btn" data-edit="${s.id}">✎</button><button class="btn" data-del="${s.id}">🗑</button></div>`;
 }
+
+// ---------- thư mục lớn tự tạo cho bài tập (lưu ở prefs/exfolders; bộ bài tập trỏ tới bằng trường xf) ----------
+const xfAll = () => store.get('prefs', 'exfolders')?.d || {};
+const xfList = lang => Object.entries(xfAll()).filter(([, f]) => !f.del && f.lang === lang).map(([id, f]) => ({ id, ...f })).sort((a, b) => a.name.localeCompare(b.name, 'vi', { numeric: true }));
+const xfSave = (id, patch) => store.put('prefs', 'exfolders', { d: { ...xfAll(), [id]: { ...xfAll()[id], ...patch } } });
+function xfNew(lang) {
+  const name = (prompt('Tên thư mục lớn mới (ví dụ: HSK1, Ôn thi):') || '').trim();
+  if (!name) return '';
+  const id = uid(); xfSave(id, { name, lang, t: Date.now() }); openG.add('X:' + id);
+  return id;
+}
+// chọn nơi đặt cho một hoặc nhiều bộ bài tập
+function moveSets(ids, lang) {
+  if (!ids.length) return;
+  let dlg = $('#xfDlg');
+  if (!dlg) { dlg = document.createElement('dialog'); dlg.id = 'xfDlg'; document.body.appendChild(dlg); dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); }); }
+  const cur = new Set(ids.map(id => store.get('sets', id)?.xf || ''));
+  dlg.innerHTML = `<div class="xfbox"><b>Cho ${ids.length} bộ bài tập vào thư mục nào?</b>
+    ${xfList(lang).map(f => `<button type="button" class="btn ${cur.size === 1 && cur.has(f.id) ? 'primary' : ''}" data-to="${f.id}">📁 <span class="gt">${esc(f.name)}</span></button>`).join('')}
+    <button type="button" class="btn" data-to="+">＋ Thư mục mới…</button><button type="button" class="btn" data-to="">Không để trong thư mục nào</button><button type="button" class="btn" data-to="x">Hủy</button></div>`;
+  $$('[data-to]', dlg).forEach(b => b.onclick = () => {
+    let to = b.dataset.to;
+    if (to === 'x') { dlg.close(); return; }
+    if (to === '+') { to = xfNew(lang); if (!to) return; }
+    for (const id of ids) store.put('sets', id, { xf: to });
+    if (to) openG.add('X:' + to);
+    dlg.close(); drawList(); toast('Đã chuyển ✓', 1600);
+  });
+  dlg.showModal();
+}
+
+const openG = new Set(); // các mục đang mở: mặc định thu gọn hết, bấm mới mở
+const parsed = new Map(); // nhớ kết quả đọc bộ bài tập: bộ hàng nghìn câu không phải đọc lại mỗi lần vẽ
+const parseOf = s => { const c = parsed.get(s.id); if (c && c.text === s.text) return c.p; const p = parseSet(s.text || ''); parsed.set(s.id, { text: s.text, p }); return p; };
 
 function drawList() {
   const lang = getLang(), list = setsOf(lang), items = new Map(itemsOfLang(lang).map(i => [i.id, i]));
-  const groups = new Map();
   const fmap = new Map(tree.allFolders(lang).map(f => [f.id, f]));
-  for (const s of list) {
-    const key = s.folder && fmap.has(s.folder) ? 'F:' + s.folder : s.itemId && items.has(s.itemId) ? 'I:' + s.itemId : '';
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(s);
-  }
-  const keys = [...groups.keys()].sort((a, b) => (a === '') - (b === '') || Math.max(...groups.get(b).map(s => s.u || 0)) - Math.max(...groups.get(a).map(s => s.u || 0)));
-  const total = s => groups.get(s).reduce((n, x) => n + countOf(parseSet(x.text || '')), 0);
-  box.innerHTML = `<div class="row"><button class="btn primary" id="msNew">＋ Tạo bộ bài tập</button><button class="btn" id="msPrompt" title="Tạo prompt để nhờ ChatGPT / Claude tách văn bản thành nhiều câu hỏi">🤖 Prompt nhờ AI</button>${list.length ? '<button class="btn" id="msQuick" title="Ra một bài kiểm tra ngẫu nhiên từ mọi bộ bài tập, hiện trên một trang">📋 Kiểm tra nhanh</button>' + timeHtml('msQT', 0) : ''}<span class="grow"></span>
+  const keyOf = s => (s.folder && fmap.has(s.folder) ? 'F:' + s.folder : s.itemId && items.has(s.itemId) ? 'I:' + s.itemId : '');
+  const group = ss => {
+    const m = new Map();
+    for (const s of ss) { const k = keyOf(s); if (!m.has(k)) m.set(k, []); m.get(k).push(s); }
+    return [...m].sort(([a, x], [b, y]) => (a === '') - (b === '') || Math.max(...y.map(s => s.u || 0)) - Math.max(...x.map(s => s.u || 0)));
+  };
+  const total = ss => ss.reduce((n, x) => n + countOf(parseOf(x)), 0);
+  const folders = xfList(lang), inFolder = new Set(folders.map(f => f.id));
+  const bodies = new Map(), ids = new Map(); // nội dung chỉ dựng khi mục được mở
+  const gTitle = k => (k.startsWith('F:') ? tree.pathLabel(k.slice(2), lang) : items.get(k.slice(2))?.title);
+  const details = (key, head, info, extra, body) => {
+    bodies.set(key, body);
+    return `<details class="grp xgrp" data-key="${esc(key)}"${extra}${openG.has(key) ? ' open' : ''}><summary>${head} <small class="dim">${info}</small></summary><div class="xbody">${openG.has(key) ? body() : ''}</div></details>`;
+  };
+  const sub = (k, ss, xf) => {
+    const key = 'G:' + xf + ':' + k, it = k.startsWith('I:') ? items.get(k.slice(2)) : null, fid = k.startsWith('F:') ? k.slice(2) : '';
+    ids.set(key, { ids: ss.map(s => s.id), k, xf, title: gTitle(k) });
+    const head = `<span class="gt">${fid ? '🎓 ' + esc(tree.pathLabel(fid, lang)) : it ? iconOf(it) + ' ' + esc(it.title || 'Không tên') : '📚 Chung (chưa gắn với video / tài liệu)'}</span>`;
+    return details(key, head, `${ss.length} bộ · ${total(ss)} câu hỏi`, ` data-g="${esc(k.slice(2))}"`,
+      () => `<div class="row"><button class="btn primary" data-grun="${esc(key)}">▶ Làm cả mục</button><button class="btn" data-gmove="${esc(key)}">📁 Cho vào thư mục</button><button class="btn" data-gnew="${esc(key)}">＋ Bộ mới</button><button class="btn" data-gprompt="${esc(key)}">🤖 Prompt cho mục này</button></div>
+        <div class="cards">${ss.map(setCard).join('')}</div>`);
+  };
+  const big = f => {
+    const ss = list.filter(s => s.xf === f.id), key = 'X:' + f.id;
+    ids.set(key, { ids: ss.map(s => s.id), xf: f.id, title: f.name });
+    return details(key, `📁 <span class="gt">${esc(f.name)}</span>`, `${ss.length} bộ · ${total(ss)} câu hỏi`, '',
+      () => `<div class="row">${ss.length ? `<button class="btn primary" data-grun="${esc(key)}">▶ Làm cả thư mục</button>` : ''}<button class="btn" data-fnew="${f.id}">＋ Bộ mới</button><button class="btn" data-fren="${f.id}">✎ Đổi tên</button><button class="btn" data-fdel="${f.id}">🗑 Xóa thư mục</button></div>
+        ${ss.length ? `<div class="xsubs">${group(ss).map(([k, g]) => sub(k, g, f.id)).join('')}</div>` : '<div class="dim">Thư mục đang trống. Mở một mục bên dưới rồi bấm “📁 Cho vào thư mục”, hoặc bấm 📁 trên từng bộ bài tập.</div>'}`);
+  };
+  const loose = list.filter(s => !inFolder.has(s.xf));
+  const html = folders.map(big).join('') + group(loose).map(([k, g]) => sub(k, g, '')).join('');
+  box.innerHTML = `<div class="row"><button class="btn primary" id="msNew">＋ Tạo bộ bài tập</button><button class="btn" id="msXf">📁 Thư mục lớn mới</button><button class="btn" id="msPrompt" title="Tạo prompt để nhờ ChatGPT / Claude tách văn bản thành nhiều câu hỏi">🤖 Prompt nhờ AI</button>${list.length ? '<button class="btn" id="msQuick" title="Ra một bài kiểm tra ngẫu nhiên từ mọi bộ bài tập, hiện trên một trang">📋 Kiểm tra nhanh</button>' + timeHtml('msQT', 0) : ''}<span class="grow"></span>
       <label class="dim"><input type="checkbox" id="msListen" ${runOpts.listen ? 'checked' : ''}> Có câu nghe</label></div>
-    <div class="dim" style="margin:4px 2px">Bài tập được chia theo mục video / tài liệu. Nhập nhiều câu cùng lúc: bấm “Tạo bộ bài tập” rồi dán các dòng theo cú pháp, hoặc bấm “Prompt nhờ AI” để AI tách văn bản thành câu hỏi.</div>
-    ${list.length ? keys.map(k => {
-      const it = k.startsWith('I:') ? items.get(k.slice(2)) : null, ss = groups.get(k), fid = k.startsWith('F:') ? k.slice(2) : '';
-      return `<details class="grp" open data-g="${esc(k.slice(2))}"><summary><span class="gt">${fid ? '🎓 ' + esc(tree.pathLabel(fid, lang)) : it ? iconOf(it) + ' ' + esc(it.title || 'Không tên') : '📚 Chung (chưa gắn với video / tài liệu)'}</span> <small class="dim">${ss.length} bộ · ${total(k)} câu hỏi</small></summary>
-        <div class="row"><button class="btn primary" data-grun="${esc(k)}">▶ Làm cả mục</button><button class="btn" data-gnew="${esc(k)}">＋ Bộ mới</button><button class="btn" data-gprompt="${esc(k)}">🤖 Prompt cho mục này</button></div>
-        <div class="cards">${ss.map(setCard).join('')}</div></details>`;
-    }).join('') : `<div class="empty">Chưa có bộ bài tập ${esc(langInfo().name)} nào.</div>`}`;
-
+    <div class="dim" style="margin:4px 2px">Bấm vào tên mục để mở. Muốn gom cho gọn thì tạo “Thư mục lớn” rồi cho các mục hoặc từng bộ bài tập vào trong.</div>
+    <div id="xfRoot">${list.length || folders.length ? html : `<div class="empty">Chưa có bộ bài tập ${esc(langInfo().name)} nào.</div>`}</div>`;
   $('#msNew', box).onclick = () => { editId = null; draft = null; mode = 'edit'; drawEditor(); };
+  $('#msXf', box).onclick = () => { if (xfNew(lang)) drawList(); };
   $('#msPrompt', box).onclick = () => { promptCtx = { itemId: '' }; mode = 'prompt'; drawPromptView(); };
-
   $('#msListen', box).onchange = e => { runOpts.listen = e.target.checked; drawList(); };
 
-  $$('[data-run]', box).forEach(b => b.onclick = () => start([b.dataset.run]));
-  $$('[data-edit]', box).forEach(b => b.onclick = () => { editId = b.dataset.edit; draft = null; mode = 'edit'; drawEditor(); });
-  $$('[data-del]', box).forEach(b => b.onclick = () => { if (confirm('Xóa bộ bài tập này?')) { store.del('sets', b.dataset.del); drawList(); } });
-  const gTitle = k => (k.startsWith('F:') ? tree.pathLabel(k.slice(2), lang) : items.get(k.slice(2))?.title);
-  $$('[data-grun]', box).forEach(b => b.onclick = () => start(groups.get(b.dataset.grun).map(s => s.id), gTitle(b.dataset.grun)));
-  $$('[data-gnew]', box).forEach(b => b.onclick = () => { const k = b.dataset.gnew; editId = null; draft = k.startsWith('F:') ? { folder: k.slice(2) } : { itemId: k.slice(2) }; mode = 'edit'; drawEditor(); });
-  $$('[data-gprompt]', box).forEach(b => b.onclick = () => { const k = b.dataset.gprompt; promptCtx = { itemId: k.startsWith('I:') ? k.slice(2) : '' }; mode = 'prompt'; drawPromptView(); });
+  const draftOf = key => { const g = ids.get(key), k = g.k || ''; return { xf: g.xf, ...(k.startsWith('F:') ? { folder: k.slice(2) } : k.startsWith('I:') ? { itemId: k.slice(2) } : {}) }; };
+  const wire = scope => {
+    $$('details.xgrp', scope).forEach(d => d.ontoggle = () => {
+      const key = d.dataset.key, body = $(':scope > .xbody', d);
+      if (!d.open) { openG.delete(key); return; }
+      openG.add(key);
+      if (!body.childElementCount) { body.innerHTML = bodies.get(key)(); wire(body); }
+    });
+    $$('[data-run]', scope).forEach(b => b.onclick = () => start([b.dataset.run]));
+    $$('[data-edit]', scope).forEach(b => b.onclick = () => { editId = b.dataset.edit; draft = null; mode = 'edit'; drawEditor(); });
+    $$('[data-del]', scope).forEach(b => b.onclick = () => { if (confirm('Xóa bộ bài tập này?')) { store.del('sets', b.dataset.del); drawList(); } });
+    $$('[data-move]', scope).forEach(b => b.onclick = () => moveSets([b.dataset.move], lang));
+    $$('[data-grun]', scope).forEach(b => b.onclick = () => { const g = ids.get(b.dataset.grun); start(g.ids, g.title); });
+    $$('[data-gmove]', scope).forEach(b => b.onclick = () => moveSets(ids.get(b.dataset.gmove).ids, lang));
+    $$('[data-gnew]', scope).forEach(b => b.onclick = () => { editId = null; draft = draftOf(b.dataset.gnew); mode = 'edit'; drawEditor(); });
+    $$('[data-gprompt]', scope).forEach(b => b.onclick = () => { const k = ids.get(b.dataset.gprompt).k; promptCtx = { itemId: k.startsWith('I:') ? k.slice(2) : '' }; mode = 'prompt'; drawPromptView(); });
+    $$('[data-fnew]', scope).forEach(b => b.onclick = () => { editId = null; draft = { xf: b.dataset.fnew }; mode = 'edit'; drawEditor(); });
+    $$('[data-fren]', scope).forEach(b => b.onclick = () => { const name = (prompt('Tên mới:', xfAll()[b.dataset.fren]?.name || '') || '').trim(); if (name) { xfSave(b.dataset.fren, { name }); drawList(); } });
+    $$('[data-fdel]', scope).forEach(b => b.onclick = () => {
+      if (!confirm('Xóa thư mục này? Bài tập bên trong không bị xóa, chỉ trở ra ngoài.')) return;
+      for (const s of list) if (s.xf === b.dataset.fdel) store.put('sets', s.id, { xf: '' });
+      xfSave(b.dataset.fdel, { del: true }); drawList();
+    });
+  };
+  wire($('#xfRoot', box));
   if ($('#msQT', box)) wireTime(box, 'msQT');
   $('#msQuick', box)?.addEventListener('click', () => quickTest(list, readTime(box, 'msQT')));
 }
@@ -255,7 +325,7 @@ function drawEditor() {
     const p = parseSet(ta.value);
     if (!p.qs.length && !p.vocab.length) { toast('Chưa có câu hỏi hợp lệ nào để lưu'); return null; }
     const id = editId || uid(); editId = id;
-    store.put('sets', id, { lang: lg, title: zhText($('#msTitle', box).value.trim(), lg) || p.title || 'Bộ bài tập', text: ta.value, itemId: sel.value, folder: fsel.value, created: s?.created || Date.now(), deleted: false });
+    store.put('sets', id, { lang: lg, title: zhText($('#msTitle', box).value.trim(), lg) || p.title || 'Bộ bài tập', text: ta.value, itemId: sel.value, folder: fsel.value, xf: s?.xf ?? draft?.xf ?? '', created: s?.created || Date.now(), deleted: false });
     toast('Đã lưu ✓');
     return id;
   };
