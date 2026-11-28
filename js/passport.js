@@ -33,7 +33,7 @@ const EARN = { 'Thời gian học': 'Study time', 'Ôn thẻ': 'Card reviews', '
 // ---------- lưu / đồng bộ ----------
 function load() {
   // hwv 2: lần đổi xu thử nghiệm 3000 → 300, đặt lại mức xu cao nhất một lần (xu thử cũ bị thu hồi)
-  try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) { const mig = !(o.hwv >= HWV); return { own: o.own || [], since: o.since || '', hw: mig ? 0 : o.hw || 0, hwv: HWV, seen: o.seen || [], last: mig ? 0 : o.last || 0, eq: o.eq || {}, eqT: o.eqT || 0, paid: o.paid || {}, extra: o.extra || 0, chestD: o.chestD || '', qz: o.qz || { d: '', n: 0 }, wk: o.wk || null, stamps: o.stamps || [], forgive: o.forgive || 0, fv: o.fv || 0, deco: o.deco || {}, decoT: o.decoT || 0, rk: o.rk || {} }; } } catch { /* bỏ qua */ }
+  try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o) { const mig = !(o.hwv >= HWV); return { own: o.own || [], since: o.since || '', hw: mig ? 0 : o.hw || 0, hwv: HWV, seen: o.seen || [], last: mig ? 0 : o.last || 0, eq: o.eq || {}, eqT: o.eqT || 0, paid: o.paid || {}, extra: o.extra || 0, chestD: o.chestD || '', qz: o.qz || { d: '', n: 0 }, wk: o.wk || null, stamps: o.stamps || [], forgive: o.forgive || 0, fv: o.fv || 0, deco: o.deco || {}, decoT: o.decoT || 0, rk: o.rk || {}, tea: o.tea }; } } catch { /* bỏ qua */ }
   return { own: [], since: '', hw: 0, hwv: HWV, seen: [], last: 0, eq: {}, eqT: 0, paid: {}, extra: 0, chestD: '', qz: { d: '', n: 0 }, wk: null, stamps: [], forgive: 0, fv: 1, deco: {}, decoT: 0, rk: {} };
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* bỏ qua */ } dirty = true; clearTimeout(pushT); pushT = setTimeout(pushP, 2000); }
@@ -55,11 +55,12 @@ function pull() { // gộp với bản từ máy khác: thẻ đã mua lấy h�
   const more = decoNew || forgive !== (P.forgive || 0) || fv !== (P.fv || 0) || extra !== (P.extra || 0) || chestD !== (P.chestD || '') || stamps.length !== (P.stamps || []).length || JSON.stringify(qz) !== JSON.stringify(P.qz) || JSON.stringify(wk) !== JSON.stringify(P.wk) || JSON.stringify(rk) !== JSON.stringify(P.rk || {});
   const ch = more || own.size !== P.own.length || seen.size !== P.seen.length || since !== P.since || hw !== P.hw || hwv !== (P.hwv || 0) || Object.keys(paid).length !== Object.keys(P.paid || {}).length || (r.eqT || 0) > (P.eqT || 0);
   const eqNew = (r.eqT || 0) > (P.eqT || 0);
-  P = { own: [...own], seen: [...seen], since, hw, hwv, paid, forgive, fv, deco, decoT, rk, extra, chestD, qz, wk, stamps, last: Math.max(P.last, r.last || 0), eq: eqNew ? (r.eq || {}) : (P.eq || {}), eqT: Math.max(P.eqT || 0, r.eqT || 0) };
+  const teaM = mergeTea(P.tea, r.tea), teaNew = JSON.stringify(teaM) !== JSON.stringify(P.tea);
+  P = { tea: teaM, own: [...own], seen: [...seen], since, hw, hwv, paid, forgive, fv, deco, decoT, rk, extra, chestD, qz, wk, stamps, last: Math.max(P.last, r.last || 0), eq: eqNew ? (r.eq || {}) : (P.eq || {}), eqT: Math.max(P.eqT || 0, r.eqT || 0) };
   if (K && missing()) ensure(S.cc).then(() => { bus.emit('lame'); if (active) draw(); }); // thẻ mới mua ở máy khác thuộc nước chưa nạp
   if (decoNew) bus.emit('skin');
   if (eqNew) bus.emit('lame');
-  if (ch) { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* bỏ qua */ } if (active && K) draw(); }
+  if (ch || teaNew) { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* bỏ qua */ } if (active && K) draw(); }
 }
 
 // ---------- xu ----------
@@ -83,7 +84,25 @@ function earned() {
   return sum;
 }
 const rawSpent = () => P.own.reduce((n, id) => n + (P.paid?.[id] ?? (K?.byId[id] ? priceOf(K.byId[id]) : 0)), 0); // giá đã trả lúc mua (có thể được giảm)
-const spent = () => Math.max(0, rawSpent() - (P.forgive || 0)); // forgive: xóa khoản nợ do đợt thu hồi xu thử nghiệm
+const teaSpent = () => Object.values(P.tea?.own || {}).reduce((a, v) => a + (+v || 0), 0); // đồ trang trí quán TeaLab
+const spent = () => Math.max(0, rawSpent() - (P.forgive || 0)) + teaSpent(); // forgive: xóa khoản nợ do đợt thu hồi xu thử nghiệm
+
+// ---------- đồ trang trí quán TeaLab: mua bằng xu chung, lưu và đồng bộ cùng Passport ----------
+const teaOf = () => (P.tea ||= { own: {}, on: {}, found: {}, t: 0 });
+export const tea = {
+  balance: () => balance(),
+  get own() { return teaOf().own; }, get on() { return teaOf().on; }, get found() { return teaOf().found; },
+  buy(id, price) { const d = teaOf(); if (d.own[id] != null || balance() < price) return false; d.own[id] = price; save(); return true; },
+  place(on) { const d = teaOf(); d.on = on; d.t = Date.now(); save(); },
+  get hidden() { return !!teaOf().hidden; },
+  hide(v) { const d = teaOf(); d.hidden = !!v; d.t = Date.now(); save(); },
+  find(id, coins) { const d = teaOf(); if (d.found[id]) return false; d.found[id] = 1; P.extra = (P.extra || 0) + coins; save(); return true; },
+};
+function mergeTea(a, b) { // đã mua và bí mật: lấy hợp; cách bày: bản sửa sau thắng
+  if (!a) return b; if (!b) return a;
+  const newer = (b.t || 0) > (a.t || 0) ? b : a;
+  return { own: { ...b.own, ...a.own }, found: { ...b.found, ...a.found }, on: { ...(newer.on || {}) }, hidden: !!newer.hidden, t: newer.t || 0 };
+}
 // thưởng chuỗi ngày học: mỗi ngày học liên tiếp trước đó +10% xu của ngày, tối đa +50%
 const studied = d => !!d && (d.sec || 0) >= 60;
 function streakDays(m, date) { let n = 0; for (let d = addDays(date, -1); n < 5; d = addDays(d, -1)) { if (studied(m.get(d))) n++; else break; } return n; }
@@ -655,6 +674,16 @@ export function init() {
   $('#pdClose')?.addEventListener('click', () => $('#passDlg').close());
   $('#psClose')?.addEventListener('click', () => $('#passStory').close());
   for (const id of ['passDlg', 'passStory']) $('#' + id)?.addEventListener('click', e => { if (e.target.id === id) e.target.close(); });
+}
+
+// ---------- cho nút Back chung: Passport đi theo lớp Thế giới → Châu → Khu vực → Nước, không có nút “←” riêng ----------
+export function navState() {
+  if (!K) return '';
+  return JSON.stringify({ lv: S.lv, cont: S.cont, reg: S.reg, cc: S.cc, wv: S.wv, group: S.group });
+}
+export function navRestore(json) {
+  try { Object.assign(S, JSON.parse(json)); } catch { return; }
+  draw(); window.scrollTo(0, 0);
 }
 
 // ---------- dùng chung với nhân vật Lame ----------

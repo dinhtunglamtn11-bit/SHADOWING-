@@ -65,6 +65,29 @@ QUY TẮC:
 ${lang === 'zh' ? '- Chữ Hán dùng GIẢN THỂ.\n' : ''}
 NGUỒN:
 {nguồn}`;
+const NEWWORDS = lang => {
+  const ex = { zh: '学习 | xué xí | học tập\n图书馆 | tú shū guǎn | thư viện', ja: '学生 | gakusei | học sinh\n図書館 | toshokan | thư viện', ko: '학생 | haksaeng | học sinh\n도서관 | doseogwan | thư viện', en: 'library | /ˈlaɪbrəri/ | thư viện\nweather | /ˈweðər/ | thời tiết' }[lang] || '学习 | xué xí | học tập';
+  return `Bạn là giáo viên ${lname(lang)}. {chung}
+
+Hãy lập danh sách khoảng {số_lượng} từ vựng MỚI để tôi luyện viết chữ.
+Trình độ: {trình_độ}
+Chủ đề: {chủ_đề}
+
+MỖI TỪ MỘT DÒNG, đúng cú pháp 3 phần cách nhau bằng dấu | :
+chữ | phiên âm | nghĩa tiếng Việt
+
+Ví dụ:
+${ex}
+
+QUY TẮC:
+- Chỉ từ vựng${lang === 'en' ? ' (một từ hoặc cụm ngắn)' : ' (thường 1–4 chữ)'}, KHÔNG viết câu.
+- Phiên âm: ${lang === 'zh' ? 'pinyin có dấu thanh' : lang === 'ja' ? 'romaji' : lang === 'ko' ? 'romaja' : 'IPA'}; nghĩa ngắn gọn bằng tiếng Việt.
+${lang === 'zh' ? '- Chữ Hán dùng GIẢN THỂ.\n' : ''}- Không trùng lặp, không đánh số.
+- Chỉ trả về các dòng từ vựng, đặt trong MỘT khối code, không giải thích.
+
+NGUỒN (nếu có thì chỉ lấy từ trong đây):
+{nguồn}`;
+};
 const PASSPORT = `Làm thêm nước {tên_nước} (châu {châu}) cho tab Passport của app SHADOWING, đúng khuôn các nước đã làm. Đọc trước memory/passport-project.md và xem js/pass-au1..5.js, js/pass-au6.js, js/pass-story-au.js, js/pass-au2.js (trang phục) làm mẫu; làm theo tools/passport/PROMPT-them-nuoc.md.
 {chung}
 
@@ -105,6 +128,7 @@ const TYPES = [
   { id: 'timeline', name: '⏱ Gắn giờ [mm:ss] cho script (từ transcript YouTube)', build: TIMELINE },
   { id: 'vocabbank', name: '🔠 Kho từ vựng (Ôn tập → Từ vựng → Nhập từ)', build: lang => head + vocabBankPrompt({ lang, topic: '{chủ_đề}', n: '{số_lượng}', level: '{trình_độ}' }) + '\n\nNGUỒN (nếu có, chỉ lấy từ trong đây):\n{nguồn}' },
   { id: 'vocab', name: '🔤 Từ vựng cho bài tập (dòng T: từ | phiên âm | nghĩa)', build: VOCAB },
+  { id: 'newwords', name: '🖊 Từ mới để luyện viết (chữ | phiên âm | nghĩa)', build: NEWWORDS },
   { id: 'scmcase', name: '📦 Thêm bộ case mới vào SCM', build: () => SCMCASE },
   { id: 'passport', name: '🛂 Thêm nước mới vào Passport', build: () => PASSPORT },
 ];
@@ -129,6 +153,13 @@ export function fill(text, v = doc.vars, common = doc.common) {
   let out = text;
   for (const k of VARS) out = out.split(`{${k}}`).join(String(map[k] ?? '').trim() || (k === 'nguồn' ? '(dán nội dung vào đây)' : ''));
   return out.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// Prompt của một loại (ưu tiên bản bạn đã sửa) đã điền biến, cho nút “Chép prompt” ở ngay màn dùng nó
+export function promptFor(type, vars) {
+  load();
+  const v = { ...doc.vars, src: '', ...vars };
+  return fill(doc.tpl[type] ?? typeOf(type).build(v.lang), v);
 }
 
 function render() {

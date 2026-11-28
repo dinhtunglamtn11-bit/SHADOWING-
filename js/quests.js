@@ -8,6 +8,7 @@ import { habitHtml } from './passport.js';
 import { tr } from './i18n.js';
 import * as store from './store.js';
 import * as notes from './notes.js';
+import * as calendar from './calendar.js';
 import { getLang, uid } from './util.js';
 
 let range = 14, tab = 'today';
@@ -87,6 +88,7 @@ function todayTab(m, today) {
       <div class="streak">🔥 <b>${streak(m)}</b><span class="sl">ngày liên tiếp<br><span class="dim">đạt mục tiêu thời gian</span></span></div>
     </div>
     <div class="dim" style="margin:2px">Mỗi ngày có bộ nhiệm vụ khác nhau (nhiệm vụ thời gian luôn có).</div>
+    ${calendar.todayHtml()}
     <div class="quests">${ds.map(q => questCard(q, t)).join('')}</div>
     ${habitHtml()}
     ${done === ds.length ? '<div class="allDone">🎉 Hoàn thành hết nhiệm vụ hôm nay!</div>' : `<div class="dim" style="margin:6px 2px">Còn ${ds.length - done} nhiệm vụ nữa.</div>`}
@@ -234,7 +236,7 @@ function openJournal(today) {
   notes.openNote(j.id);
 }
 
-const TABS = [['today', '🌅 Hôm nay'], ['week', '📅 Tuần'], ['month', '🗓 Tháng'], ['review', '🔍 Nhìn lại'], ['journal', '📓 Nhật ký'], ['ach', '🏅 Thành tựu'], ['stats', '📈 Thống kê']];
+const TABS = [['today', '🌅 Hôm nay'], ['cal', '📆 Lịch'], ['week', '📅 Tuần'], ['month', '🗓 Tháng'], ['review', '🔍 Nhìn lại'], ['journal', '📓 Nhật ký'], ['ach', '🏅 Thành tựu'], ['stats', '📈 Thống kê']];
 
 function render() {
   const m = tracker.byDate(), today = vnDate();
@@ -243,7 +245,7 @@ function render() {
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6)).filter(d => (m.get(d)?.sec || 0) > 0).length;
   const cups = all.filter(d => A.dailyFor(d.date).every(q => A.isDone(q, d))).length;
   const hearts = Array.from({ length: 7 }, (_, i) => `<span class="hrt ${i < weekDays ? '' : 'off'}">❤</span>`).join('');
-  const body = tab === 'review' ? reviewTab(m, today) : tab === 'journal' ? journalTab(today) : tab === 'week' ? periodTab(m, today, 'week') : tab === 'month' ? periodTab(m, today, 'month') : tab === 'ach' ? achTab(m) : tab === 'stats' ? statsTab(m, today) : todayTab(m, today);
+  const body = tab === 'cal' ? calendar.html() : tab === 'review' ? reviewTab(m, today) : tab === 'journal' ? journalTab(today) : tab === 'week' ? periodTab(m, today, 'week') : tab === 'month' ? periodTab(m, today, 'month') : tab === 'ach' ? achTab(m) : tab === 'stats' ? statsTab(m, today) : todayTab(m, today);
   $('#questBody').innerHTML = `
     <div class="hero">
       <div class="avatar">👤</div>
@@ -285,8 +287,10 @@ export function init() {
     if (e.target.id === 'goalMin') { prefs.goalMin = Math.max(1, Math.min(600, +e.target.value || 15)); savePrefs(); render(); }
   });
   bus.on('show', v => { active = v === 'quest'; if (active) render(); });
+  bus.on('calendar', () => { if (active && tab === 'cal') render(); });
+  bus.on('quest-tab', t => { tab = t; if (active) render(); });
   bus.on('habits', () => { if (active) render(); }); // tick / thêm / sửa thói quen
-  bus.on('store', c => { if (c === 'days' || c === 'prefs' || c === '*') { updateBadge(); if (active) render(); } });
+  bus.on('store', c => { if (c === 'days' || c === 'prefs' || c === 'events' || c === '*') { updateBadge(); if (active) render(); } });
   setInterval(() => { if (document.hidden) return; updateBadge(); if (active && !document.activeElement?.matches('input')) render(); }, 15000);
   updateBadge();
 }
