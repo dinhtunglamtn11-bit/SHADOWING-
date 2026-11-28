@@ -167,7 +167,7 @@ function next() {
   if (S.cur && S.mode === 'rad' && S.rsub === 'pick') S.disc = makeRadPick(S.cur);
   saveProg();
   draw();
-  if (S.auto && S.cur && S.mode !== 'speak' && S.mode !== 'rad') setTimeout(() => play(), 150); // mặc định KHÔNG tự đọc: chỉ phát khi bấm “Nghe”
+  if (S.auto && S.cur && S.mode !== 'speak' && S.mode !== 'rad') { const cur = S.cur; setTimeout(() => { if (S.cur === cur && !S.done && box?.offsetParent) play(); }, 150); } // mặc định KHÔNG tự đọc; đã sang câu khác hoặc rời mục thì thôi
 }
 const bcp = 'zh-CN';
 function play(slow = false) {
@@ -243,8 +243,14 @@ function makeDisc(it) {
   return { kind: 'tone', opts: shuffle([...opts]).map(s => ({ v: s, label: markAll(s) })), ans: tgt, note: 'Nghe và chọn đúng thanh điệu' };
 }
 
+// bấm đúp vào nút tự chấm: lần thứ hai sẽ rơi trúng câu kế (chưa xem) nên bỏ qua
+let ratedAt = 0;
+const twice = () => { const t = Date.now(); if (t - ratedAt < 500) return true; ratedAt = t; return false; };
+
 // ---------- ghi âm (chỉ trong RAM) ----------
+let recGen = 0, asking = -1, mineAu = null; // recGen tăng mỗi lần dừng / bỏ: micro mở muộn (đã sang câu khác) thì tắt ngay
 function stopRec(drop = false) {
+  recGen++; mineAu?.pause();
   try { S.rec?.recorder?.state === 'recording' && S.rec.recorder.stop(); } catch { /* bỏ qua */ }
   try { S.rec?.stream?.getTracks().forEach(t => t.stop()); } catch { /* bỏ qua */ }
   S.rec = null; S.recBusy = false;
@@ -254,10 +260,15 @@ async function toggleRec() {
   if (S.recBusy) { S.rec?.recorder?.stop(); return; }
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { toast('Trình duyệt này không hỗ trợ ghi âm'); return; }
   try {
+    if (asking === recGen) return; // đang chờ micro: bấm thêm không mở thêm luồng
+    const gen = (asking = recGen);
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    asking = -1;
+    if (gen !== recGen) { stream.getTracks().forEach(t => t.stop()); return; }
     const recorder = new MediaRecorder(stream), chunks = [];
     recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
     recorder.onstop = () => {
+      if (S.rec?.recorder !== recorder) { stream.getTracks().forEach(t => t.stop()); return; } // đã sang câu khác / rời mục: bỏ bản ghi dở
       stream.getTracks().forEach(t => t.stop());
       if (S.recUrl) URL.revokeObjectURL(S.recUrl);
       S.recUrl = chunks.length ? URL.createObjectURL(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })) : '';
@@ -266,9 +277,9 @@ async function toggleRec() {
     S.rec = { recorder, stream }; S.recBusy = true; recorder.start();
     drawRecBar();
     setTimeout(() => { try { recorder.state === 'recording' && recorder.stop(); } catch { /* bỏ qua */ } }, 20000); // tối đa 20 giây
-  } catch { toast('Chưa được phép dùng micro: hãy cho phép micro cho trang này', 4000); }
+  } catch { asking = -1; toast('Chưa được phép dùng micro: hãy cho phép micro cho trang này', 4000); }
 }
-const playMine = () => { if (S.recUrl) new Audio(S.recUrl).play().catch(() => {}); };
+const playMine = () => { if (!S.recUrl) return; mineAu?.pause(); mineAu = new Audio(S.recUrl); mineAu.play().catch(() => {}); };
 function compare() { // nghe mẫu rồi tới giọng của bạn
   if (!S.recUrl) { toast('Hãy ghi âm trước'); return; }
   const it = S.cur, u = new SpeechSynthesisUtterance(it.hz);
@@ -474,7 +485,7 @@ function bindCard() {
   $('#plEnd', box)?.addEventListener('click', endSession);
   if (S.mode === 'rad') {
     $('#radShow', box)?.addEventListener('click', () => { S.flip = true; draw(); });
-    $$('[data-rself]', box).forEach(b => b.addEventListener('click', () => { const ok = b.dataset.rself === '1'; record(ok); toast(ok ? 'Tốt lắm! 👍' : 'Sẽ gặp lại bộ này nhiều hơn', 1200); next(); }));
+    $$('[data-rself]', box).forEach(b => b.addEventListener('click', () => { if (twice()) return; const ok = b.dataset.rself === '1'; record(ok); toast(ok ? 'Tốt lắm! 👍' : 'Sẽ gặp lại bộ này nhiều hơn', 1200); next(); }));
     $$('.qopt', box).forEach(b => b.addEventListener('click', () => { if (S.done) return; S.pick = b.dataset.v; S.done = true; record(S.pick === S.disc.ans); draw(); }));
     if (S.rsub === 'type') {
       $('#plGo', box)?.addEventListener('click', answerRad);
@@ -496,7 +507,7 @@ function bindCard() {
     $('#plRec', box)?.addEventListener('click', toggleRec);
     $('#plMine', box)?.addEventListener('click', playMine);
     $('#plCmp', box)?.addEventListener('click', compare);
-    $$('[data-self]', box).forEach(b => b.addEventListener('click', () => { const ok = b.dataset.self === '1'; record(ok); toast(ok ? 'Tốt lắm! 👍' : 'Sẽ gặp lại câu này nhiều hơn', 1400); next(); }));
+    $$('[data-self]', box).forEach(b => b.addEventListener('click', () => { if (twice()) return; const ok = b.dataset.self === '1'; record(ok); toast(ok ? 'Tốt lắm! 👍' : 'Sẽ gặp lại câu này nhiều hơn', 1400); next(); }));
     drawRecBar();
   }
 }

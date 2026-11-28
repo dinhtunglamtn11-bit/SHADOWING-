@@ -327,6 +327,31 @@ function drawFlag(cv, cc) { // cờ pixel nhỏ cho ô chọn nước
     c.fillStyle = '#009c3b'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#ffdf00'; c.beginPath(); c.moveTo(32, 5); c.lineTo(59, 24); c.lineTo(32, 43); c.lineTo(5, 24); c.closePath(); c.fill();
     c.fillStyle = '#002776'; c.beginPath(); c.arc(32, 24, 11, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2.4; c.beginPath(); c.arc(32, 50, 28, Math.PI * 1.17, Math.PI * 1.83); c.stroke(); return;
   }
+  if (cc === 'ca') { // cờ Canada: đỏ - trắng - đỏ (1:2:1), lá phong đỏ 11 đỉnh
+    c.fillStyle = '#d80621'; c.fillRect(0, 0, 16, 48); c.fillRect(48, 0, 16, 48);
+    c.beginPath(); for (const [x, y] of [[32, 7], [35, 13], [39, 11], [37, 22], [42, 17], [43, 20], [47, 19], [45, 26], [47, 28], [39, 34], [40, 37], [33, 36], [33, 42], [31, 42], [31, 36], [24, 37], [25, 34], [17, 28], [19, 26], [17, 19], [21, 20], [22, 17], [27, 22], [25, 11], [29, 13]]) c.lineTo(x, y); c.closePath(); c.fill(); return;
+  }
+  if (cc === 'lr') { // cờ Liberia: 11 sọc đỏ trắng, ô xanh có một sao trắng
+    for (let i = 0; i < 11; i++) { c.fillStyle = i % 2 ? '#fff' : '#bf0a30'; c.fillRect(0, Math.round(i * 48 / 11), 64, Math.round((i + 1) * 48 / 11) - Math.round(i * 48 / 11)); }
+    const h = Math.round(5 * 48 / 11); c.fillStyle = '#002868'; c.fillRect(0, 0, h, h);
+    c.fillStyle = '#fff'; c.beginPath(); for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 3.2 : 8.5; c.lineTo(h / 2 + Math.cos(a) * r, h / 2 + 0.5 + Math.sin(a) * r); } c.closePath(); c.fill(); return;
+  }
+  if (cc === 'ao') { // cờ Angola: đỏ trên, đen dưới; nửa bánh răng, dao rừng và sao vàng
+    c.fillStyle = '#cc092f'; c.fillRect(0, 0, 64, 24); c.fillStyle = '#000'; c.fillRect(0, 24, 64, 24);
+    c.strokeStyle = c.fillStyle = '#ffcb00'; c.lineWidth = 3.5; c.beginPath(); c.arc(32, 24, 12, -Math.PI * 0.35, Math.PI * 0.75); c.stroke();
+    for (const a of [-0.25, 0.05, 0.35, 0.65]) c.fillRect(32 + Math.cos(Math.PI * a) * 14 - 1.5, 24 + Math.sin(Math.PI * a) * 14 - 1.5, 3, 3);
+    c.lineWidth = 3; c.beginPath(); c.moveTo(21, 15); c.lineTo(41, 35); c.stroke();
+    c.beginPath(); for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.2 : 5.5; c.lineTo(32 + Math.cos(a) * r, 21 + Math.sin(a) * r); } c.closePath(); c.fill(); return;
+  }
+  if (cc === 'mg') { c.fillStyle = '#fff'; c.fillRect(0, 0, 21, 48); c.fillStyle = '#fc3d32'; c.fillRect(21, 0, 43, 24); c.fillStyle = '#007e3a'; c.fillRect(21, 24, 43, 24); return; } // cờ Madagascar: dải trắng dọc, đỏ trên, xanh lá dưới
+  if (cc === 'pt') { // cờ Bồ Đào Nha: xanh lá (2/5), đỏ (3/5), quả cầu thiên văn vàng và khiên
+    c.fillStyle = '#046a38'; c.fillRect(0, 0, 26, 48); c.fillStyle = '#da291c'; c.fillRect(26, 0, 38, 48);
+    c.strokeStyle = '#ffd100'; c.lineWidth = 3; c.beginPath(); c.arc(26, 24, 12, 0, Math.PI * 2); c.stroke();
+    c.lineWidth = 1.5; c.beginPath(); c.moveTo(14, 24); c.lineTo(38, 24); c.moveTo(17, 17); c.lineTo(35, 31); c.stroke();
+    c.fillStyle = '#da291c'; c.fillRect(20, 16, 12, 15); c.fillStyle = '#fff'; c.fillRect(22, 18, 8, 11);
+    c.fillStyle = '#002776'; for (const [x, y] of [[25, 19], [23, 22], [25, 22], [27, 22], [25, 25]]) c.fillRect(x, y, 2, 2);
+    return;
+  }
   if (cc === 'ru') { c.fillStyle = '#fff'; c.fillRect(0, 0, 64, 16); c.fillStyle = '#0039a6'; c.fillRect(0, 16, 64, 16); c.fillStyle = '#d52b1e'; c.fillRect(0, 32, 64, 16); return; } // cờ Nga: trắng, xanh, đỏ
   if (cc === 'sa') { c.fillStyle = '#165d31'; c.fillRect(0, 0, 64, 48); c.fillStyle = '#fff'; for (const [x, w] of [[14, 8], [24, 5], [31, 9], [42, 7]]) c.fillRect(x, 15, w, 3); for (const x of [16, 22, 27, 34, 38, 46]) c.fillRect(x, 19, 3, 3); c.fillRect(14, 31, 34, 2); c.fillRect(44, 29, 2, 6); c.fillRect(48, 31, 3, 2); return; } // cờ Ả Rập Xê Út (chữ và kiếm cách điệu)
   if (cc === 'it') { c.fillStyle = '#009246'; c.fillRect(0, 0, 21, 48); c.fillStyle = '#fff'; c.fillRect(21, 0, 22, 48); c.fillStyle = '#ce2b37'; c.fillRect(43, 0, 21, 48); return; } // cờ Ý: xanh, trắng, đỏ

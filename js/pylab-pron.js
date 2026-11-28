@@ -78,9 +78,15 @@ const P = { view: 'home', unit: null, rmode: 'mix' };
 let R = null; // lượt luyện đang chạy
 const playIt = (it, slow = false) => say(it.hz, 'zh-CN', slow ? 0.55 : it.sy.length > 3 ? 0.8 : 0.7);
 
+// bấm đúp vào nút tự chấm: lần thứ hai sẽ rơi trúng câu kế (chưa xem) nên bỏ qua
+let ratedAt = 0;
+const twice = () => { const t = Date.now(); if (t - ratedAt < 500) return true; ratedAt = t; return false; };
+
 // ---------- ghi âm (chỉ trong RAM) ----------
 let rec = null, recUrl = '', recBusy = false;
+let recGen = 0, asking = -1, mineAu = null; // recGen tăng mỗi lần dừng / bỏ: micro mở muộn (đã sang câu khác) thì tắt ngay
 function stopRec(drop = false) {
+  recGen++; mineAu?.pause();
   try { rec?.recorder?.state === 'recording' && rec.recorder.stop(); } catch { /* bỏ qua */ }
   try { rec?.stream?.getTracks().forEach(t => t.stop()); } catch { /* bỏ qua */ }
   rec = null; recBusy = false;
@@ -90,10 +96,15 @@ async function toggleRec() {
   if (recBusy) { rec?.recorder?.stop(); return; }
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { toast('Trình duyệt này không hỗ trợ ghi âm'); return; }
   try {
+    if (asking === recGen) return; // đang chờ micro: bấm thêm không mở thêm luồng
+    const gen = (asking = recGen);
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    asking = -1;
+    if (gen !== recGen) { stream.getTracks().forEach(t => t.stop()); return; }
     const recorder = new MediaRecorder(stream), chunks = [];
     recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
     recorder.onstop = () => {
+      if (rec?.recorder !== recorder) { stream.getTracks().forEach(t => t.stop()); return; } // đã sang câu khác / rời mục: bỏ bản ghi dở
       stream.getTracks().forEach(t => t.stop());
       if (recUrl) URL.revokeObjectURL(recUrl);
       recUrl = chunks.length ? URL.createObjectURL(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })) : '';
@@ -101,9 +112,9 @@ async function toggleRec() {
     };
     rec = { recorder, stream }; recBusy = true; recorder.start(); recBar();
     setTimeout(() => { try { recorder.state === 'recording' && recorder.stop(); } catch { /* bỏ qua */ } }, 20000);
-  } catch { toast('Chưa được phép dùng micro: hãy cho phép micro cho trang này', 4000); }
+  } catch { asking = -1; toast('Chưa được phép dùng micro: hãy cho phép micro cho trang này', 4000); }
 }
-const playMine = () => { if (recUrl) new Audio(recUrl).play().catch(() => {}); };
+const playMine = () => { if (!recUrl) return; mineAu?.pause(); mineAu = new Audio(recUrl); mineAu.play().catch(() => {}); };
 function compare(it) {
   if (!recUrl) { toast('Hãy ghi âm trước'); return; }
   const u = new SpeechSynthesisUtterance(it.hz); u.lang = 'zh-CN'; u.rate = 0.8; u.onend = () => setTimeout(playMine, 250);
@@ -214,7 +225,7 @@ function setupQ() {
   R.done = false; R.res = null; R.pick = null; R.showHz = false; R.opts = q.mode === 'listen' ? (optionsFor(q.it) || [q.it]) : null;
   stopRec(true);
 }
-function autoPlay() { const q = R?.qs[R.i]; if (q && q.mode !== 'speak') setTimeout(() => { if (R && R.qs[R.i] === q && !R.done) playIt(q.it); }, 250); }
+function autoPlay() { const q = R?.qs[R.i]; if (q && q.mode !== 'speak') setTimeout(() => { if (R && R.qs[R.i] === q && !R.done && box?.offsetParent) playIt(q.it); }, 250); }
 const radio = (res, it) => `<div class="plrows">${res.rows.map(r => {
   const kt = r.key.t > 0 ? r.key.t : '';
   return `<div class="plsy ${r.ok ? 'ok' : 'bad'}"><b class="plch">${esc(r.ch || '')}</b><span class="plk"><i class="${r.iOk ? 'ok' : 'bad'}">${esc(r.key.i || '∅')}</i><i class="${r.fOk ? 'ok' : 'bad'}">${esc(r.key.f)}</i>${kt ? `<i class="${r.tOk ? 'ok' : 'bad'}">${kt}</i>` : ''}</span>${r.ok ? '' : `<span class="plg dim">${r.g ? 'bạn: ' + esc(r.got) : 'thiếu'}</span>`}</div>`;
@@ -301,7 +312,7 @@ function onClick(e) {
   if (t.closest('#pnMine')) { playMine(); return; }
   if (t.closest('#pnCmp')) { compare(q.it); return; }
   const sf = t.closest('[data-self]');
-  if (sf) { const ok = sf.dataset.self === '1'; if (ok) R.ok++; record(q.it, ok); toast(ok ? 'Tốt lắm! 👍' : 'Sẽ gặp lại từ này nhiều hơn', 1200); nextQ(); }
+  if (sf) { if (twice()) return; const ok = sf.dataset.self === '1'; if (ok) R.ok++; record(q.it, ok); toast(ok ? 'Tốt lắm! 👍' : 'Sẽ gặp lại từ này nhiều hơn', 1200); nextQ(); }
 }
 // phím tắt: Enter sang câu tiếp khi đã trả lời; 1–4 chọn đáp án nghe-chọn
 document.addEventListener('keydown', e => {
